@@ -29,7 +29,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from robosim_eval import contacts as contact_client
 from robosim_eval.config import BaselineConfig, Scenario, load_config
-from robosim_eval.evaluator import ContactPolicy, EvalInputs, evaluate_run
+from robosim_eval.evaluator import ContactPolicy, EvalInputs, evaluate_run, integrity_gap
 from robosim_eval.nav2_params import write_params
 from robosim_eval.run_io import VENDOR_PKG, EventLog, Transcript, to_plain, write_manifest, write_resolved_config
 from robosim_eval.runner_fsm import RunStateMachine, State, StopStillTracker, append_sample, doctor_retry, refresh_clock
@@ -535,8 +535,7 @@ class Runner:
         integ = result.get("data_integrity", {}) or {}
 
         def gap(name: str) -> Optional[float]:
-            v = integ.get(name) or {}
-            return v.get("max_wall_gap_s") if v.get("count") else None
+            return integrity_gap(integ.get(name))
 
         gt = f["ground_truth"].get("at_stop") or f["ground_truth"].get("at_end")
         term = f.get("terminal") or {}

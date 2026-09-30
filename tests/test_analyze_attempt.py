@@ -140,3 +140,47 @@ def test_transcript_parser(tmp_path):
 def test_pose_compose_with_the_real_spawn():
     x, y, yaw = aa.pose_compose((-6.0, -1.0, math.pi), (0.5, 0.0, 0.0))
     assert (x, y) == (pytest.approx(-6.5), pytest.approx(-1.0))
+
+
+def test_stream_with_no_message_inside_the_window_makes_data_incomplete():
+    # Codex D0 round1c-a #2: completeness was judged on the whole-bag count; a stream present only outside the
+    # accept..arrival window passed whenever the window itself was not longer than the dropout threshold.
+    bag = make_run()
+    bag["clock"] = [(bag["clock"][-1][0] + 10 * NS, 99.0)]      # the only /clock message arrives after the window
+    r, _ = aa.evaluate(bag, transcript(), GOAL, SPAWN, dropout=100.0)   # a large threshold isolates the in-window rule
+    assert r["data_status"] == "incomplete" and r["validation_status"] == "inconclusive"
+    assert "clock: no messages in the evaluation window" in " ".join(r["verdict_reasons"]["inconclusive"])
+
+
+def test_transcript_without_goal_id_does_not_let_a_bag_goal_pass():
+    # Codex D0 round1c-a #1: with the sent goal but no goal id in the transcript, the first accepted goal in the bag
+    # was taken as the target and could pass although it may belong to another attempt.
+    r, _ = aa.evaluate(make_run(), transcript(uuid=None), GOAL, SPAWN)
+    assert r["validation_status"] == "inconclusive"
+    assert any("goal id" in s for s in r["verdict_reasons"]["inconclusive"])
+
+
+def test_stale_arrival_position_is_not_a_navigation_failure():
+    # Codex D0 round1c-a #3: odometry stops at sim 1 s (x = 0.5), the result comes at 4 s; the last odometry sample is
+    # far older than the arrival check and must not produce a position-error failure.
+    bag = make_run(final_x=2.0)
+    bag["odom"] = [o for o in bag["odom"] if o[1] <= 1.0]
+    r, _ = aa.evaluate(bag, transcript(), GOAL, SPAWN)
+    assert r["validation_status"] == "inconclusive" and not r["verdict_reasons"]["fail"]
+    assert r["data_status"] == "incomplete"
+    assert any("position sample" in s for s in r["verdict_reasons"]["inconclusive"])
+
+
+def test_map_base_composition_never_uses_a_later_map_odom_transform():
+    # Codex D0 round1c-a #4: an odom->base_link sample received before the first map->odom must not be composed with it.
+    out = aa.compose_map_base([(10 * NS, 10.0, 100.0, 0.0, 0.0)],
+                              [(1 * NS, 1.0, 0.0, 0.0, 0.0), (11 * NS, 11.0, 0.0, 0.0, 0.0)])
+    assert [p[0] for p in out] == [11 * NS] and out[0][2] == 100.0
+
+
+@pytest.mark.parametrize("goal, sent", [((2.0, 0.0, float("nan")), GOAL), (GOAL, (2.0, float("nan"), 0.0)),
+                                        ((2.0, float("inf"), 0.0), None)])
+def test_non_finite_goal_values_are_rejected(goal, sent):
+    # Codex D0 round1c-a #5: NaN compares false, so a NaN goal passed the transcript check.
+    with pytest.raises(aa.GoalMismatch):
+        aa.evaluate(make_run(), transcript(goal=sent), goal, SPAWN)

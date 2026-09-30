@@ -22,9 +22,9 @@ from __future__ import annotations
 import dataclasses
 import math
 from dataclasses import dataclass
-from typing import List, Mapping, Optional, Sequence, Tuple
+from typing import Any, List, Mapping, Optional, Sequence, Tuple
 
-__all__ = ["ContactPolicy", "EvalInputs", "Verdict", "evaluate_run", "disallowed_contacts"]
+__all__ = ["ContactPolicy", "EvalInputs", "Verdict", "evaluate_run", "disallowed_contacts", "integrity_gap"]
 
 STATUS_NAMES = {4: "SUCCEEDED", 5: "CANCELED", 6: "ABORTED"}
 
@@ -80,6 +80,14 @@ class Verdict:
 
 def _under(path: str, root: str) -> bool:
     return path == root or path.startswith(root.rstrip("/") + "/")
+
+
+def integrity_gap(entry: Optional[Mapping[str, Any]]) -> Optional[float]:
+    """Largest wall gap of one stream from the analyzer's data_integrity entry; None ("no data") unless the stream has
+    messages inside the accept..arrival window (a whole-recording count is not evidence for the window)."""
+    if not entry or not entry.get("count_in_window"):
+        return None
+    return entry.get("max_wall_gap_s")
 
 
 def disallowed_contacts(contacts: Sequence[Tuple[str, str]], policy: ContactPolicy) -> Tuple[Tuple[str, str], ...]:

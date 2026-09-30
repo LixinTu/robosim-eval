@@ -119,6 +119,8 @@ def compose_map_base(map_odom, odom_base):
     if not map_odom:
         return res
     for t_ns, st, x, y, yaw in odom_base:
+        if t_ns < map_odom[0][0]:
+            continue  # no map->odom received yet: never apply a later transform to an earlier sample
         while j + 1 < len(map_odom) and map_odom[j + 1][0] <= t_ns:
             j += 1
         _, _, mx, my, myaw = map_odom[j]
@@ -222,6 +224,9 @@ def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0
     """Pure evaluation of one attempt; returns (result dict, trajectory rows). Raises GoalMismatch."""
     gx, gy, gyaw = goal
     fail_reasons, inconclusive = [], []
+    sent = tr.get("sent_goal")
+    if not all(math.isfinite(v) for v in goal) or (sent is not None and not all(math.isfinite(float(v)) for v in sent)):
+        raise GoalMismatch(f"non-finite goal values: --goal {list(goal)}, sent {sent}")
 
     if tr.get("sent_goal") is not None:
         sx, sy, syaw = tr["sent_goal"]
@@ -237,6 +242,8 @@ def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0
     if not target:
         target_src = "first goal id that became ACCEPTED/EXECUTING in the recording"
         target = next((u for _, u, s in statuses if s in (1, 2)), None)
+    if not tr.get("goal_id") and tr.get("sent_goal") is not None and not tr.get("rejected"):
+        inconclusive.append("the transcript has no goal id: the target was taken from the recording and may be another goal")
     st = [e for e in statuses if target and e[1] == target]
     other_ids = sorted({u for _, u, _ in statuses if u != target})
     fb = [f for f in bag["feedback"] if target and f[1] == target]
@@ -292,12 +299,18 @@ def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0
         inconclusive.append("no AMCL-independent position source (--spawn not given); the Nav2 estimate is not an independent check")
     arr = positions[arr_src]["at_arrival"]
     arr_err = arr["error_to_goal_m"] if arr else None
+    if arr is not None and t_arr is not None and t_arr - arr["recv_wall_ns"] > dropout * 1e9:
+        inconclusive.append(f"no position sample within {dropout} s before the arrival check (the last one is "
+                            f"{(t_arr - arr['recv_wall_ns']) / 1e9:.1f} s older); the position error is not judged")
+        arr_err = None
 
     lo = t_accept if t_accept is not None else (odom[0][0] if odom else 0)
     hi = t_arr if t_arr is not None else (t_last or lo)
     integrity = {name: stream_integrity(bag[name], lo, hi) for name in ("clock", "odom", "tf_odom_base", "tf_map_odom")}
     integrity["feedback_target_goal"] = {"count": len(fb)}
     problems = [f"{n}: no messages" for n, v in integrity.items() if v["count"] == 0]
+    problems += [f"{n}: no messages in the evaluation window" for n, v in integrity.items()
+                 if v["count"] and v.get("count_in_window") == 0]
     problems += [f"{n}: gap of {v['max_wall_gap_s']} s wall > {dropout} s" for n, v in integrity.items()
                  if "max_wall_gap_s" in v and v["max_wall_gap_s"] > dropout]
     problems += [f"{n}: {v['backward_stamps']} backwards stamps" for n, v in integrity.items() if v.get("backward_stamps")]

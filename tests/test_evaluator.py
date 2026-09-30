@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 
-from robosim_eval.evaluator import ContactPolicy, EvalInputs, evaluate_run
+from robosim_eval.evaluator import ContactPolicy, EvalInputs, evaluate_run, integrity_gap
 
 ROBOT = "/World/Nova_Carter_ROS"
 GROUND = ("/World/warehouse_with_forklifts/GroundPlane/",
@@ -130,3 +130,11 @@ def test_rejected_goal_is_unknown():
 def test_verdict_serializes():
     import json
     assert '"validation_status": "pass"' in json.dumps(run().to_dict())
+
+
+def test_integrity_gap_needs_messages_inside_the_window():
+    # The D3 verdict takes the analyzer's data_integrity entries; a stream with messages only outside the
+    # accept..arrival window has no usable gap (it counts as "no data"), whatever its whole-recording count.
+    assert integrity_gap({"count": 5, "count_in_window": 0, "max_wall_gap_s": 1.5}) is None
+    assert integrity_gap({"count": 5, "count_in_window": 3, "max_wall_gap_s": 1.5}) == 1.5
+    assert integrity_gap({}) is None and integrity_gap(None) is None
