@@ -1,9 +1,13 @@
-"""Fixed-input tests for the pure helpers behind the Isaac sim_control adapter (no ROS needed)."""
+"""Fixed-input tests for the pure helpers behind the Isaac sim_control adapter (no ROS needed), and for its sim.sh
+wrapper with a stub python3 (only the ROS environment files are sourced; nothing talks to Isaac)."""
 from __future__ import annotations
 
 import math
+import os
+import subprocess
 import sys
 import types
+from pathlib import Path
 from types import SimpleNamespace as NS
 
 import pytest
@@ -134,3 +138,27 @@ def test_ground_truth_frame_is_world_when_isaac_leaves_it_empty(monkeypatch):
     # EntityState.msg: "Empty frame defaults to world"
     rec = _adapter_returning(monkeypatch, _entity_state("")).entity_state("/World/x")
     assert rec["frame"] == "world" and rec["isaac_frame_id"] == ""
+
+
+REPO = Path(__file__).resolve().parents[1]
+# python3 stand-in: records how sim.sh starts the adapter; anything else (dds_env.sh's XML check) runs the real one
+STUB_PYTHON = """#!/bin/sh
+if [ "$1" = "-m" ] && [ "$2" = "robosim_eval.sim_adapter" ]; then
+  printf 'cwd=%s\\nargs=%s\\n' "$PWD" "$*"
+  exit 0
+fi
+exec /usr/bin/python3 "$@"
+"""
+
+
+@pytest.mark.skipif(not Path("/opt/ros/jazzy/setup.bash").exists(), reason="sim.sh sources the ROS 2 Jazzy setup")
+def test_sim_sh_runs_the_adapter_of_its_own_checkout(tmp_path):
+    # contract C6: run from a worktree, sim.sh must not cd into /mnt/d/RoboSim-Eval and run that checkout's adapter
+    stub = tmp_path / "python3"
+    stub.write_text(STUB_PYTHON, encoding="utf-8")
+    stub.chmod(0o755)
+    env = {**os.environ, "PATH": f"{tmp_path}:{os.environ['PATH']}"}
+    p = subprocess.run(["bash", str(REPO / "scripts" / "wsl" / "sim.sh"), "state"], capture_output=True, text=True,
+                       env=env, timeout=120, cwd=str(tmp_path))
+    assert p.returncode == 0, (p.stdout, p.stderr)
+    assert f"cwd={REPO}\n" in p.stdout and "args=-m robosim_eval.sim_adapter state\n" in p.stdout
