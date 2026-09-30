@@ -1,0 +1,156 @@
+[
+ {
+  "id": "simctl-1",
+  "severity": "Major",
+  "file": "robosim_eval/contacts.py",
+  "line": "27-30 (runner.py 245, 275, 489 catch only ContactError)",
+  "title": "Localized PowerShell error text crashes the contact client with UnicodeDecodeError. At teardown this skips stop_record/stop_nav2/result.json; at install it turns the run into an execution error",
+  "trigger": "On this zh-CN Windows (console code page 936), any terminating error inside isaac_py.ps1 writes Chinese text to stderr. Examples: Invoke-Kit's ReadToEnd hitting ReceiveTimeout because the Kit main loop is blocked for more than 75 s, or a connection reset because Isaac crashes while a call is in flight. contacts._call runs subprocess.run(..., text=True), which decodes stdout and stderr as strict UTF-8. The resulting UnicodeDecodeError is not caught by `except (OSError, TimeoutExpired)` and is not a ContactError.",
+  "expected": "Any failure of the contact channel becomes a ContactError. The runner then records contacts_unavailable, gives safety unknown and an inconclusive verdict, and the teardown still stops the recorder and Nav2 and writes result.json.",
+  "actual": "install(): the exception leaves _reset_sim and run() records it as 'internal error: UnicodeDecodeError'. execution_status becomes error, runner_errors lead to validation fail, and the exit code is 30, before any navigation. teardown fetch(): the exception leaves _teardown, which run() calls inside finally. The remaining steps (3 s settle, stop_record.sh, analyze, stop_nav2.sh, go(DONE), _write_result, ev.close, rclpy.shutdown) never run. The runner exits 1 with a traceback, and Nav2 and the recorder are left running. The pre-run clear fetch fails the same way and leaves installed=True, so the teardown fetch is attempted again.",
+  "evidence": "I used a stand-in client (scratchpad simctl/fake_client_timeout.ps1) with the same params, ErrorActionPreference and socket read as Invoke-Kit, but against a private ephemeral 127.0.0.1 listener that never answers (ReceiveTimeout 1 s).\n(1) `MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash -lc \"cd /mnt/d/RoboSim-Eval && PYTHONDONTWRITEBYTECODE=1 python3 .../simctl/repro_decode.py\"` output: `install -> ESCAPES as UnicodeDecodeError 'utf-8' codec can't decode byte 0xd3 in position 160: invalid continuation byte / is ContactError subclass: False`; fetch gives the same (WSL locale LANG=C.UTF-8).\n(2) repro_teardown.py builds a real runner.Runner (no_sim/no_nav2/no_record/no_analyze, contacts installed=True, started['nav2']=True, script() stubbed to print) and calls _teardown(). Output: `teardown ABORTED by UnicodeDecodeError ... fsm state: TEARDOWN | result.json exists: False`. No script() call was printed, so stop_nav2.sh would not have run.",
+  "fix_direction": "In _call, capture bytes and decode with errors='replace' (or pass encoding='utf-8', errors='replace'), and convert UnicodeDecodeError/ValueError into ContactError. Optionally set [Console]::OutputEncoding to UTF-8 in isaac_py.ps1. Guard the teardown contact fetch (and the teardown's set_state('playing')) with a broad except that records the error, so the rest of the teardown always runs. Add fixed-input tests for contacts._call error paths; none exist today.",
+  "reproduced": true,
+  "verification": {
+   "id": "simctl-1",
+   "verdict": "confirmed",
+   "severity": "Major",
+   "reproduced": true,
+   "repro": "Scratch: .../review-wf/verify-simctl/. (a) culture.ps1 run through WSL interop printed `ui=zh-CN cur=zh-CN outcp=936`, so powershell.exe started from WSL writes localized GBK text. (b) repro1_decode.py sets contacts.CLIENT to two stand-ins that use the same param block and ErrorActionPreference=Stop as isaac_py.ps1. throw_io.ps1 has an uncaught .NET exception and no network. timeout_listener.ps1 repeats Invoke-Kit's ReadToEnd against a private ephemeral 127.0.0.1 listener (it exits if the port is 8226) with ReceiveTimeout 1 s. Command: `MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash -lc \"cd /mnt/d/RoboSim-Eval && PYTHONDONTWRITEBYTECODE=1 python3 .../verify-simctl/repro1_decode.py\"`. Output: `raw exit 1 ... stderr non-ascii bytes: 62`, then `stderr as gbk: ...throw_io.ps1 : 使用\"1\"个参数调用\"ReadAllText\"时发生异常...`, then `throw_io.ps1 install -> ESCAPES as UnicodeDecodeError 'utf-8' codec can't decode byte 0xd3 in position 156 | ContactError subclass: False`. fetch gives the same, and timeout_listener.ps1 install/fetch give the same at position 164. (c) repro1_teardown.py builds a real runner.Runner (stub node, contacts installed=True, started nav2=True and record=True, script() stubbed to record calls) and calls _teardown(). Output: `teardown raised UnicodeDecodeError | state TEARDOWN` and `scripts called: [] | result.json: False`.",
+   "reasoning": "contacts._call (contacts.py:27-30) runs subprocess.run(..., text=True). Under WSL LANG=C.UTF-8 this decodes strictly, and the error is raised inside subprocess.run, where `except (OSError, TimeoutExpired)` does not catch it. UnicodeDecodeError is not a ContactError. The runner catches only ContactError at 245 (install), 275 (pre-run clear) and 489 (teardown fetch). In isaac_py.ps1, Invoke-Kit has try/finally with no catch around Write/ReadToEnd, and ConvertFrom-Json of a truncated reply throws ArgumentException. So a ReceiveTimeout (the Kit main loop is blocked for more than 75 s, and the server's watchdog reply also needs the loop), an RST, or a partial reply all end in localized stderr. Two paths are handled cleanly: I checked that an empty reply (FIN after a crash) yields `\"\" | ConvertFrom-Json` -> null -> exit 1 with no stderr, so ContactError; and a refused connection gives exit 3 with ASCII JSON. The failing path is therefore narrower than 'any error', but it is real. At install, the exception reaches run()'s `except Exception`: internal error, exit 30. At teardown, the exception leaves _teardown inside run()'s finally, so stop_record.sh, stop_nav2.sh, _write_result, ev.close and rclpy.shutdown are skipped. start_nav2.sh then refuses (exit 3) while Nav2 is still running, so later batch runs fail too. The recorder is duration-capped by `timeout -s INT`, but Nav2 is not. The pre-run clear failing this way leaves installed=True (only the ContactError handler at 276 clears it), so the teardown fetch is tried again. The line references are correct. Major is justified: the trigger is uncommon but plausible on this unsupported configuration, and on that path the process cleanup and result.json are lost.",
+   "fix_direction": "In contacts._call, run subprocess with encoding='utf-8', errors='replace' (or capture bytes and decode with 'replace'), and also turn ValueError/UnicodeError into ContactError. Optionally set [Console]::OutputEncoding=UTF8 in isaac_py.ps1 and catch around Invoke-Kit so it emits JSON with exit 3. In _teardown, guard the contact fetch and the set_state('playing') resume with a broad except that records the error, so stop_record/stop_nav2/_write_result always run. Add fixed-input tests for the _call error paths."
+  }
+ },
+ {
+  "id": "simctl-2",
+  "severity": "Minor",
+  "file": "robosim_eval/runner.py",
+  "line": "485-487, 551-552 (contact_monitor.py 31-35; contacts.py 61-63)",
+  "title": "Contact completeness signals ('dropped', persist_counts) are thrown away; a truncated or persist-only contact record is judged safety pass",
+  "trigger": "(a) More than 5000 FOUND/LOST events between the pre-run clear and the teardown fetch. The monitor then drops events and counts them in 'dropped', which can include the robot/obstacle FOUND. (b) A robot/obstacle contact that already exists when the pre-run clear runs, for example an obstacle spawned touching the robot, and persists through the run. Such a contact produces only PERSIST counts during the run.",
+  "expected": "Plan A5 says the tool must record loss counts or integrity flags, keep unknown/incomplete when key data is missing, and never treat 'not measured' as zero collisions. So dropped>0 should make safety unknown, and a persisting non-ground contact should count as a contact.",
+  "actual": "The runner stores 'dropped' in facts, but EvalInputs has no field for it. persist_counts is not stored at all. found_pairs keeps only type=='found'. contacts_measured is True whenever fetch() returned, so safety becomes pass in both cases.",
+  "evidence": "repro_contacts.py mirrors runner._teardown and _evaluate. Output: `persist-only contact with an obstacle dropped=0 persist_pairs=['/World/Nova_Carter_ROS/wheel_left|/World/RoboSimObstacles/low_box/Geom'] found_pairs_to_obstacle=0 -> safety=pass` and `obstacle 'found' dropped at the cap dropped=1 ... -> safety=pass`. The recorded runs have 0-6 run events and at most 48 pre-run events (grep of contacts_fetched/contacts_cleared in artifacts), so the cap is far away today; the rule gap is real regardless. No test covers dropped or persist.",
+  "fix_direction": "Pass dropped and the persist pairs into EvalInputs. Treat dropped>0 as contact data incomplete (safety unknown), and treat any non-ignored persist pair involving the robot as a contact. Add fixed-input evaluator tests for both cases.",
+  "reproduced": true,
+  "verification": {
+   "id": "simctl-2",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": true,
+   "repro": "verify-simctl/repro2_contacts.py passes fetched batches through the exact runner extraction (contacts.found_pairs, measured=True, runner.py 485-487) into EvalInputs (551-552), with the baseline ContactPolicy. Command: `MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash -lc \"cd /mnt/d/RoboSim-Eval && PYTHONDONTWRITEBYTECODE=1 python3 .../verify-simctl/repro2_contacts.py\"`. Output: `a) dropped=7 (cap hit), kept events only ground: safety=pass validation=pass`, `b) persist-only robot<->obstacle: safety=pass validation=pass`, `control: found robot<->obstacle: safety=fail validation=fail`, and `EvalInputs has dropped/persist field: ['dropout_threshold_wall_s']`, i.e. none.",
+   "reasoning": "contact_monitor.py drops FOUND/LOST events beyond 5000 and counts them in 'dropped'. PERSIST events are only counted in 'persist'. The runner stores 'dropped' in facts but never passes it to the evaluator, and persist_counts are discarded. evaluate_run sets safety=pass whenever contacts_measured is true and no FOUND pair is disallowed. Plan A5 requires loss counts or integrity flags and says missing key data must stay unknown/incomplete, so dropped>0 with safety=pass violates the rule. Reachability is low: the recorded runs show 0-6 run events and at most 48 pre-run events (my grep: 25x events 0, 1x events 6, all dropped 0). A persist-only contact needs a contact that already exists at the pre-run clear, which is essentially an obstacle spawned touching the robot. So this is a real rule gap on edge paths only, with no test covering it.",
+   "fix_direction": "Add contacts_dropped (and non-ignored persist pairs involving the robot) to EvalInputs. When dropped>0, set safety to unknown (inconclusive, contact data incomplete), and treat a disallowed persist pair as a contact. Add fixed-input evaluator tests for both cases."
+  }
+ },
+ {
+  "id": "simctl-3",
+  "severity": "Minor",
+  "file": "robosim_eval/sim_math.py",
+  "line": "57-68",
+  "title": "check_reset passes a NaN pose and NaN speeds",
+  "trigger": "Isaac returns a non-finite chassis pose or twist, for example after a physics blow-up, and the runner (_reset_sim) or `sim.sh reset-check` evaluates it.",
+  "expected": "A non-finite ground truth fails the reset check (fail closed). Plan A6 requires the reset to be verified before each run.",
+  "actual": "All comparisons are `err > tol`, and every comparison with NaN is False. So no reason is added and the result is ok=True, and sim.sh reset-check exits 0.",
+  "evidence": "repro_simmath.py output: `all NaN ok=True pos_err=nan yaw_err=nan reasons=[]`, `NaN position, yaw ok, at rest ok=True`, `pose ok, NaN speeds ok=True`. inf is rejected. Yaw wrap is correct (pi vs -pi+0.04 gives +0.04). The spawn/delete guard rejected every traversal and prefix trick tried (/World/RoboSimObstaclesX/a, ../, //, /., trailing slash, backslashes, case).",
+  "fix_direction": "Require math.isfinite on x, y, yaw and both speeds, and add a reason when any is not finite. Add a NaN case to tests/test_sim_math.py.",
+  "reproduced": true,
+  "verification": {
+   "id": "simctl-3",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": true,
+   "repro": "verify-simctl/repro3_simmath.py. Command: `MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash -lc \"cd /mnt/d/RoboSim-Eval && PYTHONDONTWRITEBYTECODE=1 python3 .../verify-simctl/repro3_simmath.py\"`. Output: `all NaN: ok=True reasons=[]`, `NaN x only: ok=True reasons=[]`, `NaN speeds: ok=True reasons=[]`, `yaw from NaN quat: ok=True reasons=[]`, `inf x: ok=False ...`. Wrap check: angle_diff(pi, -pi+0.04) = -0.04, a correct magnitude (the finding's '+0.04' has the sign flipped for this argument order). The guard rejected /World/RoboSimObstaclesX/a, /World/RoboSimObstacles/../Nova_Carter_ROS, '..', 'a/..', a trailing slash, '//', a lower-case root, a backslash and a dot.",
+   "reasoning": "check_reset uses only `err > tol` and `abs(x) > tol`. Every comparison with NaN is False, and angle_diff(nan, .) returns nan, so no reason is added and ok=True. Both the runner's _reset_sim and `sim.sh reset-check` (exit 0) would accept a non-finite ground truth. A6 requires the reset to be verified, and this check does not fail closed. The trigger needs a physics blow-up that yields a NaN transform, which is rare, so Minor. There is no NaN case in tests/test_sim_math.py.",
+   "fix_direction": "In check_reset, add a reason when any of pose.x, pose.y, pose.yaw, linear_speed or angular_speed is not math.isfinite. Add NaN and inf cases to tests/test_sim_math.py."
+  }
+ },
+ {
+  "id": "simctl-4",
+  "severity": "Minor",
+  "file": "robosim_eval/sim_adapter.py",
+  "line": "95",
+  "title": "Ground-truth pose is recorded with frame 'nova_carter' but is in world coordinates",
+  "trigger": "Every entity_state call. Isaac's get_entity_state sets header.frame_id to the prim's isaac:nameOverride or name ('nova_carter'), and the adapter copies it into 'frame'.",
+  "expected": "simulation_interfaces EntityState.msg defines header.frame_id as the reference frame of the pose and twist. AGENTS rule 9 and plan A5 require position sources and frames to be labelled correctly, so the ground truth should be labelled with the world/map frame.",
+  "actual": "events.jsonl (reset_check, ground_truth) and result.json runner.ground_truth.after_reset/at_stop say \"frame\": \"nova_carter\" while x/y are world coordinates (at_stop x=0.032, y=-1.037 for goal (0,-1)). A reader following the message spec would read the pose as expressed in the robot's own frame.",
+  "evidence": "artifacts/d5/demo/runs/normal-20260930-021122/result.json lines 382-405. D:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.sim_control/.../entity_utils.py lines 124-136 (frame_id = nameOverride or prim name). /opt/ros/jazzy/share/simulation_interfaces/msg/EntityState.msg: 'Reference frame and timestamp for pose and twist. Empty frame defaults to world.'",
+  "fix_direction": "Record frame='world' (source: sim_control ground truth) and keep Isaac's value under a separate key such as 'isaac_frame_id'. Fix the wording in docs that describe the ground-truth fields.",
+  "reproduced": true,
+  "verification": {
+   "id": "simctl-4",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": true,
+   "repro": "`sed -n 375,410p artifacts/d5/demo/runs/normal-20260930-021122/result.json` shows ground_truth.after_reset and at_stop with \"frame\": \"nova_carter\", x=-6.00/y=-1.0 and x=0.032/y=-1.037. `grep -rhoE '\"frame\": \"[^\"]*\"' artifacts --include=events.jsonl | sort | uniq -c` gives 64x nova_carter. Isaac isaacsim.ros2.sim_control/impl/entity_utils.py sets frame_id = isaac:nameOverride or prim.GetName() (lines ~124-136) while the pose comes from RigidPrim.get_world_poses(). /opt/ros/jazzy/share/simulation_interfaces/msg/EntityState.msg reads: 'Reference frame and timestamp for pose and twist. Empty frame defaults to world.'",
+   "reasoning": "sim_adapter.py:95 copies header.frame_id into 'frame'. Isaac fills that with the robot's name, not the frame of the pose, even though the pose and twist are world-frame (get_world_poses). The recorded ground-truth evidence therefore labels world coordinates as frame 'nova_carter', which contradicts the message definition that a downstream reader would follow. AGENTS rule 9 and A5 require position sources and frames to be labelled. The key 'ground_truth' and the entity path make the source clear, and the speed magnitudes do not depend on the frame, so this is a labelling inaccuracy with no verdict impact.",
+   "fix_direction": "Record frame='world' (with source 'sim_control ground truth, world pose') and keep Isaac's header.frame_id under a separate key such as isaac_frame_id."
+  }
+ },
+ {
+  "id": "simctl-5",
+  "severity": "Minor",
+  "file": "robosim_eval/kit/contact_monitor.py",
+  "line": "26, 37-38",
+  "title": "Contact events are stamped with the looping USD animation timeline, not simulation time, so collision evidence cannot be placed on the run timeline",
+  "trigger": "Any run longer than one animation-timeline loop (about 41 s, docs/setup.md:141) or any run after a stop/play. The monitor stamps each event with omni.timeline get_current_time().",
+  "expected": "Plan A6 requires events.jsonl and the collision evidence to carry times. Plan A5 requires recording the simulation clock. A contact should be placeable relative to goal acceptance and the terminal status.",
+  "actual": "In the D3 collision run (goal accepted at t_sim 7.78, cancel at t_sim 114.1), result.json runner.contacts.events are in append order with t = 5.38 (found), 5.42 (found), 1.15 (lost), 1.15 (lost), 3.85 (found), 3.92 (found). The times are not monotonic and not on the /clock scale. The field is named 't', which suggests sim time, and nothing in the repository converts it.",
+  "evidence": "py read of artifacts/d3/runs/collision-20260930-011323/result.json printed the six events with those t values. events.jsonl shows goal_sent at t_sim 7.78 and timeout/cancel at 114.1. docs/setup.md:141 says the USD animation timeline loops about every 41 s.",
+  "fix_direction": "Stamp events with the physics simulation time or step index (e.g. the value behind /clock) or a monotonic step counter, rename the field accordingly, and keep the timeline time only as 'timeline_t'.",
+  "reproduced": true,
+  "verification": {
+   "id": "simctl-5",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": true,
+   "repro": "Read artifacts/d3/runs/collision-20260930-011323/result.json runner.contacts.events with python3 (read-only). Printed t values in append order: 5.383 found, 5.417 found, 1.150 lost, 1.150 lost, 3.850 found, 3.917 found. In events.jsonl: contacts_cleared t_sim 0.117, goal_sent t_sim 7.78, timeout/cancel_requested t_sim 114.1, contacts_fetched t_sim 115.13. docs/setup.md:141 says the USD animation timeline loops about every 41 s while /clock stays monotonic.",
+   "reasoning": "contact_monitor.py:26 stamps events with omni.timeline get_current_time(), which loops. The recorded values are non-monotonic and not on the /clock scale, so an individual collision cannot be placed relative to goal acceptance, cancel or the rest window. events.jsonl only has the fetch time. The kit file header does say 'with the timeline time', and no doc claims 't' is simulation time, so the code does not contradict its own docs. The problem is that the collision evidence carries no usable time, against A6 (timestamped anomalies) and A5 (record the sim clock). The evaluator does not use t, so the verdict is unaffected. Minor.",
+   "fix_direction": "Stamp contact events with the physics simulation time or step count (the source of /clock), or with a monotonic per-step counter mapped to sim time. Keep the timeline value as 'timeline_t' and rename or document the field."
+  }
+ },
+ {
+  "id": "simctl-10",
+  "severity": "Minor",
+  "file": "scripts/windows/isaac_py.ps1",
+  "line": "19-23, 56",
+  "title": "Some bad -CodeFile values bypass the documented exit 2 JSON and end in an uncaught .NET error (exit 1, localized stderr, no JSON)",
+  "trigger": "Examples: -CodeFile 'D:\\RoboSim-Eval\\robosim_eval\\kit\\' (the directory itself), '...\\kit\\contact_monito[r].py' (Test-Path treats [] as a wildcard), '...\\kit\\*.py' or '...kit\\x.py::$DATA' (GetFullPath throws).",
+  "expected": "Per the header: 'Exit: ... 2 bad arguments', with a JSON status line on stdout.",
+  "actual": "The directory and bracket cases pass the allowlist and Test-Path, then ReadAllText throws. The '?', '*' and ':' cases throw inside GetFullPath. Under ErrorActionPreference=Stop both end the script with exit 1 and a Chinese error on stderr only. Combined with simctl-1, a WSL caller would get a UnicodeDecodeError. contacts.py always passes a fixed valid path, so only manual use is affected.",
+  "evidence": "pathcheck.ps1 output: `...\\kit\\ | starts=True | testpath=True | accepted=True read-FAIL: MethodInvocationException`; `...contact_monito[r].py | ... accepted=True read-FAIL: MethodInvocationException`; `...\\kit\\*.py | EXCEPTION MethodInvocationException`.",
+  "fix_direction": "Use Test-Path -LiteralPath -PathType Leaf, and wrap GetFullPath and ReadAllText in try/catch that emits the JSON error and exits 2.",
+  "reproduced": true,
+  "verification": {
+   "id": "simctl-10",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": true,
+   "repro": "verify-simctl/path10.ps1 copies isaac_py.ps1's path check (lines 17-23) and ReadAllText (line 56), with no token read and no network. It was run via powershell.exe for each value. Results: `...kit\\contact_monitor.py rc=0 READ OK`, `...kit\\ rc=1 stdout= stderr_lines=6`, `...kit\\contact_monito[r].py rc=1 stdout= stderr_lines=6`, `...kit\\*.py rc=1 stdout= stderr_lines=5`, `...kit\\x.py::$DATA rc=1 stdout= stderr_lines=5`. Controls: `kit\\..\\contacts.py` and `kitX\\a.py` gave rc=2 with the JSON error.",
+   "reasoning": "Test-Path without -LiteralPath and without -PathType Leaf accepts the kit directory itself and wildcard-matching names. ReadAllText then throws. GetFullPath throws on '*' and on ':' ADS syntax before any JSON is printed. All of these end with exit 1, no stdout JSON and localized stderr, which contradicts the header's 'Exit: ... 2 bad arguments'. Through contacts._call the same output would surface as the simctl-1 UnicodeDecodeError. contacts.py always passes a fixed valid KIT_FILE, so only manual use is affected. Minor.",
+   "fix_direction": "Use Test-Path -LiteralPath $full -PathType Leaf, and wrap GetFullPath and ReadAllText in try/catch that writes the JSON error and exits 2."
+  }
+ },
+ {
+  "id": "shell-10",
+  "severity": "Minor",
+  "file": "scripts/wsl/test_runner_fake.sh",
+  "line": "13 (with scripts/wsl/doctor.sh:13,21-22 and scripts/wsl/test_doctor_fake.sh:12,23)",
+  "title": "Run from another checkout, the fake-node tests exercise /mnt/d/RoboSim-Eval's doctor, not the checkout under test",
+  "trigger": "test_runner_fake.sh or test_doctor_fake.sh is run from a git worktree. Commit 67a8ffa changed test_runner_fake's REPO to 'the checkout this script is in', and docs/plan.md:42 records moving development into a worktree during batches.",
+  "expected": "Every component a fake test exercises comes from the checkout being tested.",
+  "actual": "The runner is imported from the worktree, but its doctor step calls the worktree's doctor.sh, which does `cd /mnt/d/RoboSim-Eval` and `python3 -m robosim_eval.doctor`, so the main checkout's doctor runs. test_doctor_fake.sh hard-codes REPO=/mnt/d/RoboSim-Eval and does the same. A doctor change under test is never exercised, and a PASS can come from different code.",
+  "evidence": "Static: test_runner_fake.sh:13 (REPO from BASH_SOURCE) versus doctor.sh:13/21-22 and test_doctor_fake.sh:12/23 (hard-coded REPO, cd, python3 -m). `git show 67a8ffa -- scripts/wsl/test_runner_fake.sh` shows the REPO change.",
+  "fix_direction": "Derive REPO from BASH_SOURCE in doctor.sh and test_doctor_fake.sh (and the other wrappers), or make the tests assert the module path they imported.",
+  "reproduced": false,
+  "verification": {
+   "id": "shell-10",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": true,
+   "repro": "Scratch verify-shell/repro_shell10.sh uses the existing worktree scratchpad/wt-fix (fix/review-round1 @156c31a, from `git worktree list`). It mirrors the module resolution with importlib find_spec only, with PYTHONDONTWRITEBYTECODE=1 and nothing run. Command: MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash .../verify-shell/repro_shell10.sh. Output:\n worktree doctor.sh REPO line: 13:REPO=/mnt/d/RoboSim-Eval\n runner (test_runner_fake cwd=worktree): .../scratchpad/wt-fix/robosim_eval/runner.py\n doctor (doctor.sh cwd=/mnt/d/RoboSim-Eval): /mnt/d/RoboSim-Eval/robosim_eval/doctor.py\n runner WSL dir -> doctor.sh used: .../scratchpad/wt-fix/scripts/wsl/doctor.sh",
+   "reasoning": "test_runner_fake.sh:13 derives REPO from BASH_SOURCE and runs the worktree's runner. The runner's WSL constant (runner.py:37-38) is derived from its own file, and the runner calls that doctor.sh on every fake case: PREPARE runs it even with --no-sim (runner.py:206-210). doctor.sh:13/21-22 hard-codes REPO=/mnt/d/RoboSim-Eval, cds there and runs `python3 -m robosim_eval.doctor`, which resolves to the main checkout's module. test_doctor_fake.sh:12 hard-codes the same path.\n\nA worktree is in real use: wt-fix exists, and plan.md:42 records worktree development during batches. So a fake-test PASS in a worktree can come from a different doctor than the one under test. Weak test isolation, Minor.",
+   "fix_direction": "Derive REPO from BASH_SOURCE in doctor.sh, test_doctor_fake.sh and the other wrappers that the runner calls, or let the runner pass its REPO through the environment. Have the fake tests log and assert the imported module paths."
+  }
+ }
+]
