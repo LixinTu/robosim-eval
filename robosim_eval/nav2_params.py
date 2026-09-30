@@ -131,8 +131,8 @@ def apply_changes(text: str, changes: Mapping[str, Any]) -> Tuple[str, List[Dict
             hits[by_keys[keys]].append(i)
     for path, where in hits.items():
         if not where:
-            raise ValueError(f"nav2 parameter {path!r} is not written as 'key: value' on a line of its own in the params "
-                             "file (for example inside a flow mapping); refusing to edit it")
+            raise ValueError(f"nav2 parameter {path!r} is not written as 'key: value' on a line of its own in the "
+                             "params file (for example inside a flow mapping); refusing to edit it")
         if len(where) != 1:
             raise ValueError(f"nav2 parameter {path!r} found on {len(where)} lines, need exactly 1")
         i = where[0]

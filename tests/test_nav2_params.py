@@ -211,7 +211,8 @@ def test_invalid_params_file_is_a_value_error():
 def test_mis_edit_of_a_continued_scalar_is_caught_by_parsing_back():
     text = VENDOR_EXCERPT.replace('      plugin: "dwb_core::DWBLocalPlanner"\n',
                                   "      plugin: dwb_core::DWBLocal\n        Planner\n")   # a plain scalar on two lines
-    assert yaml.safe_load(text)["controller_server"]["ros__parameters"]["FollowPath"]["plugin"] == "dwb_core::DWBLocal Planner"
+    follow = yaml.safe_load(text)["controller_server"]["ros__parameters"]["FollowPath"]
+    assert follow["plugin"] == "dwb_core::DWBLocal Planner"
     with pytest.raises(ValueError, match="differs from the declared change"):
         apply_changes(text, {FOLLOW + "plugin": "dwb_core::Other"})
 

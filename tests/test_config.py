@@ -274,9 +274,9 @@ def test_obstacle_without_asset_needs_a_default_asset_or_obstacle_usd(tmp_path: 
 
 
 def test_duplicate_obstacle_names_are_rejected(tmp_path: Path):
+    twice = "obstacles: [{name: box_1, x: -3.0, y: -1.3, asset: box_1m}, {name: box_1, x: -2.0, y: -1.3}]"
     with pytest.raises(ValueError, match="duplicate obstacle name 'box_1'"):
-        load_config(variant(tmp_path, "obstacles: [{name: box_1, x: -3.0, y: -1.3, yaw: 0.0, asset: box_1m}]",
-                             "obstacles: [{name: box_1, x: -3.0, y: -1.3, asset: box_1m}, {name: box_1, x: -2.0, y: -1.3}]"))
+        load_config(variant(tmp_path, "obstacles: [{name: box_1, x: -3.0, y: -1.3, yaw: 0.0, asset: box_1m}]", twice))
 
 
 @pytest.mark.parametrize("old,new,key", [
@@ -368,12 +368,14 @@ def test_baseline_fault_injection_scenarios_declare_their_real_expectation():
         assert (sc[name].expect_safety, sc[name].expect_data) == (None, None)
 
 
-@pytest.mark.parametrize("line,key", [("expect_safety: safe", "expect_safety"), ("expect_data: partial", "expect_data")])
+@pytest.mark.parametrize("line,key", [("expect_safety: safe", "expect_safety"),
+                                      ("expect_data: partial", "expect_data")])
 def test_expectation_fields_only_take_a5_values(tmp_path: Path, line: str, key: str):
     text = GOOD + f"scenarios:\n  s1:\n    goal: {{x: 0.0, y: 0.0, yaw: 0.0}}\n    {line}\n"
     with pytest.raises(ValueError, match=key):
         load_config(write(tmp_path, text))
-    good = GOOD + "scenarios:\n  s1:\n    goal: {x: 0.0, y: 0.0, yaw: 0.0}\n    expect_safety: fail\n    expect_data: incomplete\n"
+    good = GOOD + ("scenarios:\n  s1:\n    goal: {x: 0.0, y: 0.0, yaw: 0.0}\n"
+                   "    expect_safety: fail\n    expect_data: incomplete\n")
     sc = load_config(write(tmp_path, good)).scenarios["s1"]
     assert (sc.expect_safety, sc.expect_data) == ("fail", "incomplete")
 

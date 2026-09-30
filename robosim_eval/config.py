@@ -136,7 +136,7 @@ _LIMIT_KEYS = {"ready_wall_s", "accept_wall_s", "nav_sim_s", "nav_wall_s", "canc
 _OUTCOMES = ("reached", "unreachable", "canceled", "timeout")   # A5 task outcomes a scenario may expect
 _SAFETY = ("pass", "fail")
 _DATA = ("complete", "incomplete")
-_INTEGRITY_STREAMS = ("clock", "odom", "tf_odom_base", "tf_map_odom")   # data_integrity of scripts/wsl/analyze_attempt.py
+_INTEGRITY_STREAMS = ("clock", "odom", "tf_odom_base", "tf_map_odom")   # scripts/wsl/analyze_attempt.py data_integrity
 _DOMAIN_ID = re.compile(r"^(0|[1-9][0-9]{0,2})$")
 _MAX_DOMAIN_ID = 232   # Fast DDS refuses larger domain ids
 _DEFAULT_ASSET = Obstacle.asset
@@ -295,13 +295,15 @@ def load_config(path: Union[str, Path]) -> BaselineConfig:
         if key not in topics:
             raise ValueError(f"doctor.streams.{key} has no entry under topics")
         s = _section(th, f"doctor.streams.{key}", _STREAM_KEYS)
-        streams[str(key)] = StreamThresholds(min_rate_hz=_positive(f"doctor.streams.{key}", "min_rate_hz", s.get("min_rate_hz")),
-                                             max_age_s=_positive(f"doctor.streams.{key}", "max_age_s", s.get("max_age_s")))
+        where = f"doctor.streams.{key}"
+        streams[str(key)] = StreamThresholds(min_rate_hz=_positive(where, "min_rate_hz", s.get("min_rate_hz")),
+                                             max_age_s=_positive(where, "max_age_s", s.get("max_age_s")))
     thresholds = DoctorThresholds(clock_stall_s=_positive("doctor", "clock_stall_s", doc.get("clock_stall_s")),
                                   min_sim_progress_s=_positive("doctor", "min_sim_progress_s",
                                                                doc.get("min_sim_progress_s")),
                                   streams=streams)
-    doctor = DoctorConfig(discovery_timeout_s=_positive("doctor", "discovery_timeout_s", doc.get("discovery_timeout_s")),
+    doctor = DoctorConfig(discovery_timeout_s=_positive("doctor", "discovery_timeout_s",
+                                                        doc.get("discovery_timeout_s")),
                           window_s=_positive("doctor", "window_s", doc.get("window_s")), thresholds=thresholds)
     problem = window_problem(doctor.window_s, thresholds.clock_stall_s, doctor.discovery_timeout_s)
     if problem:
