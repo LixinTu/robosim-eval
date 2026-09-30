@@ -1,7 +1,7 @@
 """Fake Nav2 NavigateToPose action server for the runner's fake-node test (ROS 2 only, no simulator, no Nav2).
 
 Run in WSL with the ROS environment sourced, on the isolated ROS_DOMAIN_ID used by the test:
-  python3 tests/ros_fake/fake_nav2.py --mode succeed|abort|never|reject|ignore-cancel [--duration S]
+  python3 tests/ros_fake/fake_nav2.py --mode succeed|abort|never|reject|ignore-cancel [--duration S] [--accept-delay S]
   succeed        accept, publish feedback for --duration s, then SUCCEEDED
   abort          accept, publish feedback for --duration s, then ABORTED (error_code 208, like NO_VALID_PATH)
   never          accept and keep running until the client cancels (cancel is accepted -> CANCELED)
