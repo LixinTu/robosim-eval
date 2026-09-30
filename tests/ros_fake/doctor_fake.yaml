@@ -1,0 +1,17 @@
+# Doctor config for the fake-node integration test: same topics and thresholds as configs/baseline.yaml, but the
+# isolated ROS domain 42 so that the fake publishers never mix with the real Isaac data on domain 0.
+env: {rmw: rmw_fastrtps_cpp, domain_id: "42", ros_distro: jazzy, require_dds_profile: true}
+topics:
+  clock: {name: /clock, type: rosgraph_msgs/msg/Clock}
+  odom: {name: /chassis/odom, type: nav_msgs/msg/Odometry}
+  tf: {name: /tf, type: tf2_msgs/msg/TFMessage, parent: odom, child: base_link}
+  lidar: {name: /front_3d_lidar/lidar_points, type: sensor_msgs/msg/PointCloud2}
+doctor:
+  discovery_timeout_s: 5.0
+  window_s: 5.0
+  clock_stall_s: 2.0
+  min_sim_progress_s: 0.2
+  streams:
+    odom: {min_rate_hz: 8.0, max_age_s: 2.0}
+    tf: {min_rate_hz: 8.0, max_age_s: 2.0}
+    lidar: {min_rate_hz: 1.0, max_age_s: 2.5}

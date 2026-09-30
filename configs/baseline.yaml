@@ -1,0 +1,35 @@
+# configs/baseline.yaml - RoboSim Eval baseline configuration (plan doc A3: scenes, goals, topic mapping, thresholds,
+# timeouts). D1 fills in the environment expectations, the topic mapping and the doctor thresholds; later deliveries add
+# scenarios and run timeouts here.
+#
+# Rates measured on this machine (unsupported configuration: Windows 10 + 8 GB VRAM), wall clock:
+#   /clock          25.2-26.6 Hz with the sample scene playing (artifacts/d0c/probe-04-playing), 21.0-22.3 Hz with
+#                   Nav2 running (artifacts/d0d/run-01/ready-check-01.txt), about 19 Hz while navigating (attempt-01)
+#   /chassis/odom   about 25.8 Hz playing (one ros2 topic hz window 13.9 Hz, max gap 0.695 s), about 19 Hz navigating
+#   /tf             25-26 Hz playing
+#   lidar points    2.4-2.8 Hz by ros2 topic hz (possibly under-reported; /scan converted from it ran 3.54-3.60 Hz)
+#   real-time factor 0.38-0.42 without Nav2, about 0.32 navigating
+# Thresholds sit well below the lowest measured values so that navigation load does not raise false alarms, while a
+# paused simulation (no /clock at all) is still detected within clock_stall_s (plan doc: max(5 normal periods, 2 s)).
+
+env:
+  rmw: rmw_fastrtps_cpp        # Isaac 6.1 on Windows defaults to Zenoh; both sides must use Fast DDS
+  domain_id: "0"
+  ros_distro: jazzy
+  require_dds_profile: true    # FASTRTPS_DEFAULT_PROFILES_FILE -> configs/network/fastdds.xml (UDPv4 only)
+
+topics:
+  clock: {name: /clock, type: rosgraph_msgs/msg/Clock}
+  odom: {name: /chassis/odom, type: nav_msgs/msg/Odometry}
+  tf: {name: /tf, type: tf2_msgs/msg/TFMessage, parent: odom, child: base_link}   # only odom->base_link is counted
+  lidar: {name: /front_3d_lidar/lidar_points, type: sensor_msgs/msg/PointCloud2}
+
+doctor:
+  discovery_timeout_s: 5.0     # wall; wait at most this long for the topics to appear in the ROS graph
+  window_s: 5.0                # wall; observation window (ends early once /clock has stalled for clock_stall_s)
+  clock_stall_s: 2.0           # wall; no new /clock for this long => simulation not advancing
+  min_sim_progress_s: 0.2      # sim s; /clock must advance at least this much during the window
+  streams:
+    odom: {min_rate_hz: 8.0, max_age_s: 2.0}
+    tf: {min_rate_hz: 8.0, max_age_s: 2.0}
+    lidar: {min_rate_hz: 1.0, max_age_s: 2.5}

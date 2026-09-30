@@ -1,0 +1,47 @@
+# python3 -m pytest -v -p no:cacheprovider tests  (2026-09-29T23:42:00-07:00, cwd /mnt/d/RoboSim-Eval, WSL bash; pytest pytest 7.4.4)
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-7.4.4, pluggy-1.4.0 -- /usr/bin/python3
+rootdir: /mnt/d/RoboSim-Eval
+plugins: typeguard-4.1.5, cov-4.1.0, colcon-core-0.21.3
+collecting ... collected 37 items
+
+tests/test_analyze_attempt.py::test_success_is_reached_and_pass PASSED   [  2%]
+tests/test_analyze_attempt.py::test_aborted_is_unknown_not_unreachable_and_fails PASSED [  5%]
+tests/test_analyze_attempt.py::test_canceled_goal PASSED                 [  8%]
+tests/test_analyze_attempt.py::test_no_terminal_status_is_interrupted_and_inconclusive PASSED [ 10%]
+tests/test_analyze_attempt.py::test_recording_too_short_after_result_is_inconclusive_not_fail PASSED [ 13%]
+tests/test_analyze_attempt.py::test_stale_status_of_an_older_goal_is_ignored PASSED [ 16%]
+tests/test_analyze_attempt.py::test_without_transcript_the_goal_is_unverified_and_target_comes_from_the_bag PASSED [ 18%]
+tests/test_analyze_attempt.py::test_goal_argument_must_match_the_sent_goal PASSED [ 21%]
+tests/test_analyze_attempt.py::test_data_gap_longer_than_dropout_makes_data_incomplete PASSED [ 24%]
+tests/test_analyze_attempt.py::test_without_spawn_there_is_no_independent_source PASSED [ 27%]
+tests/test_analyze_attempt.py::test_rejected_goal_fails_and_keeps_the_reason PASSED [ 29%]
+tests/test_analyze_attempt.py::test_position_error_above_tolerance_fails PASSED [ 32%]
+tests/test_analyze_attempt.py::test_transcript_parser PASSED             [ 35%]
+tests/test_analyze_attempt.py::test_pose_compose_with_the_real_spawn PASSED [ 37%]
+tests/test_config.py::test_baseline_config_has_the_topics_measured_in_d0 PASSED [ 40%]
+tests/test_config.py::test_baseline_doctor_thresholds_are_bounded_and_below_measured_rates PASSED [ 43%]
+tests/test_config.py::test_minimal_valid_config_loads PASSED             [ 45%]
+tests/test_config.py::test_numeric_domain_id_is_read_as_text PASSED      [ 48%]
+tests/test_config.py::test_non_positive_window_is_rejected PASSED        [ 51%]
+tests/test_config.py::test_stream_without_topic_is_rejected PASSED       [ 54%]
+tests/test_config.py::test_missing_clock_topic_is_rejected PASSED        [ 56%]
+tests/test_config.py::test_missing_file_raises_file_not_found PASSED     [ 59%]
+tests/test_doctor_checks.py::test_healthy_simulation_exits_zero_and_reports_real_rates_and_freshness PASSED [ 62%]
+tests/test_doctor_checks.py::test_paused_simulation_with_publishers_but_no_messages_is_not_advancing PASSED [ 64%]
+tests/test_doctor_checks.py::test_clock_messages_with_frozen_sim_time_are_not_advancing PASSED [ 67%]
+tests/test_doctor_checks.py::test_clock_that_stops_during_the_window_is_not_advancing PASSED [ 70%]
+tests/test_doctor_checks.py::test_closed_simulation_without_any_publisher_is_data_missing PASSED [ 72%]
+tests/test_doctor_checks.py::test_advancing_clock_but_missing_lidar_publisher_is_data_missing PASSED [ 75%]
+tests/test_doctor_checks.py::test_slow_stream_is_degraded PASSED         [ 78%]
+tests/test_doctor_checks.py::test_stale_stream_is_degraded PASSED        [ 81%]
+tests/test_doctor_checks.py::test_silent_stream_while_clock_advances_is_degraded PASSED [ 83%]
+tests/test_doctor_checks.py::test_wrong_rmw_is_an_environment_error_even_when_data_flows PASSED [ 86%]
+tests/test_doctor_checks.py::test_missing_dds_profile_is_an_environment_error PASSED [ 89%]
+tests/test_doctor_checks.py::test_wrong_message_type_is_an_interface_error PASSED [ 91%]
+tests/test_doctor_checks.py::test_backward_clock_jump_is_reported_and_only_forward_progress_counts PASSED [ 94%]
+tests/test_doctor_checks.py::test_stamp_lag_is_reported_against_the_latest_clock PASSED [ 97%]
+tests/test_doctor_checks.py::test_report_serializes_to_plain_json_types PASSED [100%]
+
+============================== 37 passed in 0.42s ==============================
+exit=0
