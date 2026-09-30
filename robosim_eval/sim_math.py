@@ -53,10 +53,18 @@ def angle_diff(a: float, b: float) -> float:
 
 def check_reset(pose: Pose2D, linear_speed: float, angular_speed: float, spawn: Pose2D, pos_tol_m: float = 0.05,
                 yaw_tol_rad: float = 0.05, speed_tol: float = 0.02) -> ResetCheck:
-    """Is the robot (ground-truth pose and speed) back at the spawn and at rest after a reset?"""
+    """Is the robot (ground-truth pose and speed) back at the spawn and at rest after a reset?
+
+    Fails closed on a non-finite ground truth (e.g. after a physics blow-up): every comparison with NaN is False, so the
+    tolerance checks alone would let it pass.
+    """
     err = math.hypot(pose.x - spawn.x, pose.y - spawn.y)
     yaw_err = angle_diff(pose.yaw, spawn.yaw)
     reasons = []
+    values = {"x": pose.x, "y": pose.y, "yaw": pose.yaw, "linear_speed": linear_speed, "angular_speed": angular_speed}
+    bad = [f"{k}={v}" for k, v in values.items() if not math.isfinite(v)]
+    if bad:
+        reasons.append("ground truth not finite: " + ", ".join(bad))
     if err > pos_tol_m:
         reasons.append(f"position {err:.3f} m from the spawn (> {pos_tol_m} m)")
     if abs(yaw_err) > yaw_tol_rad:

@@ -23,8 +23,10 @@ param(
     [switch]$PythonServer
 )
 $ErrorActionPreference = 'Stop'
+# The Fast DDS profile comes from the checkout this script is in (D:\RoboSim-Eval for the main checkout).
+if (-not $PSScriptRoot) { throw "Run this file with -File: the repository root is derived from its location." }
 $robosimIsaac = 'D:\isaac-sim-standalone-6.1.0-windows-x86_64'
-$robosimDds   = 'D:\RoboSim-Eval\configs\network\fastdds.xml'
+$robosimDds = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PSScriptRoot, '..\..\configs\network\fastdds.xml'))
 
 if (-not (Test-Path "$robosimIsaac\isaac-sim.bat")) { throw "Isaac launcher not found: $robosimIsaac\isaac-sim.bat" }
 if (-not (Test-Path "$robosimIsaac\setup_ros_env.bat")) { throw "setup_ros_env.bat not found in $robosimIsaac" }
