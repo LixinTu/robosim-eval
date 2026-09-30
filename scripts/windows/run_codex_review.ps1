@@ -22,7 +22,8 @@ $prompt = "Read the file $promptFile (UTF-8, Chinese) and carry out exactly the 
 $t0 = Get-Date
 $p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', "codex exec --sandbox read-only -C D:\RoboSim-Eval -o `"$report`" `"$prompt`"" `
     -RedirectStandardOutput $stdout -RedirectStandardError $stderr -NoNewWindow -Wait -PassThru
-$limit = [bool](Select-String -Path $stderr -Pattern 'hit your usage limit' -Quiet)
+. (Join-Path $PSScriptRoot 'codex_queue_lib.ps1')
+$limit = Test-UsageLimitText -Text ((Get-Content -Raw $stderr -ErrorAction SilentlyContinue) + '')
 "end $(Get-Date -Format o) exit=$($p.ExitCode) duration_s=$([int]((Get-Date) - $t0).TotalSeconds) report_written=$(Test-Path $report) usage_limit_hit=$limit" |
     Out-File $status -Append -Encoding utf8
 Get-Content $status
