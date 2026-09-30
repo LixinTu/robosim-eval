@@ -38,3 +38,91 @@ function ConvertFrom-RetryText([string]$Text, [datetime]$Now) {
     if ($when -lt $Now.AddMinutes(-10)) { $when = $when.AddDays(1) }
     return $when.AddMinutes(3)
 }
+
+# ---- queue lock (review finding shell-9) ----
+# The queue keeps <ReviewRoot>\codex-queue.lock open for its whole run (write access, FileShare.Read): a second queue
+# cannot open it for writing, and Windows closes the handle when the queue ends or is killed, so neither a dead owner
+# nor a reused PID can block a new queue. The file names the holder, "pid=<PID> start=<process start, UTC ticks>
+# script=<path>". A lock file that can be opened still counts as held when it names a live process with exactly that
+# start time, or, in the older format (a bare PID, written by queues from before this lock), a live process whose
+# command line runs run_codex_review_queue.ps1.
+
+# Start time (UTC ticks) and command line of a running process; $null when there is no such process.
+function Get-LockProcessInfo([int]$Id) {
+    $p = Get-Process -Id $Id -ErrorAction SilentlyContinue
+    if ($null -eq $p) { return $null }
+    $ticks = if ($p.StartTime) { $p.StartTime.ToUniversalTime().Ticks } else { $null }
+    $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId=$Id").CommandLine
+    return [pscustomobject]@{ StartTicks = $ticks; CommandLine = $cmd }
+}
+
+# $true when the lock file content names a holder that is still running; -GetProcess maps a PID to Get-LockProcessInfo.
+function Test-LockHolderAlive([string]$Content, [scriptblock]$GetProcess = { param([int]$Id) Get-LockProcessInfo $Id }) {
+    $Content = $Content.Trim()
+    if ($Content -match '^pid=(\d+) start=(\d+)') {
+        $info = & $GetProcess ([int]$Matches[1])
+        return [bool]($info -and $null -ne $info.StartTicks -and [string]$info.StartTicks -eq $Matches[2])
+    }
+    if ($Content -match '^\d+$') {
+        $info = & $GetProcess ([int]$Content)
+        return [bool]($info -and $info.CommandLine -and $info.CommandLine -match 'run_codex_review_queue\.ps1')
+    }
+    return $false
+}
+
+# The holder record in a lock file, read without disturbing the holder's handle; '' when there is none.
+function Read-LockHolder([string]$Path) {
+    try {
+        $fs = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+    } catch [System.IO.FileNotFoundException] {
+        return ''
+    }
+    try { return ((New-Object IO.StreamReader($fs)).ReadToEnd()).Trim() } finally { $fs.Dispose() }
+}
+
+# Takes the lock: returns Acquired, Stream (keep it until Exit-QueueLock), Reason (why refused) and Note (a stale
+# record that was replaced).
+function Enter-QueueLock([string]$Path, [string]$Script) {
+    try {
+        $fs = [IO.File]::Open($Path, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::Read)
+    } catch [System.IO.IOException] {
+        return [pscustomobject]@{ Acquired = $false; Stream = $null; Note = ''
+            Reason = "another queue holds $Path open ($(Read-LockHolder $Path))" }
+    }
+    $old = (New-Object IO.StreamReader($fs)).ReadToEnd().Trim()
+    if (Test-LockHolderAlive -Content $old) {
+        $fs.Dispose()
+        return [pscustomobject]@{ Acquired = $false; Stream = $null; Note = ''
+            Reason = "$Path names a queue that is still running ($old)" }
+    }
+    $ticks = (Get-Process -Id $PID).StartTime.ToUniversalTime().Ticks
+    $bytes = [Text.Encoding]::ASCII.GetBytes("pid=$PID start=$ticks script=$Script`r`n")
+    $fs.SetLength(0); $fs.Write($bytes, 0, $bytes.Length); $fs.Flush()
+    $note = if ($old) { "replaced a stale lock record ($old): that process is gone or its PID was reused" } else { '' }
+    return [pscustomobject]@{ Acquired = $true; Stream = $fs; Reason = ''; Note = $note }
+}
+
+# Releases the lock: empties and closes it, then deletes the file. Returns '' or a note when the file could not be
+# deleted because another queue had just opened it (it is empty then, so it names no holder).
+function Exit-QueueLock($Lock, [string]$Path) {
+    $Lock.Stream.SetLength(0); $Lock.Stream.Dispose()
+    try { [IO.File]::Delete($Path) } catch [System.IO.IOException] { return "lock file $Path left in place (opened by another process); it is empty" }
+    return ''
+}
+
+# Processes that still work on review round $Round in folder $Dir: a codex/cmd process whose command line names the
+# round's report or prompt file, or a run_codex_review.ps1 started with this -Round and -Dir. $Exclude is skipped.
+function Find-RoundProcess($Processes, [string]$Round, [string]$Dir, [int]$Exclude) {
+    $report = Join-Path $Dir "codex-$Round-report.md"
+    $prompt = Join-Path $Dir "codex-prompt-$Round.md"
+    $roundRe = '(?i)-Round\s+[''"]?' + [regex]::Escape($Round) + '[''"]?(\s|$)'
+    $dirRe = '(?i)-Dir\s+[''"]?' + [regex]::Escape($Dir.TrimEnd('\')) + '\\?[''"]?(\s|$)'
+    foreach ($p in $Processes) {
+        $cmd = [string]$p.CommandLine
+        if (-not $cmd -or $p.ProcessId -eq $Exclude) { continue }
+        $names = $cmd.IndexOf($report, [StringComparison]::OrdinalIgnoreCase) -ge 0 -or
+            $cmd.IndexOf($prompt, [StringComparison]::OrdinalIgnoreCase) -ge 0
+        $runner = $cmd -match '(?i)run_codex_review\.ps1' -and $cmd -match $roundRe -and $cmd -match $dirRe
+        if ($names -or $runner) { $p }
+    }
+}

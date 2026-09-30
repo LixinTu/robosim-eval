@@ -9,7 +9,11 @@
 # codex-<round>-attemptN-{status,stderr,stdout}.txt. When the failure is the usage limit, the "try again at <time>" in
 # stderr is parsed (codex_queue_lib.ps1) and the queue sleeps until 3 minutes after it (30 minutes when the time cannot be parsed), then
 # retries the same round. Any other failure stops the queue (exit 1). At most MaxAttempts attempts per round (exit 2
-# when exhausted). Only one queue runs at a time: <ReviewRoot>\codex-queue.lock holds the owner PID (exit 3 if taken).
+# when exhausted). Only one queue runs at a time: it holds <ReviewRoot>\codex-queue.lock open for its whole run and
+# writes its PID and process start time into it; a lock naming a dead process or a reused PID is taken over, a live
+# holder refuses the start (exit 3; codex_queue_lib.ps1, finding shell-9). Before each attempt the queue refuses
+# (exit 4) while a process of that round from an earlier, killed queue is still running (its runner or its codex
+# process), so two Codex runs never write the same round's files.
 # Log: <ReviewRoot>\codex-queue.log. Writes only review files; Codex itself runs with --sandbox read-only.
 param(
     [string]$Items = '',
@@ -54,13 +58,9 @@ if ($Items) {
     $queue = @($Rounds -split ',' | ForEach-Object { [pscustomobject]@{ Dir = $Dir; Round = $_.Trim() } })
 }
 
-if (Test-Path $lock) {
-    $owner = (Get-Content $lock -ErrorAction SilentlyContinue | Select-Object -First 1)
-    if ($owner -and (Get-Process -Id ([int]$owner) -ErrorAction SilentlyContinue)) {
-        Write-QueueLog "refuse: another queue (pid $owner) holds $lock"; exit 3
-    }
-}
-"$PID" | Out-File $lock -Encoding ascii
+$held = Enter-QueueLock -Path $lock -Script $PSCommandPath
+if (-not $held.Acquired) { Write-QueueLog "refuse: $($held.Reason)"; exit 3 }
+if ($held.Note) { Write-QueueLog $held.Note }
 Write-QueueLog "queue start pid=$PID items=$(($queue | ForEach-Object { (Split-Path $_.Dir -Leaf) + '/' + $_.Round }) -join ',') max_attempts=$MaxAttempts not_before=$NotBefore"
 try {
     if ($NotBefore) { Wait-Until ([datetime]::Parse($NotBefore)) 'NotBefore' }
@@ -75,6 +75,12 @@ try {
             ForEach-Object { if ($_.Name -match 'attempt(\d+)-') { [int]$Matches[1] } })
         $base = if ($prev.Count) { ($prev | Measure-Object -Maximum).Maximum } else { 0 }
         for ($attempt = 1; $attempt -le $MaxAttempts -and -not $done; $attempt++) {
+            $busy = @(Find-RoundProcess -Processes @(Get-CimInstance Win32_Process | Select-Object ProcessId, CommandLine) `
+                -Round $round -Dir $d -Exclude $PID)
+            if ($busy.Count) {
+                Write-QueueLog "stop: $tag is still being reviewed by an earlier run (pid $(($busy | ForEach-Object { $_.ProcessId }) -join ',')); not starting a second one"
+                exit 4
+            }
             & powershell -NoProfile -ExecutionPolicy Bypass -File $runner -Round $round -Dir $d | Out-Null
             $rc = $LASTEXITCODE
             $stderr = Join-Path $d "codex-$round-stderr.txt"
@@ -95,5 +101,6 @@ try {
     Write-QueueLog 'queue end: all items have reports'
     exit 0
 } finally {
-    Remove-Item $lock -ErrorAction SilentlyContinue
+    $left = Exit-QueueLock -Lock $held -Path $lock
+    if ($left) { Write-QueueLog $left }
 }
