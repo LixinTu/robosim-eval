@@ -372,8 +372,8 @@ def test_sigterm_to_the_batch_lets_the_attempt_finish_unsignalled(tmp_path: Path
 
 @needs_terminal
 def test_cap_stops_the_batch_after_the_attempt_and_keeps_its_exit_code(tmp_path: Path):
-    t = stub_tree(tmp_path, cap_s=2)
-    rc, out = on_terminal(t, 4.0, lambda marks, terminal: True)
+    t = stub_tree(tmp_path, cap_s=3)   # the first attempt starts well within 3 s and runs 6 s: the cap hits it
+    rc, out = on_terminal(t, 6.0, lambda marks, terminal: True)
     started, signals, rec, bdir = read_marks(t)
     assert rc == 20, out                                     # the batch's own code, not timeout's 124
     assert started == 1 and signals == [[]] and rec["attempts"][0]["exit"] == 0
