@@ -71,6 +71,8 @@ wsl -d Ubuntu -- python3 -m pytest -q -p no:cacheprovider /mnt/d/RoboSim-Eval/te
 powershell -NoProfile -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\run_codex_review.ps1 -Round <轮次>   # 读 docs/review/2026-09-29-d0/codex-prompt-<轮次>.md
 ```
 
+额度不够一次审完时,把范围拆成分片提示词,用 `scripts/windows/run_codex_review_queue.ps1 -Rounds <轮次1>,<轮次2> -NotBefore <时间>` 在后台排队;撞到上限会按提示的恢复时间等待后重试,日志是审查目录下的 codex-queue.log。
+
 审查材料与报告放在 docs/review/;提示词模板是 Codex-Harness-Pack-ZH(1).md 的"默认:Codex 独立审查提示词"。
 
 ## 什么要问人

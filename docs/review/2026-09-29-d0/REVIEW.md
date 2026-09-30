@@ -7,8 +7,9 @@
 | 轮次 | 时间 | 命令 | 模型 / 配置 | 结果 | 证据 |
 | --- | --- | --- | --- | --- | --- |
 | 第 1 轮 | 2026-09-29 20:57:40 → 20:59:36(116 s) | `codex exec --sandbox read-only -C D:\RoboSim-Eval -o …\codex-round1-report.md "<读取 codex-prompt-round1.md 并执行>"`(由 temp 里的启动器以独立进程运行) | codex-cli 0.157.0;model gpt-6-astra;sandbox read-only;approval on-request;reasoning effort ultra | **未完成,无审查意见**。Codex 读完提示词、交接材料、需求原文、AGENTS.md、docs/plan.md、若干脚本后,下一条只读命令的"自动审批"调用因账户用量上限被拒("You've hit your usage limit … try again at Sep 30th, 2026 12:58 AM"),本轮中止,退出码 1,已用 82,531 tokens;第 0 步入口核对结论未输出 | codex-round1-status.txt、codex-round1-stderr.txt(原始日志)、codex-round1-stdout.txt(空) |
+| 第 1 轮重跑(round1b) | 2026-09-29 23:21:16 → 23:23:22(126 s) | `run_codex_review.ps1 -Round round1b`(同一命令,读取 codex-prompt-round1b.md) | 同上 | **未完成,无审查意见**。Codex 读了交接材料和大段 diff 后再次撞到账户用量上限("… try again at Sep 30th, 2026 3:35 AM"),退出码 1,已用 102,685 tokens。原定 01:05 的自动重跑(隐藏 PowerShell,pid 29648)核对命令行后于 23:21 停掉,改为立即运行,避免重复 | codex-round1b-status.txt、codex-round1b-stderr.txt、codex-round1b-stdout.txt(空) |
 
-状态:**待独立审查**。不购买额度、不升级套餐(项目规则:不新增付费服务)。额度恢复后按 docs/review/2026-09-29-d0-handoff.md 与本目录的提示词重跑;在此之前,本轮交付不得写成"已通过独立审查"。
+状态:**待独立审查**。不购买额度、不升级套餐(项目规则:不新增付费服务)。两次整轮审查都在读完 diff 之前耗尽额度,所以把同一范围拆成 4 个分片:round1c-a 评测逻辑、round1c-b 常驻进程与退出码、round1c-c Windows 侧与环境安全、round1c-d 文档与证据一致性。每片只读指定文件,并一律用 `git show 19203e0:<路径>` 读被审版本。四片由 `scripts/windows/run_codex_review_queue.ps1` 排队运行:从 2026-09-30 03:38 开始,撞到上限时按提示的恢复时间等待后重试,失败的尝试保留为 `codex-<轮次>-attemptN-*`,日志在本目录 `codex-queue.log`。拿到报告之前,本轮交付不得写成"已通过独立审查"。
 
 重跑方式:`powershell -NoProfile -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\run_codex_review.ps1 -Round <轮次>`,读取本目录 `codex-prompt-<轮次>.md`,输出 `codex-<轮次>-report.md` 与 status/stdout/stderr;status 里记录真实退出码与是否撞到用量上限。
 
