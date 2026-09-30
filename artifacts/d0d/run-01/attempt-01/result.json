@@ -1,0 +1,72 @@
+{
+  "attempt_dir": "/mnt/d/RoboSim-Eval/artifacts/d0d/run-01/attempt-01",
+  "goal": {
+    "frame": "map",
+    "x": -4.0,
+    "y": -1.0,
+    "yaw": 0.0,
+    "position_tolerance_m": 0.5,
+    "orientation_assessed": false
+  },
+  "execution_status": "completed",
+  "task_outcome": "reached",
+  "safety_status": "unknown (contact/collision not measured in D0)",
+  "data_status": "complete",
+  "validation_status": "pass",
+  "nav2_raw": {
+    "terminal_status_code": 4,
+    "terminal_status_name": "SUCCEEDED",
+    "error_code": 0,
+    "error_msg": "''",
+    "goal_id": "8e28b7ce036f43659b4be8c71c404771",
+    "status_text_from_client": "SUCCEEDED",
+    "recoveries": 0,
+    "distance_remaining_last_feedback_m": 0.23535507917404175
+  },
+  "timing": {
+    "accepted_wall": "2026-09-29T20:24:40.495",
+    "result_wall": "2026-09-29T20:25:06.105",
+    "accept_to_result_wall_s": 25.610750353,
+    "sim_time_at_accept_s": 509.916666666,
+    "sim_time_at_result_s": 518.383333333,
+    "accept_to_result_sim_s": 8.46666666699997
+  },
+  "final_pose": {
+    "nav2_feedback_map": {
+      "x": -4.249568623030009,
+      "y": -1.002056241696005,
+      "yaw": 0.019111762049455045,
+      "error_to_goal_m": 0.249577093762643,
+      "source": "Nav2 feedback current_pose (map frame; localization estimate, not ground truth)"
+    },
+    "tf_map_base_link": {
+      "x": -4.228891789710769,
+      "y": -1.0214551717964917,
+      "yaw": 0.021284539933207114,
+      "error_to_goal_m": 0.22989514086603863,
+      "source": "/tf map->odom (AMCL) composed with odom->base_link (Isaac odometry)"
+    }
+  },
+  "stop_still": {
+    "rule": "|v|<0.05 m/s and |w|<0.1 rad/s for 1.0 s sim time after terminal status, on /chassis/odom twist",
+    "confirmed": true,
+    "confirmed_at_sim": 519.533333333,
+    "max_lin_after_end": 0.16805578935062318,
+    "max_ang_after_end": 0.045024674385786057,
+    "samples_after_end": 126
+  },
+  "message_counts": {
+    "clock": 904,
+    "odom": 904,
+    "cmd_vel": 540,
+    "status": 2,
+    "feedback": 2405,
+    "tf_map_odom": 145,
+    "tf_odom_base": 904
+  },
+  "notes": [
+    "Positions come from Nav2/AMCL estimates and Isaac odometry; independent simulation ground truth was not recorded (D3).",
+    "safety_status is unknown because contact/collision data was not measured (D3).",
+    "rejected/aborted goals would be reported as unknown, not unreachable (plan doc A5)."
+  ]
+}

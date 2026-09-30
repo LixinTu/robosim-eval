@@ -9,15 +9,21 @@ set +u
 source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh || exit 2
 set -u
 [[ -f "$ATT/record.pids" ]] || { echo "no record.pids in $ATT"; exit 1; }
+# Each recorder was started with setsid, so its PID is also its session id; `timeout` creates its own process group
+# inside that session, therefore signal the whole SESSION (pkill -s), not just the original process group.
 while read -r name pid; do
   [[ -n "${pid:-}" ]] || continue
-  if kill -0 "$pid" 2>/dev/null; then kill -INT -- "-$pid" 2>/dev/null || kill -INT "$pid"; echo "INT -> $name ($pid)"; else echo "$name ($pid) already exited"; fi
+  if pgrep -s "$pid" >/dev/null 2>&1; then pkill -INT -s "$pid"; echo "INT -> session $name ($pid): $(pgrep -s "$pid" | tr '\n' ' ')"; else echo "$name ($pid) already exited"; fi
 done < "$ATT/record.pids"
 for i in $(seq 1 20); do
   alive=0
-  while read -r name pid; do [[ -n "${pid:-}" ]] && kill -0 "$pid" 2>/dev/null && alive=1; done < "$ATT/record.pids"
+  while read -r name pid; do [[ -n "${pid:-}" ]] && pgrep -s "$pid" >/dev/null 2>&1 && alive=1; done < "$ATT/record.pids"
   [[ $alive -eq 0 ]] && break; sleep 1
 done
+while read -r name pid; do
+  [[ -n "${pid:-}" ]] || continue
+  if pgrep -s "$pid" >/dev/null 2>&1; then echo "WARNING: session $name ($pid) still alive after 20 s; sending SIGTERM"; pkill -TERM -s "$pid"; fi
+done < "$ATT/record.pids"
 echo "record stop $(date -Is)" >> "$ATT/record.meta"
 BAG=$(cat "$ATT/bag-path.txt" 2>/dev/null || true)
 if [[ -n "$BAG" && -d "$BAG" ]]; then

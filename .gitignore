@@ -26,3 +26,8 @@ configs/network/*.peers.xml
 # ---- OS / IDE noise ----
 .DS_Store
 Thumbs.db
+
+# ---- Runtime pid files written by the recorder/launch scripts (transient; PIDs are recorded in commands.md) ----
+artifacts/**/*.pid
+artifacts/**/pid-*
+artifacts/**/*.err

@@ -44,7 +44,7 @@ startpipe odom      ros2 topic echo --csv --field pose.pose /chassis/odom
 startpipe amcl_pose ros2 topic echo --csv /amcl_pose
 startpipe cmd_vel   ros2 topic echo --csv /cmd_vel
 startpipe action_status ros2 topic echo /navigate_to_pose/_action/status
-startpipe tf_map_base ros2 run tf2_ros tf2_echo map base_link 5
+startpipe tf_map_base ros2 run tf2_ros tf2_echo map base_link -r 5
 sleep 2
 echo "pids:"; cat "$ATT/record.pids"
 for p in $(awk '{print $2}' "$ATT/record.pids"); do kill -0 "$p" 2>/dev/null && echo "  running $p" || echo "  NOT running $p (see logs)"; done
