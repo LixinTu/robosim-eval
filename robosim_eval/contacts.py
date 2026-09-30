@@ -21,9 +21,10 @@ __all__ = ["ContactError", "install", "fetch", "found_pairs", "windows_path"]
 def windows_path(path: PurePosixPath) -> Optional[str]:
     """Windows form of a WSL path on a Windows drive (/mnt/d/x -> D:\\x); None for any other path."""
     parts = path.parts
-    if len(parts) < 3 or parts[:2] != ("/", "mnt") or len(parts[2]) != 1 or not parts[2].isalpha():
+    drive = parts[2] if len(parts) >= 3 and parts[:2] == ("/", "mnt") else ""
+    if len(drive) != 1 or not (drive.isascii() and drive.isalpha()):
         return None
-    return parts[2].upper() + ":\\" + "\\".join(parts[3:])
+    return drive.upper() + ":\\" + "\\".join(parts[3:])
 
 
 REPO = Path(__file__).resolve().parents[1]
@@ -130,8 +131,9 @@ def found_pairs(fetched: Dict[str, Any]) -> List[Tuple[str, str]]:
     """(actor0, actor1) of every contact in a fetched batch: each 'found' event, then each persisting pair not already
     found in the batch (a contact that started before the pre-run clear only persists during the run).
 
-    The monitor reports only contacts of bodies with contact reporting, i.e. the robot's; which of them are allowed
-    (ground, self contacts) is decided by the evaluator's ContactPolicy.
+    PhysX reports a pair when either body has contact reporting, which the monitor enables on the robot's bodies only
+    (an asset could enable it itself); the evaluator's ContactPolicy drops pairs without a robot body, robot self
+    contacts and the ignored ground contacts.
     """
     pairs = [(e["actor0"], e["actor1"]) for e in fetched.get("events", []) if e.get("type") == "found"]
     seen = {frozenset(p) for p in pairs}
