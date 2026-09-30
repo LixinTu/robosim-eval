@@ -14,6 +14,7 @@
 | 问题 | 去哪 |
 | --- | --- |
 | 现在做到哪、下一步、阻塞、决定记录 | [docs/plan.md](docs/plan.md)(唯一活计划) |
+| 项目整体技术说明(第一次接触时先读) | [docs/technical-overview.md](docs/technical-overview.md) |
 | 需求、验收、状态合同(冻结参考) | [RoboSim-Eval-Plan-and-Setup-ZH(1).md](RoboSim-Eval-Plan-and-Setup-ZH(1).md) 的 §0.2、A4、A5、B |
 | 开发流程与审查约定(冻结参考) | [Claude-Code-Harness-Pack-ZH(1).md](Claude-Code-Harness-Pack-ZH(1).md)、[Codex-Harness-Pack-ZH(1).md](Codex-Harness-Pack-ZH(1).md) |
 | 本机环境证据 | [docs/environment.md](docs/environment.md)(阶段 1 生成) |
