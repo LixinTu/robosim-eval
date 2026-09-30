@@ -12,7 +12,7 @@
 | D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 完成(2026-09-29 19:35–20:12) | artifacts/d0c/commands.md;probe-04-playing/(/clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、tf2_echo odom→base_link);clock-continuity-01;clock-pause-test-02(暂停 29 s 时钟停、恢复后继续);bridge-check-01/02;kit-udp-endpoints-01;diag-01 | 门槛 3→4 通过。排障:Windows 防火墙阻断 WSL→kit.exe 入站(用户以管理员加一条限定规则后解决);首次 Play 后 7 s 时间线被停止(重新 Play 解决)。发现:示例场景不发布 2D 雷达扫描(params 的局部代价地图两路来源无数据,D0d 记偏差);USD 动画时间线每 ~41 s 循环但仿真时钟不受影响;显存为几次点采样(空场景 3124–3128 MiB、Play 后 5 s 3754 MiB、Nav2 运行时 Isaac 界面显示 3.9 GiB),未做连续测量 |
 | D0d · 一次真实 A→B | 完成(2026-09-29 20:13–20:52) | artifacts/d0d/commands.md;run-01/(nav2-launch.log、ready-check-01、map-overview、rviz 截图、usd-inspection);run-01/attempt-01/(goal-202437.txt、result.json、trajectory.csv、bag-info、文本流);run-02/03/04-stoptest(停止路径验证) | 目标 map (-4.0,-1.0,yaw 0) 由 CLI action client 发送:SUCCEEDED、error_code 0、0 次恢复、8.47 s 仿真时间、停稳确认;**AMCL 独立来源**(理想里程计 + USD 出生位姿)在停稳确认时刻误差 0.091 m,AMCL 估计 0.231 m → validation=pass(内部预审后用新分析脚本重算)。发现见 §9 |
 | D0 交付 + 独立审查 | 进行中:**待独立审查** | docs/setup.md;docs/review/2026-09-29-d0-handoff.md;docs/review/2026-09-29-d0/REVIEW.md | Codex 第 1 轮两次因账户用量上限中止、无意见(20:59 用 82,531 tokens;23:23 重跑用 102,685 tokens);同一范围已拆成 4 个分片,由排队脚本从 2026-09-30 03:38 起自动运行,见 REVIEW.md;Claude 内部预审第 2 次完成(38 条,确认 35 条),有效项已修复并回归,见 REVIEW.md |
-| D1 doctor | 进行中(2026-09-29 23:3x 起) | 分支 `feature/d1-doctor` | 用户要求加速;D0 审查排队期间并行开始,见 §2 决定记录与 §11 |
+| D1 doctor | 实现与验证完成(2026-09-29 23:3x–23:49),**待独立审查**与用户验收 | 分支 `feature/d1-doctor`;`robosim_eval/doctor*.py`、`configs/baseline.yaml`、`scripts/wsl/doctor.sh`;证据 `artifacts/d1/commands.md` | 固定输入测试 37 passed、改坏检查 7/7、假节点测试 6/6;真实 Isaac:运行时退出 0,用户按 ⏸ 后 2 s 窗口判"不推进"退出 10,恢复后退出 0 |
 | D2 单次运行 / D3 判定 / D4 批量复跑 / D5 作品交付 | 未开始 | — | 按序进行 |
 
 **当前任务:** D0 交付收尾(Codex 分片审查排队中 → 逐条核实、修复有效项、重跑受影响检查 → 必要时第二轮复核 → 用户三步验收)与 D1 诊断工具并行。D0 的修复在 `feature/d0-environment` 上做,再合进 `feature/d1-doctor`。
@@ -133,6 +133,8 @@
 - 零指令缓爬:按位置增量约 1.1 mm/仿真秒(0.045 m @ 40.3 s、0.378 m @ 340.3 s、0.561 m @ 505.5 s);odom twist 读数只有约 0.6 mm/s,偏低约 40%。
 - USD 动画时间线每 ~41 s 循环一次(一帧 dt=0 的差速控制器警告),仿真时钟不受影响。
 - 首次 Play 后 7 s 时间线曾被停止(topic 在、无数据),重新 Play 恢复。
+- D1:rclpy 直接订阅测得点云约 3.0 Hz(artifacts/d1 的 real-01 与 real-02 恢复后),高于 D0 用 `ros2 topic hz` 测的 2.4–2.8 Hz,印证 topic hz 对 540 KB 的大消息读数偏低。
+- D1:Isaac 暂停时话题和发布者都还在,只是没有消息;doctor 用"有发布者但 /clock 不推进"判暂停(退出 10),用"没有发布者"判关闭或断连(退出 11)。
 
 **已知问题:**
 - Nav2 停止时组件容器在清理阶段 SIGSEGV("Magick: abort due to signal 11",exit -6):run-01、run-04、run-05 三次都出现。rviz2 每次退出方式不同:run-01 为 -6,run-04 为 -9(launch 在 SIGINT/SIGTERM 超时后 SIGKILL),run-05 为 -11。launch 退出码 1 只在 run-04、run-05 记录到;run-01 用的是旧脚本,没有记录。三次都没有残留进程,不影响导航与记录。
@@ -155,8 +157,9 @@
 - sudo/管理员、colcon 构建时间、rosdep 网络、10 分钟工具上限(后台作业规避)。
 - 总时长粗估半天到一天,并受用户在 GUI 步骤的可用时间影响。
 
-## 11. 下一项:D1 诊断工具的第一个小验收(与 D0 独立审查并行)
-- 用户操作:仿真在 Play 时运行 doctor;然后暂停仿真再运行一次。
-- 门槛要按实测设:各话题周期随实时因子变(见 §9),单一的 "5 个周期" 在导航负载下会误报。
-- 预期:正常时报告 /clock、/chassis/odom、/tf、/front_3d_lidar/lidar_points 的实际频率与新鲜度并退出 0;暂停时在有限时间内(候选:max(5 个正常周期, 2 s))判定时钟停止并非零退出。
-- 验证:固定输入测试(不需要仿真)+ 真实 Isaac 集成各一次,分别记录;复用 probe_topics.sh / watch_clock.sh 的经验,不另起框架。
+## 11. 下一项:D2 单次运行器的第一个小验收
+- 目标(计划 A4 D2、A5、A6):用配置运行一次 A→B;状态机的每一段都有超时;保存接受、反馈、结果与轨迹;中断时也收尾(取消目标、确认停车、停止记录、写出 interrupted 结果)。
+- 先定配置:`configs/baseline.yaml` 补齐 A5 要求的字段(坐标系、单位、到达容差、朝向是否考核、停稳条件、导航仿真时限、现实等待上限、断流阈值、接触过滤),正式比较前冻结。
+- 先定冲突:导航时实时因子约 0.32,120 s 仿真时间约等于 375 s 现实时间,会先触发 300 s 现实上限,需要写明取舍。
+- 每次运行一个 run_id 目录:manifest.json、config.resolved.yaml、events.jsonl、trajectory.csv、result.json,可选 rosbag。
+- 验证:状态机用假 action server 测;真实 Isaac 各跑一次正常 A→B 与一次中断收尾,分开记录。

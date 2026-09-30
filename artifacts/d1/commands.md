@@ -22,7 +22,8 @@
 | 23:41:46 | `python3 artifacts/d1/mutation_check.py` | wsl.exe bash -l(非交互) | /mnt/d/RoboSim-Eval | 0 | mutation-check.txt | 7 种改坏(不判陈旧、不判过慢、缺发布者当静默、忽略时钟停滞、冻结时钟算推进、忽略环境错误、倒退算推进)各被至少一个测试抓到;恢复后 0 失败 |
 | 23:42 | `pytest -v tests`(存档) | 同上 | 同上 | 0 | pytest.txt | 37 passed |
 | 23:42:13 | `scripts/wsl/test_doctor_fake.sh artifacts/d1/fake-03` | 同上 | 同上 | 0 | fake-03/summary.txt 与各用例日志 | 6/6 PASS:healthy 0(5.8 s)、paused 10(2.8 s)、closed 11(5.8 s)、lidar_missing 11(10.7 s)、lidar_slow 12(5.8 s)、rmw_unset 13(5.7 s) |
+| 23:44:37–23:49:10 | `scripts/wsl/doctor_watch_pause.sh artifacts/d1/real-02-pause 1800`(后台;每次 `doctor.sh --window 3`,直到先见到退出 10、再见到退出 0) | wsl.exe bash -l(非交互,Claude 后台任务) | /mnt/d/RoboSim-Eval | 0 | real-02-pause/watch.log、paused/、resumed/ | 用户在 Isaac 按 ⏸,约 20 s 后按 ▶。**暂停时**(23:48:44):/clock 有发布者但 2.01 s 窗口内 0 条消息,判"仿真不推进",退出 10,doctor 从启动到出结论约 4 s;odom、TF、点云都判静默。**恢复后**(23:49:06):healthy 退出 0,/clock 21.21 Hz、RTF 0.42,odom 21.54 Hz,点云 2.98 Hz。doctor.txt 里的 JSON 路径写的是临时目录 `.try/`,文件随后被移到 paused/、resumed/ |
 
 ## 未执行
 
-- 真实 Isaac 的暂停测试(计划 D1 的验收操作)与关闭仿真测试:需要暂停或关闭用户的 Isaac,还没做。假节点测试已覆盖这两种情形的判定。
+- 真实 Isaac 的"关闭仿真"测试:需要关闭用户的 Isaac,没做。计划 D1 的验收写的是"暂停或关闭",暂停已在真实 Isaac 上验证;关闭(没有发布者)只在假节点测试里验证过(closed 用例,退出 11)。

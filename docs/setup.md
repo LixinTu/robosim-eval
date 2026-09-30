@@ -47,6 +47,26 @@
    - RViz 的 **Nav2 Goal** 也能发目标,但**未执行过**,而且没有目标转录,分析结果最多是 inconclusive;验收请用 send_goal.sh。
 5. **暂停/恢复核对**(可选):`watch_clock.sh 120 <文件>` 运行时在 Isaac 按 ⏸ 再按 ▶;文件中会出现一段没有 /clock 消息的空白,空白前后的仿真时间最多相差一个步长(实测 0.017 s)。
 
+## 诊断:doctor(D1)
+
+判断仿真与 ROS 通路是否正常,约 13 s 内一定结束(发现话题最多 5 s,观察 5 s,外加 Python 启停;仿真暂停时约 4 s 就出结论):
+
+```powershell
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/doctor.sh --out /mnt/d/RoboSim-Eval/artifacts/d1/<目录>
+```
+
+| 退出码 | 含义 | 常见原因 |
+| --- | --- | --- |
+| 0 | 正常,并报告各路实际频率与新鲜度 | — |
+| 10 | 仿真不推进 | Isaac 暂停或停止(⏸ / ⏹) |
+| 11 | 仿真数据缺失 | Isaac 没开、ROS 2 bridge 没加载、防火墙或 DDS 发现不通、某个必需话题没有发布者 |
+| 12 | 数据降级 | 某路数据过慢、陈旧或静默 |
+| 13 | 环境或接口不对 | 没加载 ros_env.sh / dds_env.sh、RMW 不是 Fast DDS、话题类型不符 |
+| 2 | 用法或配置错误 | 配置文件缺项或数值非法 |
+| 124 | 60 s 硬上限触发 | doctor 自身卡住,按失败处理 |
+
+话题与阈值在 `configs/baseline.yaml`,依据是 D0 的实测频率。不需要仿真的检查:`python3 -m pytest tests`(在仓库根目录);假节点测试:`scripts/wsl/test_doctor_fake.sh <目录>`,用 ROS domain 42,不影响正在运行的 Isaac。
+
 ## 关闭顺序
 
 1. `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh /mnt/d/RoboSim-Eval/artifacts/d0d/<run_dir>`:先核对归属(开机 ID、包装进程启动时刻、命令行都要与启动时记录的一致,否则拒绝并以 5 退出),然后 SIGINT 只发给 `ros2 launch`,最多等 45 s,必要时对本会话升级 SIGTERM、SIGKILL;launch 真实退出码写在 `<run_dir>/nav2.exit`;最后用不走 daemon 的 fresh discovery 核对没有残留 Nav2 节点。退出 0 = 无残留;1 = 有残留;3 = 残留检查本身失败。实测 10–13 s 结束;launch 退出码为 1,因为 Nav2 组件容器在清理阶段 SIGSEGV、rviz2 以 -9 或 -11 退出(上游已知问题,见 docs/plan.md §9)。
