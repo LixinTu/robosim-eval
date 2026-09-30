@@ -11,7 +11,7 @@ import json
 import omni.physx
 import omni.timeline
 import omni.usd
-from pxr import PhysicsSchemaTools, PhysxSchema, UsdPhysics
+from pxr import PhysicsSchemaTools, PhysxSchema, Usd
 
 ROBOSIM_CONTACTS = globals().setdefault(
     "ROBOSIM_CONTACTS", {"events": [], "persist": {}, "sub": None, "bodies": [], "dropped": 0})
@@ -42,13 +42,15 @@ def robosim_contacts_install(robot_root="/World/Nova_Carter_ROS"):
     stage = omni.usd.get_context().get_stage()
     if stage is None:
         return json.dumps({"ok": False, "error": "no stage"})
+    root = stage.GetPrimAtPath(robot_root)
+    if not root.IsValid():
+        return json.dumps({"ok": False, "error": f"{robot_root} not found"})
     bodies = []
-    for prim in stage.Traverse():
-        p = str(prim.GetPath())
-        if p.startswith(robot_root + "/") and prim.HasAPI(UsdPhysics.RigidBodyAPI):
+    for prim in Usd.PrimRange(root):  # the robot subtree only
+        if "PhysicsRigidBodyAPI" in prim.GetAppliedSchemas():
             api = PhysxSchema.PhysxContactReportAPI.Apply(prim)
             api.CreateThresholdAttr().Set(0.0)
-            bodies.append(p)
+            bodies.append(str(prim.GetPath()))
     st = ROBOSIM_CONTACTS
     st["bodies"] = bodies
     if st["sub"] is None:
