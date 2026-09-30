@@ -7,8 +7,10 @@
 # Layout: a wrapper bash (new session via setsid; its PID = session id in nav2.pid) runs `ros2 launch` in the foreground
 # and writes the launch's real exit code to nav2.exit when it ends. The wrapper traps INT/TERM (runs `true`), so a signal
 # to the session never kills it before it has recorded the exit code; the trap is reset for the launch itself.
-# Ownership record for stop_nav2.sh: boot_id, the wrapper's start time (/proc/<pid>/stat field 22) and its command line
-# (which contains this run dir's nav2.exit path) are written to nav2-launch.meta.
+# Ownership record for stop_nav2.sh: boot_id, the wrapper's and the launch's start times (/proc/<pid>/stat field 22)
+# and a fresh ownership token are written to nav2-launch.meta; the wrapper's command line contains this run dir's
+# nav2.exit path, and the token is exported as ROBOSIM_OWNER_TOKEN to the wrapper, so every process of the launch
+# inherits it and stop_nav2.sh can still prove leftovers of this launch after the wrapper has exited (shell-5).
 # Map record for send_goal.sh and map_overview.sh (finding codex-b-7): the map this launch loads (the launch file's
 # default, or the last map:= argument) is written to nav2-launch.meta as map_yaml= with the sha256 of its yaml and
 # image, so goals are checked against the map Nav2 actually uses and a later change of the files is noticed.
@@ -18,7 +20,8 @@ set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 RUN_DIR="${1:-$REPO/artifacts/d0d/$(date +%Y%m%d-%H%M%S)}"
 shift || true
-mkdir -p "$RUN_DIR"
+mkdir -p "$RUN_DIR" || exit 2
+RUN_DIR="$(cd "$RUN_DIR" && pwd -P)"   # one spelling for the wrapper's command line and stop_nav2.sh's check
 set +u
 # shellcheck disable=SC1091
 source "$REPO/scripts/wsl/ros_env.sh" --full || exit 2   # /opt/ros/jazzy + pinned overlay
@@ -48,7 +51,8 @@ except (OSError, yaml.YAMLError, KeyError, TypeError) as exc:
 PY
 ) || { echo "ERROR: cannot read the map Nav2 would load ($MAP): $MAP_ID"; exit 2; }
 
-starttime_of() { sed -E 's/^.*\) //' "/proc/$1/stat" 2>/dev/null | awk '{print $20}'; }
+PROC="${ROBOSIM_PROC_ROOT:-/proc}"   # test seam: tests/shell point this at a fake /proc tree
+starttime_of() { sed -E 's/^.*\) //' "$PROC/$1/stat" 2>/dev/null | awk '{print $20}'; }
 
 if [[ -f "$RUN_DIR/nav2.pid" ]] && pgrep -s "$(cat "$RUN_DIR/nav2.pid")" >/dev/null 2>&1; then
   echo "ERROR: session $(cat "$RUN_DIR/nav2.pid") from this run dir still has processes; stop it first"; exit 3
@@ -66,6 +70,7 @@ fi
 
 LOG="$RUN_DIR/nav2-launch.log"
 rm -f "$RUN_DIR/nav2.exit" "$RUN_DIR/nav2.pid"
+TOKEN=$(cat /proc/sys/kernel/random/uuid) || exit 2
 {
   echo "start_wall=$(date -Is)"
   echo "cmd=ros2 launch carter_navigation carter_navigation.launch.xml use_sim_time:=true $*"
@@ -76,7 +81,7 @@ rm -f "$RUN_DIR/nav2.exit" "$RUN_DIR/nav2.pid"
 
 # `env --default-signal=INT,TERM`: a non-interactive shell starts `&` jobs with SIGINT ignored, and that inherited
 # SIG_IGN made `ros2 launch` ignore SIGINT entirely (2026-09-29 run-03). Restore the defaults before the wrapper starts.
-setsid nohup env --default-signal=INT,TERM bash -c 'echo $$ > "$0"; trap "true" INT TERM; ros2 launch carter_navigation carter_navigation.launch.xml use_sim_time:=true "${@:2}"; echo $? > "$1"' \
+ROBOSIM_OWNER_TOKEN="$TOKEN" setsid nohup env --default-signal=INT,TERM bash -c 'echo $$ > "$0"; trap "true" INT TERM; ros2 launch carter_navigation carter_navigation.launch.xml use_sim_time:=true "${@:2}"; echo $? > "$1"' \
   "$RUN_DIR/nav2.pid" "$RUN_DIR/nav2.exit" "$@" < /dev/null > "$LOG" 2>&1 &
 
 WRAP=""; LAUNCH=""
@@ -90,5 +95,5 @@ done
 if [[ -z "$WRAP" || -z "$LAUNCH" ]]; then
   echo "ERROR: launch did not start (wrapper=${WRAP:-none} launch=${LAUNCH:-none}); see $LOG"; tail -20 "$LOG"; exit 4
 fi
-echo "session=$WRAP launch_pid=$LAUNCH boot_id=$(cat /proc/sys/kernel/random/boot_id) wrapper_starttime=$(starttime_of "$WRAP")" >> "$RUN_DIR/nav2-launch.meta"
+echo "session=$WRAP launch_pid=$LAUNCH launch_starttime=$(starttime_of "$LAUNCH") boot_id=$(cat "$PROC/sys/kernel/random/boot_id") wrapper_starttime=$(starttime_of "$WRAP") token=$TOKEN" >> "$RUN_DIR/nav2-launch.meta"
 echo "nav2 launch started: wrapper/session=$WRAP launch_pid=$LAUNCH run_dir=$RUN_DIR log=$LOG"
