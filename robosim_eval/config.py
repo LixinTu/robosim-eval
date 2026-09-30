@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 import re
 from collections.abc import Hashable
+import dataclasses
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple, Union
@@ -309,8 +310,29 @@ def load_config(path: Union[str, Path]) -> BaselineConfig:
     if problem:
         raise ValueError(f"doctor.window_s: {problem}")
     sim = _load_sim(raw.get("sim"))
-    return BaselineConfig(env=env, topics=topics, doctor=doctor, sim=sim, run=_load_run(raw.get("run")),
-                          scenarios=_load_scenarios(raw.get("scenarios"), sim))
+    run, scenarios = _load_run(raw.get("run")), _load_scenarios(raw.get("scenarios"), sim)
+    _check_record_cap(run, scenarios)
+    return BaselineConfig(env=env, topics=topics, doctor=doctor, sim=sim, run=run, scenarios=scenarios)
+
+
+# Wall time the runner still needs after the navigation and cancel/stop limits before it stops the recorders: settle
+# (3 s), ground truth, contact fetch; generous, because a recording that ends early makes the run's data incomplete.
+TEARDOWN_MARGIN_S = 30.0
+
+
+def _check_record_cap(run: Optional[RunConfig], scenarios: Mapping[str, Scenario]) -> None:
+    """The recorders are started with run.record_cap_s; it must cover the longest run of every scenario: acceptance,
+    navigation (wall limit), an injected pause, cancel, stop confirmation and the teardown margin."""
+    if run is None:
+        return
+    for name, sc in {"(run defaults)": None, **scenarios}.items():
+        lim = dataclasses.replace(run.limits, **dict(sc.timeouts)) if sc else run.limits
+        pause = float(sc.inject.get("pause_wall_s", 0.0)) if sc else 0.0
+        need = lim.accept_wall_s + lim.nav_wall_s + pause + lim.cancel_wall_s + lim.stop_wall_s + TEARDOWN_MARGIN_S
+        if run.record_cap_s < need:
+            raise ValueError(f"run.record_cap_s {run.record_cap_s:g} s is shorter than the longest run of scenario "
+                             f"{name!r}: {need:g} s (acceptance + navigation wall limit + pause + cancel + stop + "
+                             f"{TEARDOWN_MARGIN_S:g} s teardown); the recorders would stop before the run is closed out")
 
 
 def _stream_names(value: Any, where: str, default: Tuple[str, ...], allow_empty: bool) -> Tuple[str, ...]:

@@ -42,7 +42,8 @@ from robosim_eval import map_check
 from robosim_eval.config import BaselineConfig, Scenario, load_config
 from robosim_eval.evaluator import ContactPolicy, EvalInputs, Verdict, evaluate_run
 from robosim_eval.nav2_params import write_params
-from robosim_eval.run_io import (NAV2_SHARE, EventLog, RunLock, Transcript, loaded_inputs, now_iso, runner_lock_path,
+from robosim_eval.run_io import (NAV2_SHARE, EventLog, RunLock, Transcript, loaded_inputs, now_iso, read_exit_file,
+                                 runner_lock_path,
                                  write_manifest, write_resolved_config)
 from robosim_eval.runner_fsm import RunStateMachine, State, StopStillTracker, doctor_retry, refresh_clock
 from robosim_eval.runner_node import RunNode
@@ -463,6 +464,10 @@ class Runner:
         while self.fsm.state in (State.EXECUTING, State.CANCELING):
             self.rn.spin(0.05)
             self._test_fault("executing")
+            launch_exit = read_exit_file(self.run_dir / "nav2.exit") if self.started["nav2"] else None
+            if launch_exit is not None:  # the launch wrapper records the exit only when ros2 launch has ended
+                self.fsm.fail(f"Nav2 launch exited during the run (exit {launch_exit})", *self.now())
+                return False
             if not self.opts.no_sim:
                 self._inject()
             if self.result_future.done():
@@ -701,9 +706,13 @@ class Runner:
     def _td_stop_nav2(self) -> None:
         if not self.started["nav2"]:
             return
+        before = read_exit_file(self.run_dir / "nav2.exit")  # set already: the launch ended before our stop request
         rc = self.facts["exit_codes"]["stop_nav2"] = script("stop_nav2.sh", [str(self.run_dir)],
                                                              self.run_dir / "stop_nav2.txt", 180)
-        self.ev.write("nav2_stop", exit_code=rc)
+        # the stop script's result says whether the processes are gone (cleanup); Nav2's own exit is kept apart
+        self.facts["nav2"] = {"stop_script_exit": rc, "launch_exit": read_exit_file(self.run_dir / "nav2.exit"),
+                              "launch_exited_before_stop": before is not None}
+        self.ev.write("nav2_stop", exit_code=rc, **self.facts["nav2"])
         if rc != 0:
             self.fsm.fail(f"stop_nav2.sh exit {rc}: Nav2 was not confirmed stopped", *self.now(), abort=True)
 

@@ -29,6 +29,14 @@ ISAAC_VERSION = Path("/mnt/d/isaac-sim-standalone-6.1.0-windows-x86_64/VERSION")
 LOCK_DIR = Path("/tmp/robosim_eval")
 
 
+def read_exit_file(path: Path) -> Optional[int]:
+    """The integer exit code a wrapper wrote to `path` (e.g. <run_dir>/nav2.exit); None when absent or unreadable."""
+    try:
+        return int(path.read_text(encoding="utf-8").split()[0])
+    except (OSError, ValueError, IndexError):
+        return None
+
+
 def now_iso() -> str:
     return datetime.datetime.now().astimezone().isoformat(timespec="milliseconds")
 

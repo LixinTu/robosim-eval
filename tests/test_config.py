@@ -409,3 +409,20 @@ def test_namespaced_nav2_node_and_literal_dotted_parameter_are_accepted(tmp_path
                    "      controller_server.ros__parameters.FollowPath.PathAlign.scale: 16.0\n")
     sc = load_config(write(tmp_path, text)).scenarios["s1"]
     assert len(sc.nav2_params) == 2
+
+
+def _baseline_with(tmp_path: Path, old: str, new: str) -> Path:
+    text = BASELINE.read_text(encoding="utf-8")
+    assert text.count(old) == 1
+    return write(tmp_path, text.replace(old, new))
+
+
+def test_record_cap_must_cover_the_longest_run(tmp_path: Path):
+    # release review, focus 2: the recorders must outlive acceptance + navigation + cancel + stop + teardown margin
+    with pytest.raises(ValueError, match="record_cap_s"):
+        load_config(_baseline_with(tmp_path, "record_cap_s: 480", "record_cap_s: 200"))
+
+
+def test_record_cap_is_checked_against_scenario_limit_overrides(tmp_path: Path):
+    with pytest.raises(ValueError, match="record_cap_s.*timeout"):
+        load_config(_baseline_with(tmp_path, "timeouts: {nav_sim_s: 6.0}", "timeouts: {nav_sim_s: 6.0, nav_wall_s: 600}"))
