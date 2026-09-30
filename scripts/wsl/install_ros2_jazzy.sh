@@ -83,8 +83,11 @@ rosdep update
 
 step "6. verification (each line must show 'install ok installed')"
 for p in "${PKGS[@]}"; do printf '%-40s %s\n' "$p" "$(dpkg-query -W -f='${Status} ${Version}' "$p")"; done
+# ROS setup scripts are not `set -u` clean (AMENT_TRACE_SETUP_FILES), so relax -u while sourcing.
+set +u
 # shellcheck disable=SC1091
 source /opt/ros/jazzy/setup.bash
+set -u
 echo "ros2 executable: $(command -v ros2)"
 echo "colcon executable: $(command -v colcon)"
 echo "rosdep: $(rosdep --version)"

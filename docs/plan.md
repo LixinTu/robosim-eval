@@ -8,13 +8,15 @@
 | --- | --- | --- | --- |
 | 阶段 0 · 唯一计划与入口 | 完成(2026-09-29) | 基线 commit `dbf67ce`(master);分支 `feature/d0-environment`;AGENTS.md / CLAUDE.md / docs/plan.md / docs/harness-sources.md / artifacts/README.md | — |
 | D0a · 环境证据 | 完成(2026-09-29 19:02–19:04) | docs/environment.md;artifacts/d0a/(两侧探测原始输出 + commands.md) | 门槛 1→2 通过;发现:WSL 内无 ROS 2,sudo 需密码 |
-| D0b · ROS 2 Jazzy + 6.1.0 示例工作区 | 等待用户执行安装块 | scripts/wsl/install_ros2_jazzy.sh(用户在 Ubuntu 终端运行);日志 artifacts/d0b/install-jazzy.log | sudo 需要密码,Claude 无法安装;安装完成后 Claude 继续 RViz 测试、克隆、构建 |
-| D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 未开始 | artifacts/d0c/(待生成) | 需用户 GUI 操作;8 GB 显存待实测 |
+| D0b · ROS 2 Jazzy + 6.1.0 示例工作区 | 完成(2026-09-29 19:16–19:30) | artifacts/d0b/commands.md(安装日志、check-ros-install、talker/listener ×2、rviz2 测试、setup-workspace.log) | 门槛 2→3 通过。工作区 `~/robotics/vendor/isaac-ros-6.1`,HEAD a9e8471…;安装脚本首跑退出码 1 是校验步骤的 `set -u` 缺陷(已修),安装本身成功 |
+| D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 进行中:无 GUI 准备完成,等待用户重启 Isaac | configs/network/fastdds.xml、scripts/windows/start_isaac_ros2.ps1、scripts/wsl/dds_env.sh、scripts/wsl/probe_topics.sh、scripts/windows/check_isaac_bridge.ps1 | 需用户:关闭当前 Isaac → 用脚本重启 → 加载 Nova Carter → Play;8 GB 显存待实测;Windows 侧 rclpy 预测试不可行 |
 | D0d · 一次真实 A→B | 未开始 | artifacts/d0d/(待生成) | 需用户 RViz 操作 |
 | D0 交付 + 独立审查 | 未开始 | docs/review/(待生成) | Codex 登录状态待查 |
 | D1 doctor / D2 单次运行 / D3 判定 / D4 批量复跑 / D5 作品交付 | 未开始 | — | D0 通过后按序进行 |
 
-**当前任务:** 用户在 Ubuntu 终端运行 `bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh`(需 sudo 密码);完成后 Claude 读取 artifacts/d0b/install-jazzy.exit 与日志,继续阶段 2 其余步骤(talker/listener、rviz2 测试、克隆钉住工作区、colcon 构建)。
+**当前任务(D0c,用户回合):** 用户正常关闭当前 Isaac GUI(PID 29036)→ 在新的普通 PowerShell 运行 `powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\start_isaac_ros2.ps1` → 若弹防火墙对话框对 kit.exe 允许(含公用网络)→ Window → Examples → Robotics Examples → ROS2 → Navigation → Nova Carter → Load Sample Scene → Play → 告诉 Claude。Claude 随后运行 `scripts/windows/check_isaac_bridge.ps1`(bridge 是否加载、显存)与 `scripts/wsl/probe_topics.sh`(/clock、odom、TF、雷达)。
+
+**D0b 结果(2026-09-29 19:16–19:30):** ROS 2 Jazzy desktop + Nav2 + 闭包依赖装好(用户执行);WSL 内 talker/listener 默认与加载 fastdds.xml 均通;rviz2 在 WSLg 下存活 20 s(OpenGL 4.5);工作区 `~/robotics/vendor/isaac-ros-6.1` @ a9e8471…,`colcon build --packages-up-to carter_navigation` 成功;launch 参数 map / params_file / use_sim_time 可查询。
 
 **D0a 新增事实(2026-09-29 19:02–19:04,详见 docs/environment.md):** WSL 里完全没有 ROS 2(无 /opt/ros、无 apt 源、无 colcon/rosdep);`sudo -n true` 失败(需密码);WSLg 变量在非交互 shell 也存在;WSL eth0 172.28.211.14/20,网关 172.28.208.1 = Windows vEthernet (WSL);Windows 与 WSL 均无 ROS/DDS 残留配置;`extension_examples` 链接已存在;Claude 的 shell 未提权;Codex 0.157.0 已登录,`codex exec --sandbox read-only` 可用;`isaac-sim.bat` 自动调用 `setup_ros_env.bat`(默认 RMW = rmw_zenoh_cpp,仅当 ROS_DISTRO 未设时才把自带 jazzy 库加入 PATH/AMENT_PREFIX_PATH);自带前缀含 rclpy 7.1.11 与 rmw_fastrtps_cpp.dll / rmw_zenoh_cpp.dll。
 

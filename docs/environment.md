@@ -40,6 +40,17 @@
 | ROS 残留 | env、~/.bashrc、~/.profile、/etc/environment、/etc/profile.d 均无 ROS/RMW/FASTRTPS 行;`~/.ros/*.xml` 不存在 | 无冲突配置 |
 | 登录 vs 干净 shell | 两次探测除内存数字外逐行一致 | 非交互 `bash -lc` 的结论可信 |
 
+## ROS 2 与第三方工作区(D0b 之后,2026-09-29 19:30)
+
+| 项目 | 实测 |
+| --- | --- |
+| ROS 2 | Jazzy,`ros-jazzy-desktop 0.11.0`、`ros-jazzy-navigation2 1.3.13`、`ros-jazzy-nav2-bringup 1.3.13`、`ros-jazzy-pointcloud-to-laserscan 2.0.2`、`ros-jazzy-rmw-fastrtps-cpp 8.4.4`、`ros-dev-tools 1.0.3`;rosdep 已初始化并更新 |
+| 环境脚本 | `scripts/wsl/ros_env.sh`(`--base-only` 与 overlay 模式均实跑退出 0)、`scripts/wsl/dds_env.sh`(退出 0);RMW_IMPLEMENTATION=rmw_fastrtps_cpp,ROS_DOMAIN_ID=0 |
+| WSL 内通信 | talker/listener 默认配置与加载 `configs/network/fastdds.xml` 均收到消息(仅证明 WSL 内部) |
+| RViz | rviz2 在 WSLg 下默认 GL 存活 20 s,OpenGL 4.5 |
+| 第三方工作区 | `~/robotics/vendor/isaac-ros-6.1`(WSL ext4),tag IsaacSim-6.1.0,HEAD `a9e8471ee901bc2332c1e4aca94ac580713ca3ab`,树干净;构建闭包 carter_navigation + isaacsim_bringup + isaac_ros_navigation_goal;overlay `jazzy_ws/install/setup.bash` |
+| carter_navigation 关键配置(钉住版本) | launch 参数 map / params_file / use_sim_time(默认 True);地图 `carter_warehouse_navigation.yaml`(分辨率 0.05,原点 [-11.975, -17.975, 0]);amcl `set_initial_pose: true`,initial_pose x=-6.0 y=-1.0 yaw=3.14159;bt_navigator odom_topic `/chassis/odom`;局部代价地图用 `/front_2d_lidar/scan` 与 `/back_2d_lidar/scan`,全局代价地图与碰撞监视用 `/scan`(由 pointcloud_to_laserscan 从 `/front_3d_lidar/lidar_points` 转换,target_frame front_3d_lidar);collision_monitor 输出 `cmd_vel`(输入 `cmd_vel_smoothed`);params 未设置 enable_stamped_cmd_vel(Jazzy 默认为 geometry_msgs/Twist,须在 D0c 用 `ros2 topic info -v` 与 Isaac 订阅方核对) |
+
 ## 门槛 1→2 判定
 
 - 两侧探测均有完整输出、退出码 0;Isaac 两个关键路径存在 → 通过。

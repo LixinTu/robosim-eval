@@ -20,8 +20,11 @@ echo "=== setup_workspace.sh start $(date -Is) user=$(id -un) ws=$WS_ROOT ==="
 step() { echo; echo "--- [$(date +%T)] $* ---"; }
 
 step "0. base ROS environment"
+# ROS setup scripts are not `set -u` clean (AMENT_TRACE_SETUP_FILES), so relax -u while sourcing.
+set +u
 # shellcheck disable=SC1091
 source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only
+set -u
 
 step "1. checkout $TAG"
 if [[ -d "$WS_ROOT/.git" ]]; then
@@ -60,8 +63,10 @@ colcon build --packages-up-to carter_navigation --event-handlers console_direct+
 echo "build finished; packages in install/: $(ls install | tr '\n' ' ')"
 
 step "5. overlay checks"
+set +u
 # shellcheck disable=SC1091
 source install/setup.bash
+set -u
 echo "carter_navigation prefix: $(ros2 pkg prefix carter_navigation)"
 ros2 launch carter_navigation carter_navigation.launch.xml --show-args
 SHARE=$(ros2 pkg prefix carter_navigation)/share/carter_navigation
