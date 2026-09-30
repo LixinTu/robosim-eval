@@ -226,14 +226,6 @@ class Runner:
         simcfg = self.cfg.sim
         state = self.sim.get_state()
         self.ev.write("sim_state", state=state)
-        if not self.opts.no_contacts:  # before the reset: the contact report API takes effect when physics restarts
-            try:
-                info = contact_client.install()
-                self.facts["contacts"].update(installed=True, bodies=info.get("bodies"))
-                self.ev.write("contacts_installed", bodies=len(info.get("bodies", [])))
-            except contact_client.ContactError as exc:
-                self.facts["contacts"]["error"] = str(exc)
-                self.ev.write("contacts_unavailable", error=str(exc))
         try:
             self.sim.entity_state(simcfg.robot_entity)
         except Exception as exc:  # noqa: BLE001 - robot not found: the world is not loaded yet
@@ -241,6 +233,16 @@ class Runner:
             if state == "playing":
                 self.sim.set_state("stopped")
             self.sim.load_world(simcfg.world_uri)
+        # After a possible load (the robot's bodies must exist) and before the reset (the contact report API takes
+        # effect when physics restarts).
+        if not self.opts.no_contacts:
+            try:
+                info = contact_client.install()
+                self.facts["contacts"].update(installed=True, bodies=info.get("bodies"))
+                self.ev.write("contacts_installed", bodies=len(info.get("bodies", [])))
+            except contact_client.ContactError as exc:
+                self.facts["contacts"]["error"] = str(exc)
+                self.ev.write("contacts_unavailable", error=str(exc))
         self.ev.write("reset_request")
         self.ev.write("reset_done", state=self.sim.reset())
         check = None
