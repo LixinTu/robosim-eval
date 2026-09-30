@@ -1,0 +1,217 @@
+PROBE START: 2026-09-29T19:03:32-07:00  script=/mnt/d/RoboSim-Eval/scripts/wsl/probe_env.sh  login_shell=no  interactive=no
+
+===== identity =====
+CMD: id
+uid=1000(administrator) gid=1000(administrator) groups=1000(administrator),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),100(users),1001(docker)
+EXIT: 0
+
+===== home/shell =====
+CMD: echo "HOME=$HOME USER=${USER:-?} SHELL=${SHELL:-?} PWD=$PWD"
+HOME=/home/administrator USER=administrator SHELL=/bin/bash PWD=/mnt/d/RoboSim-Eval
+EXIT: 0
+
+===== os-release =====
+CMD: cat /etc/os-release
+PRETTY_NAME="Ubuntu 24.04.4 LTS"
+NAME="Ubuntu"
+VERSION_ID="24.04"
+VERSION="24.04.4 LTS (Noble Numbat)"
+VERSION_CODENAME=noble
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=noble
+LOGO=ubuntu-logo
+EXIT: 0
+
+===== kernel =====
+CMD: uname -r
+6.6.87.2-microsoft-standard-WSL2
+EXIT: 0
+
+===== python3 =====
+CMD: python3 --version
+Python 3.12.3
+EXIT: 0
+
+===== git =====
+CMD: git --version
+git version 2.43.0
+EXIT: 0
+
+===== colcon =====
+CMD: command -v colcon || echo "colcon not on PATH"
+colcon not on PATH
+EXIT: 0
+
+===== ros2 before source =====
+CMD: command -v ros2 || echo "ros2 not on PATH (before source)"
+ros2 not on PATH (before source)
+EXIT: 0
+
+===== opt ros =====
+CMD: ls -ld /opt/ros /opt/ros/jazzy
+ls: cannot access '/opt/ros': No such file or directory
+ls: cannot access '/opt/ros/jazzy': No such file or directory
+EXIT: 2
+
+===== ros2 after source =====
+CMD: if [ -f /opt/ros/jazzy/setup.bash ]; then source /opt/ros/jazzy/setup.bash && command -v ros2 && echo "ROS_DISTRO=$ROS_DISTRO RMW=${RMW_IMPLEMENTATION:-unset}"; else echo "no /opt/ros/jazzy/setup.bash"; fi
+no /opt/ros/jazzy/setup.bash
+EXIT: 0
+
+===== ros-jazzy package count =====
+CMD: dpkg-query -W -f="\${Package}\n" "ros-jazzy-*" 2>/dev/null | wc -l
+0
+EXIT: 0
+
+===== pkg ros-jazzy-desktop =====
+CMD: dpkg-query -W -f='${Status} ${Version}\n' ros-jazzy-desktop 2>/dev/null || echo 'not installed'; apt-cache policy ros-jazzy-desktop 2>/dev/null | sed -n '2,3p'
+not installed
+EXIT: 0
+
+===== pkg ros-dev-tools =====
+CMD: dpkg-query -W -f='${Status} ${Version}\n' ros-dev-tools 2>/dev/null || echo 'not installed'; apt-cache policy ros-dev-tools 2>/dev/null | sed -n '2,3p'
+not installed
+EXIT: 0
+
+===== pkg ros-jazzy-navigation2 =====
+CMD: dpkg-query -W -f='${Status} ${Version}\n' ros-jazzy-navigation2 2>/dev/null || echo 'not installed'; apt-cache policy ros-jazzy-navigation2 2>/dev/null | sed -n '2,3p'
+not installed
+EXIT: 0
+
+===== pkg ros-jazzy-nav2-bringup =====
+CMD: dpkg-query -W -f='${Status} ${Version}\n' ros-jazzy-nav2-bringup 2>/dev/null || echo 'not installed'; apt-cache policy ros-jazzy-nav2-bringup 2>/dev/null | sed -n '2,3p'
+not installed
+EXIT: 0
+
+===== pkg ros-jazzy-nav2-simple-commander =====
+CMD: dpkg-query -W -f='${Status} ${Version}\n' ros-jazzy-nav2-simple-commander 2>/dev/null || echo 'not installed'; apt-cache policy ros-jazzy-nav2-simple-commander 2>/dev/null | sed -n '2,3p'
+not installed
+EXIT: 0
+
+===== pkg ros-jazzy-pointcloud-to-laserscan =====
+CMD: dpkg-query -W -f='${Status} ${Version}\n' ros-jazzy-pointcloud-to-laserscan 2>/dev/null || echo 'not installed'; apt-cache policy ros-jazzy-pointcloud-to-laserscan 2>/dev/null | sed -n '2,3p'
+not installed
+EXIT: 0
+
+===== pkg ros-jazzy-rmw-fastrtps-cpp =====
+CMD: dpkg-query -W -f='${Status} ${Version}\n' ros-jazzy-rmw-fastrtps-cpp 2>/dev/null || echo 'not installed'; apt-cache policy ros-jazzy-rmw-fastrtps-cpp 2>/dev/null | sed -n '2,3p'
+not installed
+EXIT: 0
+
+===== pkg ros-jazzy-demo-nodes-cpp =====
+CMD: dpkg-query -W -f='${Status} ${Version}\n' ros-jazzy-demo-nodes-cpp 2>/dev/null || echo 'not installed'; apt-cache policy ros-jazzy-demo-nodes-cpp 2>/dev/null | sed -n '2,3p'
+not installed
+EXIT: 0
+
+===== pkg ros-jazzy-rviz2 =====
+CMD: dpkg-query -W -f='${Status} ${Version}\n' ros-jazzy-rviz2 2>/dev/null || echo 'not installed'; apt-cache policy ros-jazzy-rviz2 2>/dev/null | sed -n '2,3p'
+not installed
+EXIT: 0
+
+===== pkg python3-colcon-common-extensions =====
+CMD: dpkg-query -W -f='${Status} ${Version}\n' python3-colcon-common-extensions 2>/dev/null || echo 'not installed'; apt-cache policy python3-colcon-common-extensions 2>/dev/null | sed -n '2,3p'
+not installed
+EXIT: 0
+
+===== pkg python3-rosdep =====
+CMD: dpkg-query -W -f='${Status} ${Version}\n' python3-rosdep 2>/dev/null || echo 'not installed'; apt-cache policy python3-rosdep 2>/dev/null | sed -n '2,3p'
+not installed
+EXIT: 0
+
+===== apt sources mentioning ros =====
+CMD: ls -la /etc/apt/sources.list.d/ 2>/dev/null; grep -rHi ros /etc/apt/sources.list.d/ /etc/apt/sources.list 2>/dev/null || echo "no ros apt source"
+total 12
+drwxr-xr-x 2 root root 4096 Feb  9  2026 .
+drwxr-xr-x 8 root root 4096 Feb  9  2026 ..
+-rw-r--r-- 1 root root 2552 Feb  9  2026 ubuntu.sources
+no ros apt source
+EXIT: 0
+
+===== rosdep state =====
+CMD: ls -la /etc/ros/rosdep/sources.list.d/ 2>&1; ls -la ~/.ros/rosdep/ 2>&1
+ls: cannot access '/etc/ros/rosdep/sources.list.d/': No such file or directory
+ls: cannot access '/home/administrator/.ros/rosdep/': No such file or directory
+EXIT: 2
+
+===== sudo -n true =====
+CMD: sudo -n true
+sudo: a password is required
+EXIT: 1
+
+===== display vars =====
+CMD: echo "DISPLAY=${DISPLAY:-unset} WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-unset} XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-unset}"; ls -la /mnt/wslg 2>&1 | head -5
+DISPLAY=:0 WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=/run/user/1000/
+total 56
+drwxrwxrwt  7 root          root            300 Sep 28 19:12 .
+drwxr-xr-x  7 root          root           4096 Mar  1  2026 ..
+drwxrwxrwx  2 root          root             60 Sep 28 19:12 .X11-unix
+srwxrwxrwx  1 administrator administrator     0 Sep 28 19:12 PulseAudioRDPSink
+EXIT: 0
+
+===== ip =====
+CMD: ip -4 addr show 2>/dev/null | grep -E "inet |^[0-9]+:"; echo "--- route ---"; ip route 2>/dev/null | head -5
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    inet 127.0.0.1/8 scope host lo
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1428 qdisc mq state UP group default qlen 1000
+    inet 172.28.211.14/20 brd 172.28.223.255 scope global eth0
+--- route ---
+default via 172.28.208.1 dev eth0 proto kernel 
+172.28.208.0/20 dev eth0 proto kernel scope link src 172.28.211.14 
+EXIT: 0
+
+===== memory =====
+CMD: free -h
+               total        used        free      shared  buff/cache   available
+Mem:            31Gi       2.0Gi        27Gi       4.7Mi       1.9Gi        29Gi
+Swap:          8.0Gi          0B       8.0Gi
+EXIT: 0
+
+===== disk =====
+CMD: df -h / /mnt/d
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sdf       1007G  8.5G  948G   1% /
+D:\             1.9T  340G  1.5T  19% /mnt/d
+EXIT: 0
+
+===== existing workspaces =====
+CMD: ls -ld ~/robotics ~/robotics/vendor ~/robotics/vendor/* 2>&1; echo "--- find ---"; find ~ -maxdepth 4 -type d \( -name "IsaacSim-ros_workspaces*" -o -name "isaac-ros-6.1" -o -name jazzy_ws \) 2>/dev/null; find /mnt/d -maxdepth 2 -type d \( -name "IsaacSim-ros_workspaces*" -o -name "isaac-ros-6.1" -o -name jazzy_ws \) 2>/dev/null; true
+ls: cannot access '/home/administrator/robotics': No such file or directory
+ls: cannot access '/home/administrator/robotics/vendor': No such file or directory
+ls: cannot access '/home/administrator/robotics/vendor/*': No such file or directory
+--- find ---
+EXIT: 0
+
+===== residual ROS/DDS env =====
+CMD: env | grep -E "ROS_|RMW_|FASTRTPS|CYCLONE|DDS" || echo "none in env"
+none in env
+EXIT: 0
+
+===== residual ROS lines in rc files =====
+CMD: grep -nE "ros|RMW|ROS_|FASTRTPS" ~/.bashrc ~/.profile /etc/environment /etc/profile.d/* 2>/dev/null || echo "none in rc files"
+none in rc files
+EXIT: 0
+
+===== existing fastdds xml =====
+CMD: ls -la ~/.ros/*.xml /mnt/d/robosim-assets/network/*.xml 2>&1
+ls: cannot access '/home/administrator/.ros/*.xml': No such file or directory
+ls: cannot access '/mnt/d/robosim-assets/network/*.xml': No such file or directory
+EXIT: 2
+
+===== rviz2 binary =====
+CMD: command -v rviz2 || ls -la /opt/ros/jazzy/bin/rviz2 2>&1 || echo "rviz2 not found"
+ls: cannot access '/opt/ros/jazzy/bin/rviz2': No such file or directory
+rviz2 not found
+EXIT: 0
+
+===== network reachability (github, ros apt) =====
+CMD: for h in github.com packages.ros.org; do if getent hosts "$h" >/dev/null 2>&1; then echo "$h resolves"; else echo "$h does NOT resolve"; fi; done
+github.com resolves
+packages.ros.org resolves
+EXIT: 0
+
+PROBE END: 2026-09-29T19:03:32-07:00
