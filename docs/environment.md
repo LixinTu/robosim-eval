@@ -55,13 +55,14 @@
 
 | 项目 | 实测 |
 | --- | --- |
-| Isaac + Nova Carter 示例场景 | 显存峰值 3754 MiB / 8188(GUI 内显示 3.9 GiB);GPU 利用率 80%;视口 20 FPS;kit 工作集 14.7 GB;仿真实时因子约 0.4 |
+| Isaac + Nova Carter 示例场景 | 显存只有几次点采样,未连续测量:空场景 3124–3128 MiB,Play 后 5 s 3754 MiB / 8188(均为会话输出,未存文件),Nav2 运行时 Isaac 界面显示 3.9 GiB(截图 artifacts/d0d/run-01/rviz-before-goal-2018.png);GPU 利用率 80%;视口 20 FPS;kit 工作集 14.7 GB;仿真实时因子空场景约 0.4、导航时约 0.32 |
 | Windows↔WSL 通信 | Fast DDS,domain 0,UDPv4-only profile;需要防火墙规则 "RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)"(入站/UDP/kit.exe/vEthernet (WSL));Isaac 的 SPDP 多播本来就能到 WSL,缺的是 WSL→Windows 入站 |
-| Isaac 发布的 topic | /clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、前双目 image_raw/camera_info、5 路 IMU;订阅 /cmd_vel(geometry_msgs/Twist);无 2D LaserScan、无 /tf_static |
+| Isaac 发布的 topic | (空场景)/clock 25–26 Hz、/chassis/odom 约 25.8 Hz(一个窗口 13.9 Hz,最长间隔 0.695 s;导航时约 19 Hz)、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、前双目 image_raw/camera_info、5 路 IMU;订阅 /cmd_vel(geometry_msgs/Twist);无 2D LaserScan、无 /tf_static |
 | Nav2(钉住默认参数) | 10 个生命周期节点 active;/scan 3.5 Hz;/map 480×776;amcl 自动初始位姿;RViz 经 WSLg 显示(OpenGL 4.5) |
-| 首次导航 | 目标 (-4.0,-1.0) SUCCEEDED,8.47 s 仿真时间,停稳确认;终点误差:AMCL 独立来源(仿真状态里程计 + USD 出生位姿)0.090 m,AMCL 估计 0.230 m |
+| 首次导航 | 目标 (-4.0,-1.0) SUCCEEDED,8.47 s 仿真时间,停稳确认;停稳确认时刻的终点误差:AMCL 独立来源(理想里程计 + USD 出生位姿)0.091 m,AMCL 估计 0.231 m;validation=pass(artifacts/d0d/run-01/attempt-01/result.json) |
 | 位置来源 | 场景 USD `/World/Nova_Carter_ROS` 出生位姿 translate (-6, -1, 0)、yaw π(= amcl initial_pose);/chassis/odom 由 `isaacsim.core.nodes.IsaacComputeOdometry` 从底盘仿真状态计算,相对 Play 起点(理想里程计);机器人零指令下缓爬约 1 mm/仿真秒,Nav2 启动时 AMCL 初始位姿因此偏 0.324 m(证据:artifacts/d0d/run-01/usd-inspection.txt、attempt-01/result.json) |
-| Nav2 停止 | SIGINT 只发给 ros2 launch 时 13 s 全部退出;组件容器清理阶段 SIGSEGV、rviz2 被 SIGKILL,launch 退出码 1(上游已知问题,无残留) |
+| Nav2 停止 | SIGINT 只发给 ros2 launch 时 10–13 s 全部退出(run-04、run-05);组件容器清理阶段 SIGSEGV,rviz2 以 -9 或 -11 退出,launch 退出码 1(上游已知问题,无残留) |
+| 版本证据 | Isaac VERSION `6.1.0-rc.26+release.49347.2d230af4.gl` 与 ROS 2 扩展版本见 artifacts/d0a/isaac-version.txt(bridge 5.1.4、core 1.11.0 的启动行另见 artifacts/d0c/bridge-check-01-after-launch.txt);Codex 登录状态见 artifacts/d0a/codex-login-status.txt |
 
 ## 门槛 1→2 判定
 

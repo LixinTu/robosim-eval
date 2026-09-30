@@ -1,0 +1,8 @@
+record start 2026-09-29T22:06:46-07:00 attempt=/mnt/d/RoboSim-Eval/artifacts/d0d/run-05-regress/record-test max=60s bag=/home/administrator/robosim_bags/record-test-20260929-220646
+record stop 2026-09-29T22:07:01-07:00
+  bag            session 61389   exit=2
+  odom           session 61398   exit=2
+  amcl_pose      session 61408   exit=2
+  cmd_vel        session 61419   exit=2
+  action_status  session 61439   exit=2
+  tf_map_base    session 61458   exit=0

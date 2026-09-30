@@ -34,13 +34,16 @@ powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\check_i
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_ros_install.sh                    # 安装自检,PASS/FAIL
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/probe_topics.sh <out_dir>                # Isaac 数据是否到达(/clock 等)
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/start_nav2.sh <run_dir>                  # Nav2 + RViz,独立进程组
-wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_nav2_ready.sh <run_dir>            # 生命周期、/scan、/map、action、TF
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_nav2_ready.sh <run_dir>            # 就绪判定:0 READY / 1 NOT READY
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/record_d0.sh <attempt_dir> 330           # bag + 文本流
-wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/send_goal.sh <attempt_dir> X Y YAW       # 地图空闲核对 + 发一个目标
-wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_record.sh <attempt_dir>
-wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/analyze_attempt.sh <attempt_dir> --goal X Y YAW   # result.json + trajectory.csv
-wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh <run_dir>
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/send_goal.sh <attempt_dir> X Y YAW       # 地图空闲核对 + 发一个目标;0 = SUCCEEDED
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_record.sh <attempt_dir>             # 0 = 已停、bag 完整、必需话题有数据
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/analyze_attempt.sh <attempt_dir> --goal X Y YAW --spawn -6.0 -1.0 3.141592653589793   # 0 pass / 10 fail / 11 inconclusive
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh <run_dir>                   # 先核对归属;0 = 无残留
+wsl -d Ubuntu -- python3 -m pytest -q -p no:cacheprovider /mnt/d/RoboSim-Eval/tests              # 分析脚本固定输入测试(不需要仿真)
 ```
+
+每次导航尝试前先在 Isaac 按 ⏹ 再按 ▶ 重置场景,然后尽快启动 Nav2(原因见 docs/setup.md)。
 
 一次性安装(需 sudo 密码,用户在 Ubuntu 终端运行):`bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh`,然后 `setup_workspace.sh`;防火墙规则(管理员):`scripts\windows\allow_wsl_to_isaac_firewall.ps1`。
 
@@ -61,10 +64,10 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh <run_dir>
 
 默认:Claude Code 主实现 → Codex 新会话只读审查 → Claude Code 逐条核实、只修有效项、重跑受影响检查 → Codex 复核修复后的范围。最多两轮。"无发现"不等于验收通过;Codex 不可用时标"待独立审查",不伪造跨模型审查。审查前先提交并冻结,审查期间不改动源码。
 
-只读审查命令(参数按本机 codex-cli 0.157.0 的 `codex exec --help` 核实;已登录;提示词放文件里经 stdin 传入;实际运行记录见 docs/review/):
+只读审查的实际运行方式(codex-cli 0.157.0;内部执行 `codex exec --sandbox read-only -C D:\RoboSim-Eval -o <报告>`,短提示词让 Codex 去读 UTF-8 提示词文件,避免 PowerShell 5.1 管道改写中文;记录真实退出码与是否撞到用量上限):
 
 ```powershell
-Get-Content -Raw <提示词文件> | codex exec --sandbox read-only -C D:\RoboSim-Eval -o <报告文件> -
+powershell -NoProfile -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\run_codex_review.ps1 -Round <轮次>   # 读 docs/review/2026-09-29-d0/codex-prompt-<轮次>.md
 ```
 
 审查材料与报告放在 docs/review/;提示词模板是 Codex-Harness-Pack-ZH(1).md 的"默认:Codex 独立审查提示词"。

@@ -9,9 +9,9 @@
 | 阶段 0 · 唯一计划与入口 | 完成(2026-09-29) | 基线 commit `dbf67ce`(master);分支 `feature/d0-environment`;AGENTS.md / CLAUDE.md / docs/plan.md / docs/harness-sources.md / artifacts/README.md | — |
 | D0a · 环境证据 | 完成(2026-09-29 19:02–19:04) | docs/environment.md;artifacts/d0a/(两侧探测原始输出 + commands.md) | 门槛 1→2 通过;发现:WSL 内无 ROS 2,sudo 需密码 |
 | D0b · ROS 2 Jazzy + 6.1.0 示例工作区 | 完成(2026-09-29 19:16–19:30) | artifacts/d0b/commands.md(安装日志、check-ros-install、talker/listener ×2、rviz2 测试、setup-workspace.log) | 门槛 2→3 通过。工作区 `~/robotics/vendor/isaac-ros-6.1`,HEAD a9e8471…;安装脚本首跑退出码 1 是校验步骤的 `set -u` 缺陷(已修),安装本身成功 |
-| D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 完成(2026-09-29 19:35–20:12) | artifacts/d0c/commands.md;probe-04-playing/(/clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、tf2_echo odom→base_link);clock-continuity-01;clock-pause-test-02(暂停 29 s 时钟停、恢复后继续);bridge-check-01/02;kit-udp-endpoints-01;diag-01 | 门槛 3→4 通过。排障:Windows 防火墙阻断 WSL→kit.exe 入站(用户以管理员加一条限定规则后解决);首次 Play 后 7 s 时间线被停止(重新 Play 解决)。发现:示例场景不发布 2D 雷达扫描(params 的局部代价地图两路来源无数据,D0d 记偏差);USD 动画时间线每 ~41 s 循环但仿真时钟不受影响;显存峰值 3754 MiB |
-| D0d · 一次真实 A→B | 完成(2026-09-29 20:13–20:52) | artifacts/d0d/commands.md;run-01/(nav2-launch.log、ready-check-01、map-overview、rviz 截图、usd-inspection);run-01/attempt-01/(goal-202437.txt、result.json、trajectory.csv、bag-info、文本流);run-02/03/04-stoptest(停止路径验证) | 目标 map (-4.0,-1.0,yaw 0) 由 CLI action client 发送:SUCCEEDED、error_code 0、0 次恢复、8.47 s 仿真时间、停稳确认;**AMCL 独立来源**(仿真状态里程计 + USD 出生位姿)终点误差 0.090 m,AMCL 估计 0.230 m → task_outcome=reached。发现见 §9 |
-| D0 交付 + 独立审查 | 进行中 | docs/setup.md、docs/review/(待生成) | Codex 0.157.0 已登录;`codex exec --sandbox read-only` 可用 |
+| D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 完成(2026-09-29 19:35–20:12) | artifacts/d0c/commands.md;probe-04-playing/(/clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、tf2_echo odom→base_link);clock-continuity-01;clock-pause-test-02(暂停 29 s 时钟停、恢复后继续);bridge-check-01/02;kit-udp-endpoints-01;diag-01 | 门槛 3→4 通过。排障:Windows 防火墙阻断 WSL→kit.exe 入站(用户以管理员加一条限定规则后解决);首次 Play 后 7 s 时间线被停止(重新 Play 解决)。发现:示例场景不发布 2D 雷达扫描(params 的局部代价地图两路来源无数据,D0d 记偏差);USD 动画时间线每 ~41 s 循环但仿真时钟不受影响;显存为几次点采样(空场景 3124–3128 MiB、Play 后 5 s 3754 MiB、Nav2 运行时 Isaac 界面显示 3.9 GiB),未做连续测量 |
+| D0d · 一次真实 A→B | 完成(2026-09-29 20:13–20:52) | artifacts/d0d/commands.md;run-01/(nav2-launch.log、ready-check-01、map-overview、rviz 截图、usd-inspection);run-01/attempt-01/(goal-202437.txt、result.json、trajectory.csv、bag-info、文本流);run-02/03/04-stoptest(停止路径验证) | 目标 map (-4.0,-1.0,yaw 0) 由 CLI action client 发送:SUCCEEDED、error_code 0、0 次恢复、8.47 s 仿真时间、停稳确认;**AMCL 独立来源**(理想里程计 + USD 出生位姿)在停稳确认时刻误差 0.091 m,AMCL 估计 0.231 m → validation=pass(内部预审后用新分析脚本重算)。发现见 §9 |
+| D0 交付 + 独立审查 | 进行中:**待独立审查** | docs/setup.md;docs/review/2026-09-29-d0-handoff.md;docs/review/2026-09-29-d0/REVIEW.md | Codex 第 1 轮因账户用量上限中止、无意见(额度提示 2026-09-30 00:58 后可重试);Claude 内部预审第 2 次完成(38 条,确认 35 条),有效项已修复并回归,见 REVIEW.md |
 | D1 doctor / D2 单次运行 / D3 判定 / D4 批量复跑 / D5 作品交付 | 未开始 | — | D0 独立审查结束后按序进行;下一项是 D1 的第一个小验收(见 §11) |
 
 **当前任务(D0 交付):** 冻结审查快照 → Codex 独立只读审查(`codex exec --sandbox read-only`)与 Claude 内部预审并行 → 逐条核实、修复有效项、重跑受影响检查 → 必要时第二轮复核 → 最终交付说明与用户三步验收。
@@ -41,7 +41,7 @@
 
 ## 4. 执行机制(贯穿各阶段)
 
-- 工具调用最多 10 分钟且无 tty:apt、rosdep、clone、colcon 一律后台作业(`setsid nohup bash -l <脚本> < /dev/null > <日志> 2>&1; echo $? > <步骤>.exit &`),短查询轮询 `.exit`;证据表从 `.exit` 读退出码。
+- 工具调用最多 10 分钟且无 tty:apt、rosdep、clone、colcon 一律后台作业(`setsid nohup bash -c 'bash -l <脚本>; echo $? > <步骤>.exit' < /dev/null > <日志> 2>&1 &`;注意整条命令都要放进后台,旧写法只把 echo 放进了后台),短查询轮询 `.exit`;证据表从 `.exit` 读退出码。
 - 所有 sudo 一律 `sudo -n`;若 `sudo -n true` 失败,只给用户一个合并命令块(apt 源 + 全部包 + rosdep init),阶段 2 标"等待用户"。
 - WSL 命令从 PowerShell 发出,或以脚本文件方式 `bash -l /mnt/d/RoboSim-Eval/scripts/wsl/<脚本>.sh` 运行,避免 Git Bash 的 MSYS 路径改写;.ps1 用 `powershell -ExecutionPolicy Bypass -File` 运行。
 - 用户回合检查点:需要 GUI 的步骤(关闭/重启 Isaac、Load Sample Scene、Play、Pause/Resume、2D Pose Estimate、Nav2 Goal)给出操作与"完成后报告什么",然后结束回合等待;不假装已点过。Windows 侧改动合并成一次重启,并在请用户重启前做完所有无 GUI 的验证。
@@ -52,7 +52,7 @@
 
 1. 已覆盖:计划文档 v2.0 已是规格、验收表和状态合同;Apu 的证据目录与审查门只借方法。
 2. 真实缺口:无 Git 基线、无入口文件、无已验证的启动顺序、无证据格式。
-3. 补的机制与验证方式:AGENTS.md / CLAUDE.md / docs/plan.md(阶段 5 前用一次只读 `codex exec` 让 Codex 列出它加载的说明来源与当前任务);commands.md 格式(故意记录一条失败命令,确认非零退出码被如实记下);审查交接(第一轮真实跑通)。
+3. 补的机制与验证方式:AGENTS.md / CLAUDE.md / docs/plan.md(让 Codex 列出它加载的说明来源与当前任务:已并入审查提示词第 0 步,第 1 轮中止前未输出,**尚未验证**);commands.md 格式(原计划故意记录一条失败命令;实际记录了多条真实失败及其非零退出码,如 `sudo -n true` 1、安装脚本 1、probe 1、stop_nav2 5,另有分析脚本的固定输入测试与改坏检查,见 REVIEW.md);审查交接(第 1 轮因额度中止,**待重跑**)。
 4. 暂缓及触发条件:R09 Codex 插件(文件交接 + codex exec 够用;两次交接丢材料再考虑)、R12/R13 规格工具(计划文档已是规格)、R14/R06/C07 Skills/Hooks/CI(同一检查漏两次再上)、R15/R16/R18 多任务调度(D1–D5 出现可并行任务再考虑)、R17 BMAD(单人工具)、C10/C11(无需求)、Obsidian 绑定(见决定记录)。
 
 ## 6. 阶段
@@ -60,7 +60,7 @@
 ### 阶段 0 · 唯一计划与入口
 - [x] `git init`;.gitignore / .gitattributes;基线提交(三份文档原样)
 - [x] 分支 `feature/d0-environment`
-- [ ] AGENTS.md、CLAUDE.md、docs/plan.md、docs/harness-sources.md、artifacts/README.md、只读探测脚本;提交
+- [x] AGENTS.md、CLAUDE.md、docs/plan.md、docs/harness-sources.md、artifacts/README.md、只读探测脚本;提交(c4fa3d8)
 - 资料阅读不阻塞探测:S1/S2/S6 在阶段 2 前、S3/S4/S7 在阶段 3 前、C02/C05/C08/C12 在阶段 5 前由主会话读全文;其余 R/C 只读入口页;台账区分 全文 / 摘录 / 仅入口页 / 不可访问。
 
 ### 阶段 1 · D0a 环境证据(只读,不装任何东西,不需要用户)
@@ -107,34 +107,43 @@
 - [x] D0b:包可发现、构建成功、launch 参数可查询;命令与退出码。→ artifacts/d0b/commands.md
 - [x] D0c:/clock 持续推进;里程计、TF、激光有样本和频率;暂停可识别。→ artifacts/d0c/probe-04-playing/、clock-pause-test-02.txt
 - [x] D0d:Nav2 接受并完成目标,轨迹显示移动,到达且停稳;原始证据保留。→ artifacts/d0d/run-01/attempt-01/result.json
-- [ ] B7 六项最低交付:环境与依赖版本记录 ✔ / 已验证启动顺序 ✔(docs/setup.md)/ 一次真实 A→B 的记录 ✔ / 最小 diff 说明 ✔(审查包)/ 未验证清单 ✔(§9)/ 独立审查材料(进行中)
+- [ ] B7 六项最低交付:环境与依赖版本记录 ✔ / 已验证启动顺序 ✔(docs/setup.md)/ 一次真实 A→B 的记录 ✔ / 最小 diff 说明 ✔(审查包)/ 未验证清单 ✔(§9)/ 独立审查材料 ✔ 但**独立审查尚未完成**(Codex 额度)
 - [ ] 用户三步验收:新终端启动看到地图与实时数据;发目标看到达并打开记录核对;暂停看数据停、恢复看数据回来。(待用户)
 
 ## 8. 偏差记录
 - fastdds.xml 路径:仓库内 `configs/network/` 而非 `D:\robosim-assets\network`(见决定记录)。
-- 工作分支:D0 在 `feature/d0-environment`,master 只放基线;审查范围 = `master..HEAD` + 未跟踪文件。
+- 工作分支:D0 在 `feature/d0-environment`,master 只放基线;审查范围以 docs/review/2026-09-29-d0-handoff.md §1 写明的提交为准。
 - Windows 启动脚本将**不**预设 ROS_DISTRO(计划文档 B4 块预设了它):本机 `isaac-sim.bat` 自动调用 `setup_ros_env.bat`,该脚本只在 ROS_DISTRO 未设时才把自带 jazzy 库加入 PATH 与 AMENT_PREFIX_PATH;预设会跳过这一步。脚本只预设 RMW_IMPLEMENTATION=rmw_fastrtps_cpp、ROS_DOMAIN_ID、FASTRTPS_DEFAULT_PROFILES_FILE,并在启动后用 kit 日志核对实际生效值。
 - 阶段 2 安装省略了 ROS 文档建议的整体 `apt upgrade`(项目规则:不做无关系统升级);若 apt 因依赖被 hold 而失败,再用 `--with-upgrade` 重跑并记录。
 - S6(docs.ros.org)被反爬页拦截,改读计划文档允许的官方托管镜像 repo.test.ros2.org;安装脚本的命令逐条来自该镜像。
 - Nav2 用钉住版本的默认参数运行;示例场景不发布 /front_2d_lidar/scan 与 /back_2d_lidar/scan,局部代价地图这两路观测源无数据。D0 首次导航未因此受阻,所以没有改参数;D2 起若要消除,把 params 复制到 configs/nav2/ 并把局部代价地图观测源改为 /scan,用 `params_file:=` 引用。
 - 到达核对使用"仿真状态里程计 + USD 出生位姿"作为 AMCL 独立来源(计划文档 A5 要求"用独立位置来源核对"),它不是单独的真值 topic,前提写在 result.json 的 notes 里。
-- 首次导航目标由 CLI action client 发送(为拿到原始 result 与 error_code),未用 RViz Nav2 Goal;RViz 发目标的路径留给用户验收第 2 步。
+- 首次导航目标由 CLI action client 发送(为拿到原始 result 与 error_code),未用 RViz Nav2 Goal。RViz 路径没有目标转录,分析脚本对它只能给 inconclusive,所以用户验收也用 send_goal.sh。
+- 未执行计划文档 B6 第 3 步的 2D Pose Estimate:用户只做了目视贴合核对,AMCL 用参数里的出生点自动初始化。事后交叉核对显示当时 AMCL 初始位姿偏 0.324 m(机器人已缓爬离开出生点),目视没有发现;选目标时的"机器人位置 (-6.14, -1.00)"也是 AMCL 估计。到达判定不依赖 AMCL,所以结论不受影响;以后每次尝试前先重置场景并尽快启动 Nav2,或在 RViz 按真实位置做 2D Pose Estimate。
+- 到达判定时刻:从"记录结束时"改为"停稳确认时刻"(内部预审 A6),attempt-01 的独立来源误差因此从 0.090 m 变为 0.091 m。
 
 ## 9. 发现、已知问题与未验证清单
 **发现(影响后续交付):**
 - Nav2 启动时 AMCL 初始位姿偏差 0.324 m:机器人在零指令下缓慢前爬(Play 后 505 s 仿真时间内 0.56 m),而 amcl `set_initial_pose` 固定用出生点。转身时 AMCL 自行重定位,结束时仍偏 0.160 m。→ D2/D4 每次运行前必须重置场景并尽快启动,或按实际位姿设置初始定位。
 - /chassis/odom 由 `IsaacComputeOdometry` 计算(仿真底盘状态,相对 Play 起点,无轮速/噪声模型)= 理想里程计。它适合做评测侧的位置核对,但不能证明真实定位鲁棒性(计划文档 A5)。
-- 仿真实时因子约 0.4;USD 动画时间线每 ~41 s 循环一次(一帧 dt=0 的差速控制器警告),仿真时钟不受影响。
+- 仿真实时因子:空场景约 0.38–0.42,Nav2 运行并导航时约 0.32(attempt-01:8.47 s 仿真 / 25.61 s 现实;bag 中 15.03 s 仿真 / 47.72 s 现实)。按 0.32 计,120 s 仿真时间约需 375 s 现实时间,会先触发 300 s 现实上限;D2 设计超时时要按实测换算。
+- 话题频率随实时因子变化:/chassis/odom 每仿真秒约 60 条,空场景约 26 Hz,导航时约 19 Hz;probe-04 中有一个窗口只有 13.9 Hz、最长间隔 0.695 s;attempt-01 中 /clock 与 odom 最长间隔 0.92 s,AMCL 的 map→odom 最长间隔 1.86 s(接近 2 s 断流门槛)。D1 的断流门槛要按各话题实测周期设。
+- 零指令缓爬:按位置增量约 1.1 mm/仿真秒(0.045 m @ 40.3 s、0.378 m @ 340.3 s、0.561 m @ 505.5 s);odom twist 读数只有约 0.6 mm/s,偏低约 40%。
+- USD 动画时间线每 ~41 s 循环一次(一帧 dt=0 的差速控制器警告),仿真时钟不受影响。
 - 首次 Play 后 7 s 时间线曾被停止(topic 在、无数据),重新 Play 恢复。
 
 **已知问题:**
-- Nav2 停止时组件容器在清理阶段 SIGSEGV("Magick: abort due to signal 11",exit -6),rviz2 在 SIGINT/SIGTERM 超时后被 launch SIGKILL,launch 退出码 1;run-01 与 run-04 两次复现,不影响导航与记录,已无残留进程。
+- Nav2 停止时组件容器在清理阶段 SIGSEGV("Magick: abort due to signal 11",exit -6):run-01、run-04、run-05 三次都出现。rviz2 每次退出方式不同:run-01 为 -6,run-04 为 -9(launch 在 SIGINT/SIGTERM 超时后 SIGKILL),run-05 为 -11。launch 退出码 1 只在 run-04、run-05 记录到;run-01 用的是旧脚本,没有记录。三次都没有残留进程,不影响导航与记录。
+- attempt-01 是用修复前的记录与停止脚本采集的:没有记录器退出码文件;4 个文本流比 bag 多跑了约 3 分钟,最后手动按会话停止。bag 本身完整,分析只用 bag。
 - RViz 在 WSLg 下启动时报一次 GLSL 链接错误(`indexed_8bit_image`),地图与激光照常显示。
 - 首次导航的反馈转录 goal-202437.txt 为 2.7 MB(CLI 高频反馈);以后可只保存摘要。
 
 **未验证(D1–D4 范围或待用户):**
 - 碰撞/接触(safety_status=unknown)、单独的仿真真值 topic、自动重置、批量运行、取消与超时处理、doctor/runner/evaluator/report 均未实现。
 - RViz Nav2 Goal 发目标路径、`record_d0.sh` 以外的记录方式、Heightmap 回退路线未执行。
+- "重置场景(⏹ 再 ▶)后机器人回到出生点、里程计归零"没有专门验证过;用户验收时首次执行。
+- 修复后的记录、停止、就绪脚本在 run-05-regress 中做了正向与反向回归,但还没有用于一次真实导航尝试;用户验收的那次尝试是修复后脚本的第一次完整使用。
+- Codex 独立审查与入口发现验证尚未完成(额度)。
 - 只做了一次导航尝试;不据此声称任何导航性能。
 
 ## 10. 风险
@@ -146,5 +155,6 @@
 
 ## 11. 下一项:D1 诊断工具的第一个小验收(D0 审查结束后开始)
 - 用户操作:仿真在 Play 时运行 doctor;然后暂停仿真再运行一次。
+- 门槛要按实测设:各话题周期随实时因子变(见 §9),单一的 "5 个周期" 在导航负载下会误报。
 - 预期:正常时报告 /clock、/chassis/odom、/tf、/front_3d_lidar/lidar_points 的实际频率与新鲜度并退出 0;暂停时在有限时间内(候选:max(5 个正常周期, 2 s))判定时钟停止并非零退出。
 - 验证:固定输入测试(不需要仿真)+ 真实 Isaac 集成各一次,分别记录;复用 probe_topics.sh / watch_clock.sh 的经验,不另起框架。

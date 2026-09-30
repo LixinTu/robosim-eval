@@ -1,0 +1,9 @@
+send_goal: non-numeric yaw                                 expected 2        got 2    PASS
+analyze: --goal differs from the sent goal                 expected 2        got 2    PASS
+analyze: result.json untouched on mismatch (0 = same hash) expected 0        got 0    PASS
+stop_nav2: refuses a session it cannot confirm             expected 5        got 5    PASS
+stop_nav2: foreign session still alive (0 = alive)         expected 0        got 0    PASS
+stop_record: bag directory missing                         expected 5        got 5    PASS
+map_overview: malformed candidate point                    expected 1 2      got 1    PASS
+check_nav2_ready: Nav2 not running -> NOT READY            expected 1        got 1    PASS
+setup_workspace: idempotent re-run (exit file: 0)          expected 0        got 0    PASS

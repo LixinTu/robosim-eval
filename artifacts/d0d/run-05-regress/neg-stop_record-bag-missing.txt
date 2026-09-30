@@ -1,0 +1,14 @@
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=base-only overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+recorder exit codes (124 = time cap reached; ros2 topic echo returns 2 = signal.SIGINT when stopped):
+FAIL(5): bag directory not found (/home/nonexistent/bag)
+/mnt/d/RoboSim-Eval/scripts/wsl/stop_record.sh: line 64: /mnt/d/RoboSim-Eval/artifacts/d0d/run-05-regress/neg-bag-missing/odom.txt: No such file or directory
+odom                0 lines
+/mnt/d/RoboSim-Eval/scripts/wsl/stop_record.sh: line 64: /mnt/d/RoboSim-Eval/artifacts/d0d/run-05-regress/neg-bag-missing/amcl_pose.txt: No such file or directory
+amcl_pose           0 lines
+/mnt/d/RoboSim-Eval/scripts/wsl/stop_record.sh: line 64: /mnt/d/RoboSim-Eval/artifacts/d0d/run-05-regress/neg-bag-missing/cmd_vel.txt: No such file or directory
+cmd_vel             0 lines
+/mnt/d/RoboSim-Eval/scripts/wsl/stop_record.sh: line 64: /mnt/d/RoboSim-Eval/artifacts/d0d/run-05-regress/neg-bag-missing/action_status.txt: No such file or directory
+action_status       0 lines
+/mnt/d/RoboSim-Eval/scripts/wsl/stop_record.sh: line 64: /mnt/d/RoboSim-Eval/artifacts/d0d/run-05-regress/neg-bag-missing/tf_map_base.txt: No such file or directory
+tf_map_base         0 lines
+stop_record result: exit 5

@@ -1,0 +1,2 @@
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=base-only overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+ERROR: --goal [-3.0, -1.0, 0.0] differs from the goal sent in goal-202437.txt: [-4.0, -1.0, 0.0]

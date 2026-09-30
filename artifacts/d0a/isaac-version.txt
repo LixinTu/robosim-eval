@@ -1,0 +1,13 @@
+﻿=== Isaac Sim version and ROS 2 extension versions (read-only) 2026-09-29 22:04:13 ===
+--- D:\isaac-sim-standalone-6.1.0-windows-x86_64\VERSION ---
+6.1.0-rc.26+release.49347.2d230af4.gl
+--- ros2 extensions registered (kit log of the first GUI session, kit_20260929_162201.log) ---
+[ext: isaacsim.ros2.bridge-5.1.4] registered (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.bridge)
+[ext: isaacsim.ros2.control-0.1.6] registered (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.control)
+[ext: isaacsim.ros2.core-1.11.0] registered (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.core)
+[ext: isaacsim.ros2.examples-1.2.9] registered (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.examples)
+[ext: isaacsim.ros2.nodes-1.22.7] registered (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.nodes)
+[ext: isaacsim.ros2.sim_control-1.6.8] registered (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.sim_control)
+[ext: isaacsim.ros2.tf_viewer-2.3.8] registered (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.tf_viewer)
+[ext: isaacsim.ros2.ui-1.9.2] registered (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.ui)
+[ext: isaacsim.ros2.urdf-2.3.9] registered (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.urdf)
