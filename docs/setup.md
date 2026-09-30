@@ -115,6 +115,17 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_batch.sh      # nor
 
 每次尝试都先复位并用真值核对;停车没确认会中止后续批次。结果在 `artifacts/d4/batch-<时间>/`:`batch.json`、`runs/<每次运行>/`、`runs/report.html`(静态页面,双击打开)、`runs/summary.json`。报告只从已保存的记录生成,可单独重建:`python3 -m robosim_eval.report <runs 目录>`。页头列出批次里出现的每个 commit 及其运行次数;"距目标"是真值算的最终距离(不可达情形也有值,不是到达误差);"Nav2 恢复"列能看出开头卡住(见 artifacts/d4/commands.md)。一次批量 9 次约 27 分钟墙钟。
 
+## 声明的参数改动与演示(D5)
+
+情形可以声明 Nav2 参数改动,例如 `normal_slow` 的 `nav2_params: {controller_server.ros__parameters.FollowPath.max_vel_x: 0.4}`。运行器从 NVIDIA 原始参数文件派生 `<运行目录>/nav2_params.yaml`,只改这一行;经 `params_file:=` 启动 Nav2 后,从运行中的节点读回实际值,不符就判出错(退出 30),不发目标。对比批量:
+
+```powershell
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_batch.sh --scenarios normal,normal_slow --repeats 2 --out /mnt/d/RoboSim-Eval/artifacts/d5
+wsl -d Ubuntu -- python3 /mnt/d/RoboSim-Eval/artifacts/d5/compare_speed.py /mnt/d/RoboSim-Eval/artifacts/d5/<批次目录>/runs
+```
+
+要模拟"Isaac 刚启动、场景未加载",不必重启 Isaac:`sim.sh stop`,再 `sim.sh load D:/RoboSim-Eval/tests/assets/empty_stage.usda`(一个空的 /World)。下一次运行会自己加载仓库场景。三个演示的记录见 `docs/demo.md`。
+
 ## 关闭顺序
 
 1. `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh /mnt/d/RoboSim-Eval/artifacts/d0d/<run_dir>`:先核对归属(开机 ID、包装进程启动时刻、命令行都要与启动时记录的一致,否则拒绝并以 5 退出),然后 SIGINT 只发给 `ros2 launch`,最多等 45 s,必要时对本会话升级 SIGTERM、SIGKILL;launch 真实退出码写在 `<run_dir>/nav2.exit`;最后用不走 daemon 的 fresh discovery 核对没有残留 Nav2 节点。退出 0 = 无残留;1 = 有残留;3 = 残留检查本身失败。实测 10–13 s 结束;launch 退出码为 1,因为 Nav2 组件容器在清理阶段 SIGSEGV、rviz2 以 -9 或 -11 退出(上游已知问题,见 docs/plan.md §9)。

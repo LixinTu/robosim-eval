@@ -16,9 +16,9 @@
 | D2 单次运行器 | 实现与验证完成(2026-09-30 00:1x–00:47),**待独立审查**与用户验收 | 分支 `feature/d2-runner`;`robosim_eval/runner*.py`、`sim_adapter.py`、`run_io.py`;`scripts/wsl/run_scenario.sh`、`sim.sh`;证据 `artifacts/d2/commands.md` | 固定输入测试 77 passed;运行器假节点测试 8/8;真实 Isaac:正常 A→B reached(真值误差 0.264 m),导航中 SIGINT → 取消、停车、收尾(interrupted);Isaac 由 sim_control 复位、加载场景、读真值,不再需要 GUI 点击 |
 | D3 判定与失败处理 | 实现与验证完成(2026-09-30 00:5x–01:29),**待独立审查**与用户验收 | 分支 `feature/d3-verdicts`;`robosim_eval/evaluator.py`、`contacts.py`、`kit/contact_monitor.py`;证据 `artifacts/d3/commands.md`;缺陷记录 `docs/defect-record.md` | 固定输入测试 109 passed;判定模块改坏检查 8/8(含 4 种必做的坏数据);真实 Isaac:正常、绕行、不可达、取消、超时 pass,断流正确判 inconclusive,碰撞抓到轮子与矮箱子的接触判 fail;修复一个运行器缺陷(复位前 odom 残留) |
 | D4 批量复跑 | 实现与验证完成(2026-09-30 01:30–02:0x),**待独立审查**与用户验收 | 分支 `feature/d4-batch`;`robosim_eval/batch.py`、`report.py`、`scripts/wsl/run_batch.sh`;证据 `artifacts/d4/commands.md`、`artifacts/d4/batch-20260930-013010/runs/report.html` | 9 次全部留档、全部 pass(normal 3/3 到达、bypass 3/3 到达且未碰箱子、unreachable 3/3 判不可达);每次复位后真值距出生点 0.07 mm;报告改进 1 处(列出全部 commit、恢复次数列);"开头卡住"查到大部分机制(见 §9) |
-| D5 作品交付 | 未开始 | — | — |
+| D5 作品交付 | 实现与演示完成(2026-09-30 01:3x–02:3x),**待独立审查**与用户验收 | 分支 `feature/d5-demo`;`README.md`、`docs/demo.md`、`robosim_eval/nav2_params.py`;证据 `artifacts/d5/commands.md` | README 按新终端逐字执行通过;三个演示:正常导航并打开记录(pass)、取消案例及解释(pass)、参数改动 max_vel_x 0.8→0.4 的事先预测与复跑对比(峰值速度、平均速度、行驶段、到达误差符合预测;路程与最大角速度两条预测不成立,见 docs/demo.md);修复缺陷 3(场景未加载时接触监视装不上)与缺陷 4(接受目标时的仿真时间是旧的);固定输入测试 128 passed,运行器假节点测试 10/10 |
 
-**当前任务:** D0 交付收尾(Codex 分片审查排队中 → 逐条核实、修复有效项、重跑受影响检查 → 必要时第二轮复核 → 用户三步验收)与 D1 诊断工具并行。D0 的修复在 `feature/d0-environment` 上做,再合进 `feature/d1-doctor`。
+**当前任务:** D0–D5 都已实现并在真实 Isaac 上验证,剩下审查与验收:Codex 分片审查排队中(2026-09-30 03:38 起)→ 逐条核实、修复有效项、重跑受影响检查 → 用户验收 → 本地按顺序合并分支(d0 → d1 → … → d5 → master,不推送)。分支是叠加的:每个交付分支从上一个分出;某个交付的审查修复在它自己的分支上做,再向后合并。
 
 **D0b 结果(2026-09-29 19:16–19:30):** ROS 2 Jazzy desktop + Nav2 + 闭包依赖装好(用户执行);WSL 内 talker/listener 默认与加载 fastdds.xml 均通;rviz2 在 WSLg 下存活 20 s(OpenGL 4.5);工作区 `~/robotics/vendor/isaac-ros-6.1` @ a9e8471…,`colcon build --packages-up-to carter_navigation` 成功;launch 参数 map / params_file / use_sim_time 可查询。
 
@@ -36,13 +36,17 @@
 | 2026-09-29 | 独立审查用 `codex exec`(新进程、只读),与 Apu 项目一致 | Claude(默认做法,用户未反对) | harness pack 默认分工 |
 | 2026-09-29 | 三份文档保留带 "(1)" 的原名,不改名 | Claude | 不擅自改用户文件;入口写真实路径 |
 | 2026-09-29 | 本轮不绑定 Obsidian 知识库 | Claude | 避免出现第四份计划;触发条件 = D1 之后需要跨会话知识库 |
+| 2026-09-30 | 打开 Isaac 的 Python 执行服务(只监听 127.0.0.1、需要令牌),用于在 Isaac 内做接触检测 | 用户("要打开") | 计划 A5 要求碰撞判定;自动模式分类器曾拦下这项改动,用户明确同意后才做 |
+| 2026-09-30 | 不等审查,D1–D5 连续做完;每个交付一个叠加分支,各自一份审查材料进队列 | 用户("先做D1吧 等审查太拖慢效率了""然后做完");分支与排队做法由 Claude 定 | Codex 额度窗口有限;各分片用 `git show <冻结提交>:<路径>` 读被审版本,不受后续提交影响 |
+| 2026-09-30 | D5 的参数改动选 DWB `max_vel_x` 0.8→0.4,并新增情形 `normal_slow`;参数文件在运行目录派生,不复制进仓库 | Claude | 预测可证伪(峰值速度、行驶段时长);不修改 NVIDIA 文件;运行器从运行中的节点读回核对 |
+| 2026-09-30 | 批量运行期间的开发改在独立的 git worktree 里做 | Claude | 批量的每次运行都会记录 git 是否有未提交改动;不能让运行器正在用的文件在批量中途变化 |
 | 2026-09-29 | D0 的 Codex 审查拆成 4 个分片排队(`run_codex_review_queue.ps1`);等待期间先做 D1,分支 `feature/d1-doctor` 从 `feature/d0-environment` 分出,D0 的修复之后合进来 | 用户要求加速("赶紧审查下 然后做完");具体做法由 Claude 定 | Codex 额度每个窗口约 10 万 token,两次整轮审查都没读完;分片提示词一律用 `git show 19203e0:<路径>` 读被审版本,不受后续提交影响 |
 
 ## 3. 本轮范围
 
-做:D0 剩余部分(D0a→D0d)+ 记录它所需的最小 harness + D0 交付 + Codex 独立审查交接。
+做:D0 剩余部分(D0a→D0d)+ 记录它所需的最小 harness + D0 交付 + Codex 独立审查交接。2026-09-30 起按用户要求扩到 D1–D5(见 §2 决定记录),每个交付仍是"实现 → 真实验证 → 独立审查材料"。
 
-不做:D1–D5 及 doctor/runner/recorder/evaluator/report 模块、sim_adapter、网页、persona/LLM/world model、重装 Isaac 或 Ubuntu、换驱动、Pixi/Zenoh 原生路线、mirrored networking、付费服务、push/deploy、删改用户文件、停 Docker、杀用户的 Isaac GUI、`wsl --shutdown`(改变 WSL IP 并影响 docker-desktop;确需时先征得同意)。
+不做:网页、persona/LLM/world model、重装 Isaac 或 Ubuntu、换驱动、Pixi/Zenoh 原生路线、mirrored networking、付费服务、push/deploy、删改用户文件、停 Docker、杀用户的 Isaac GUI、`wsl --shutdown`(改变 WSL IP 并影响 docker-desktop;确需时先征得同意)。
 
 ## 4. 执行机制(贯穿各阶段)
 
@@ -114,6 +118,12 @@
 - [x] D0d:Nav2 接受并完成目标,轨迹显示移动,到达且停稳;原始证据保留。→ artifacts/d0d/run-01/attempt-01/result.json
 - [ ] B7 六项最低交付:环境与依赖版本记录 ✔ / 已验证启动顺序 ✔(docs/setup.md)/ 一次真实 A→B 的记录 ✔ / 最小 diff 说明 ✔(审查包)/ 未验证清单 ✔(§9)/ 独立审查材料 ✔ 但**独立审查尚未完成**(Codex 额度)
 - [ ] 用户三步验收:新终端启动看到地图与实时数据;发目标看到达并打开记录核对;暂停看数据停、恢复看数据回来。(待用户)
+- [x] D1:正常时报告真实数据;暂停或关闭后在有限时间内非零退出。→ artifacts/d1/commands.md
+- [x] D2:配置运行一次 A→B,保存接受、反馈、结果与轨迹;中断也收尾。→ artifacts/d2/commands.md
+- [x] D3:到达、超时、碰撞、取消分开判定;停止可验证;真实缺陷的复现、修复、同条件复跑。→ artifacts/d3/commands.md、docs/defect-record.md
+- [x] D4:三种情形各 3 次,每次复位,9 次全部留档与汇总。→ artifacts/d4/commands.md、report.html
+- [x] D5:README 从新终端启动;三个真实演示;来源与 AI 参与写明。→ README.md、docs/demo.md、artifacts/d5/commands.md
+- [ ] D1–D5 独立审查(排队中)与用户验收
 
 ## 8. 偏差记录
 - fastdds.xml 路径:仓库内 `configs/network/` 而非 `D:\robosim-assets\network`(见决定记录)。
@@ -143,9 +153,12 @@
 - D2:AMCL 的 map→odom 在导航中两次出现 2.3–2.5 s 的空档(D0 为 1.86 s),超过 2 s 断流门槛;D3 起把它归为"仅作参考"的数据流,判定必需的是 /clock、odom 与 Isaac 侧 TF。
 - D2:Nav2 从启动到就绪 13.3–13.6 s(远低于 60 s 预算);正常通路(6 m,先转 180°)约 15–18 s 仿真时间。
 - D3:Isaac 内的 PhysX 接触报告经 Python 执行服务取数可用;复位后机器人只与两个地面碰撞平面接触,由此确定地面过滤规则(artifacts/d3/contact-fetch-after-reset.json)。
-- D3:"开头卡住"间歇出现(开接触监视的 3 次正常路线中 2 次),发目标后约 38 s 仿真时间不动,Nav2 恢复后到达;/scan 与正常时相同,机制未查明,见 artifacts/d3/commands.md。
+- D3:"开头卡住"间歇出现(开接触监视的 3 次正常路线中 2 次),发目标后约 37 s 仿真时间不动(原记约 38 s,偏差来自缺陷 4),Nav2 恢复后到达;/scan 与正常时相同,机制未查明,见 artifacts/d3/commands.md。
 - D3:不可达目标 (-10.05, -1.0) 实测 Nav2 返回 ABORTED、error_code 208,恢复 15 次(离线预测 4 次)。
 - D4:9 次批量全部 pass,sim_control 复位的真值误差每次都是 0.07 mm(复位是确定的)。
+- D5:声明的 Nav2 参数改动可以从运行中的节点读回核对(normal_slow 两次都是 0.4)。限速 0.4 m/s 后峰值线速度 0.41、行驶段约 1.55 倍;里程计的角速度在 0.8 m/s 时会超过 max_vel_theta 0.7(实测 1.01–1.02 rad/s)。
+- D5:一次自发的 Isaac 卡顿(三路数据同时停 2.19 s 墙钟,仿真时间只前进一步),评测按规则判 inconclusive。
+- D5:normal_slow 两次开头各有一次 NavFn 规划失败("Failed to create a plan from potential when a legal potential was found"),触发一次恢复。
 - D4:"开头卡住"在本批 6 次可到达的运行中出现 5 次。机器人开头正好背对全局路径;DWB 常选最小转向档 +0.0368 rad/s,直接实验证实机器人对它基本不转;DWB 为何选它未查明。见 artifacts/d4/commands.md。平均用时因此主要反映卡住,不是导航速度。
 
 **已知问题:**
@@ -154,13 +167,13 @@
 - RViz 在 WSLg 下启动时报一次 GLSL 链接错误(`indexed_8bit_image`),地图与激光照常显示。
 - 首次导航的反馈转录 goal-202437.txt 为 2.7 MB(CLI 高频反馈);以后可只保存摘要。
 
-**未验证(D1–D4 范围或待用户):**
-- 碰撞/接触(safety_status=unknown)、单独的仿真真值 topic、自动重置、批量运行、取消与超时处理、doctor/runner/evaluator/report 均未实现。
+**未验证(截至 D5):**
+- DWB 为什么在"开头卡住"时把最小转向档打分最高(运行时没有记录各评分项的分数)。
+- 接触监视是否改变"开头卡住"出现的概率(开与不开两组的样本和路径起点分布都不同,无法归因)。
+- 自发的 Isaac 卡顿(D5 的 normal_slow 第 1 次:三路数据同时停 2.19 s 墙钟,仿真时间只前进一步)原因未查;D4 的 9 次没有出现。
 - RViz Nav2 Goal 发目标路径、`record_d0.sh` 以外的记录方式、Heightmap 回退路线未执行。
-- "重置场景(⏹ 再 ▶)后机器人回到出生点、里程计归零"没有专门验证过;用户验收时首次执行。
-- 修复后的记录、停止、就绪脚本在 run-05-regress 中做了正向与反向回归,但还没有用于一次真实导航尝试;用户验收的那次尝试是修复后脚本的第一次完整使用。
-- Codex 独立审查与入口发现验证尚未完成(额度)。
-- 只做了一次导航尝试;不据此声称任何导航性能。
+- Codex 独立审查尚未完成(额度;D0–D5 分片排队)。
+- 每个情形只有少量工程试运行;不据此声称任何导航性能或成功率。
 
 ## 10. 风险
 - 8 GB 显存 + Windows 10:场景可能跑不起来 → Heightmap 缩场景;仍不行则如实记硬件阻塞。
@@ -169,7 +182,7 @@
 - sudo/管理员、colcon 构建时间、rosdep 网络、10 分钟工具上限(后台作业规避)。
 - 总时长粗估半天到一天,并受用户在 GUI 步骤的可用时间影响。
 
-## 11. 下一项:D4 批量复跑与 D5 作品交付
-- D4(计划 A4):normal、bypass、unreachable 各 3 次,每次复位并用真值核对;9 次全部留档;静态 HTML 报告按情形分组、失败尝试计入、成功时间只统计到达的运行并注明。
-- D5(计划 A4、§D):README 从新终端启动;三个真实操作(正常导航并打开记录、一个失败或取消案例并解释、改一个事先说明的参数并预测、复跑对比);写明哪些来自 NVIDIA/Nav2、哪些自写、哪些由 AI 编写。
-- 审查:D0–D3 的 Codex 审查在队列里(03:38 起);D4、D5 完成后加入。
+## 11. 下一项:审查、验收与合并
+- 审查:D0–D5 的 Codex 分片在队列里(2026-09-30 03:38 起,排队脚本 `scripts/windows/run_codex_review_queue.ps1`)。每份报告出来后逐条核实;有效项在对应交付的分支上修复,重跑受影响的检查,记入该交付的 REVIEW.md。
+- 用户验收:D0 三步验收;D1–D5 按 README 与 docs/demo.md 的操作复现。
+- 合并:审查与验收完成后,本地按 d0 → d1 → … → d5 顺序合并到 master(`--no-ff`),不推送。

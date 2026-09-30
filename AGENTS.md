@@ -7,14 +7,16 @@
 
 用现成机器人(Nova Carter)与导航系统(ROS 2 Jazzy + Nav2)做机器人仿真评测工具:运行任务、记录数据、检查异常、解释结果、复跑。仿真在 Windows 上的 Isaac Sim 6.1.0,ROS 在 WSL2 的 Ubuntu 24.04。
 
-当前阶段:D0 已跑通、待独立审查与用户验收;D1(doctor)、D2(单次运行器)、D3(判定)、D4(批量与报告)已实现并在真实 Isaac 上验证、待独立审查;D5 进行中,见 docs/plan.md。
+当前阶段:D0–D5 都已实现并在真实 Isaac 上验证,都在等 Codex 独立审查与用户验收;见 docs/plan.md。
 
 ## 先读什么
 
 | 问题 | 去哪 |
 | --- | --- |
 | 现在做到哪、下一步、阻塞、决定记录 | [docs/plan.md](docs/plan.md)(唯一活计划) |
+| 怎么从新终端跑起来、结果在哪、哪些来自 NVIDIA/Nav2/AI | [README.md](README.md) |
 | 项目整体技术说明(第一次接触时先读) | [docs/technical-overview.md](docs/technical-overview.md) |
+| 三个演示(正常、取消、参数改动的预测与复跑) | [docs/demo.md](docs/demo.md) |
 | 需求、验收、状态合同(冻结参考) | [RoboSim-Eval-Plan-and-Setup-ZH(1).md](RoboSim-Eval-Plan-and-Setup-ZH(1).md) 的 §0.2、A4、A5、B |
 | 开发流程与审查约定(冻结参考) | [Claude-Code-Harness-Pack-ZH(1).md](Claude-Code-Harness-Pack-ZH(1).md)、[Codex-Harness-Pack-ZH(1).md](Codex-Harness-Pack-ZH(1).md) |
 | 本机环境证据 | [docs/environment.md](docs/environment.md)(阶段 1 生成) |
