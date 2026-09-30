@@ -16,7 +16,7 @@
 | D2 单次运行器 | 实现与验证完成(2026-09-30 00:1x–00:47),**待独立审查**与用户验收 | 分支 `feature/d2-runner`;`robosim_eval/runner*.py`、`sim_adapter.py`、`run_io.py`;`scripts/wsl/run_scenario.sh`、`sim.sh`;证据 `artifacts/d2/commands.md` | 固定输入测试 77 passed;运行器假节点测试 8/8;真实 Isaac:正常 A→B reached(真值误差 0.264 m),导航中 SIGINT → 取消、停车、收尾(interrupted);Isaac 由 sim_control 复位、加载场景、读真值,不再需要 GUI 点击 |
 | D3 判定与失败处理 | 实现与验证完成(2026-09-30 00:5x–01:29),**待独立审查**与用户验收 | 分支 `feature/d3-verdicts`;`robosim_eval/evaluator.py`、`contacts.py`、`kit/contact_monitor.py`;证据 `artifacts/d3/commands.md`;缺陷记录 `docs/defect-record.md` | 固定输入测试 109 passed;判定模块改坏检查 8/8(含 4 种必做的坏数据);真实 Isaac:正常、绕行、不可达、取消、超时 pass,断流正确判 inconclusive,碰撞抓到轮子与矮箱子的接触判 fail;修复一个运行器缺陷(复位前 odom 残留) |
 | D4 批量复跑 | 实现与验证完成(2026-09-30 01:30–02:0x),**待独立审查**与用户验收 | 分支 `feature/d4-batch`;`robosim_eval/batch.py`、`report.py`、`scripts/wsl/run_batch.sh`;证据 `artifacts/d4/commands.md`、`artifacts/d4/batch-20260930-013010/runs/report.html` | 9 次全部留档、全部 pass(normal 3/3 到达、bypass 3/3 到达且未碰箱子、unreachable 3/3 判不可达);每次复位后真值距出生点 0.07 mm;报告改进 1 处(列出全部 commit、恢复次数列);"开头卡住"查到大部分机制(见 §9) |
-| D5 作品交付 | 实现与演示完成(2026-09-30 01:3x–02:3x),**待独立审查**与用户验收 | 分支 `feature/d5-demo`;`README.md`、`docs/demo.md`、`robosim_eval/nav2_params.py`;证据 `artifacts/d5/commands.md` | README 按新终端逐字执行通过;三个演示:正常导航并打开记录(pass)、取消案例及解释(pass)、参数改动 max_vel_x 0.8→0.4 的事先预测与复跑对比(峰值速度、平均速度、行驶段、到达误差符合预测;路程与最大角速度两条预测不成立,见 docs/demo.md);修复缺陷 3(场景未加载时接触监视装不上)与缺陷 4(接受目标时的仿真时间是旧的);固定输入测试 128 passed,运行器假节点测试 10/10 |
+| D5 作品交付 | 实现与演示完成(2026-09-30 01:3x–02:3x),**待独立审查**与用户验收 | 分支 `feature/d5-demo`;`README.md`、`docs/demo.md`、`robosim_eval/nav2_params.py`;证据 `artifacts/d5/commands.md` | README 第 2 步的两条命令在新的 PowerShell 里逐字执行通过(用空场景模拟"刚启动、场景未加载";Isaac 没有真正重启,第 1 步和第 3 步没有按原文执行);三个演示:正常导航并打开记录(pass)、取消案例及解释(pass)、参数改动 max_vel_x 0.8→0.4 的事先预测与复跑对比(峰值速度、平均速度、行驶段、到达误差成立;"判定不变"部分成立,一次因自发卡顿判 inconclusive;路程与最大角速度不成立;"开头卡住不因参数改变"无法检验,见 docs/demo.md);修复缺陷 3(场景未加载时接触监视装不上)与缺陷 4(接受目标时的仿真时间是旧的);固定输入测试 128 passed,运行器假节点测试 10/10 |
 
 **当前任务:** D0–D5 都已实现并在真实 Isaac 上验证,剩下审查与验收:Codex 分片审查排队中(2026-09-30 03:38 起)→ 逐条核实、修复有效项、重跑受影响检查 → 用户验收 → 本地按顺序合并分支(d0 → d1 → … → d5 → master,不推送)。分支是叠加的:每个交付分支从上一个分出;某个交付的审查修复在它自己的分支上做,再向后合并。
 
@@ -38,7 +38,7 @@
 | 2026-09-29 | 本轮不绑定 Obsidian 知识库 | Claude | 避免出现第四份计划;触发条件 = D1 之后需要跨会话知识库 |
 | 2026-09-30 | 打开 Isaac 的 Python 执行服务(只监听 127.0.0.1、需要令牌),用于在 Isaac 内做接触检测 | 用户("要打开") | 计划 A5 要求碰撞判定;自动模式分类器曾拦下这项改动,用户明确同意后才做 |
 | 2026-09-30 | 不等审查,D1–D5 连续做完;每个交付一个叠加分支,各自一份审查材料进队列 | 用户("先做D1吧 等审查太拖慢效率了""然后做完");分支与排队做法由 Claude 定 | Codex 额度窗口有限;各分片用 `git show <冻结提交>:<路径>` 读被审版本,不受后续提交影响 |
-| 2026-09-30 | D5 的参数改动选 DWB `max_vel_x` 0.8→0.4,并新增情形 `normal_slow`;参数文件在运行目录派生,不复制进仓库 | Claude | 预测可证伪(峰值速度、行驶段时长);不修改 NVIDIA 文件;运行器从运行中的节点读回核对 |
+| 2026-09-30 | D5 的参数改动选 DWB `max_vel_x` 0.8→0.4,并新增情形 `normal_slow`;参数文件在运行目录派生,仓库里不维护改过的副本(派生文件随运行目录作为证据保存) | Claude | 预测可证伪(峰值速度、行驶段时长);不修改 NVIDIA 文件;运行器从运行中的节点读回核对 |
 | 2026-09-30 | 批量运行期间的开发改在独立的 git worktree 里做 | Claude | 批量的每次运行都会记录 git 是否有未提交改动;不能让运行器正在用的文件在批量中途变化 |
 | 2026-09-29 | D0 的 Codex 审查拆成 4 个分片排队(`run_codex_review_queue.ps1`);等待期间先做 D1,分支 `feature/d1-doctor` 从 `feature/d0-environment` 分出,D0 的修复之后合进来 | 用户要求加速("赶紧审查下 然后做完");具体做法由 Claude 定 | Codex 额度每个窗口约 10 万 token,两次整轮审查都没读完;分片提示词一律用 `git show 19203e0:<路径>` 读被审版本,不受后续提交影响 |
 

@@ -27,11 +27,12 @@
 
 优先级:根目录三份 ZH 文档是 2026-09-29 冻结的需求参考,它们里面的"当前状态"列已作废;状态只看 docs/plan.md。文件名保留下载时的 "(1)" 后缀,引用时写真实路径。
 
-## 跑起来(2026-09-29 本机实测;完整顺序与期望值见 docs/setup.md)
+## 跑起来(D5 起的做法;从新终端启动的完整步骤见 README.md,期望值见 docs/setup.md)
 
 ```powershell
-# Windows 普通 PowerShell:启动 Isaac Sim + ROS 2 bridge(然后在 GUI 加载 Nova Carter 示例并 Play)
-powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\start_isaac_ros2.ps1
+# Windows 普通 PowerShell:启动 Isaac Sim + ROS 2 bridge + sim_control + 只听本机的 Python 执行服务(接触检测要用)。
+# 不需要在 GUI 里加载场景或按 Play:运行器自己加载、复位并用真值核对。
+powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\start_isaac_ros2.ps1 -PythonServer
 powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\check_isaac_bridge.ps1   # bridge 是否加载、显存
 # WSL(从 Windows 调用;脚本内部自动 source ros_env.sh + dds_env.sh)
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_ros_install.sh                    # 安装自检,PASS/FAIL
@@ -49,12 +50,12 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/send_goal.sh <attempt_d
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_record.sh <attempt_dir>             # 0 = 已停、bag 完整、必需话题有数据
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/analyze_attempt.sh <attempt_dir> --goal X Y YAW --spawn -6.0 -1.0 3.141592653589793   # 0 pass / 10 fail / 11 inconclusive
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh <run_dir>                   # 先核对归属;0 = 无残留
-wsl -d Ubuntu -- python3 -m pytest -q -p no:cacheprovider /mnt/d/RoboSim-Eval/tests              # 分析脚本固定输入测试(不需要仿真)
+wsl -d Ubuntu -- python3 -m pytest -q -p no:cacheprovider /mnt/d/RoboSim-Eval/tests              # 固定输入测试(不需要仿真;任何目录下都能运行)
 ```
 
-每次导航尝试前先在 Isaac 按 ⏹ 再按 ▶ 重置场景,然后尽快启动 Nav2(原因见 docs/setup.md)。
+`run_scenario.sh` / `run_batch.sh` 每次运行前自己经 sim_control 复位并用真值核对,不需要手动按 ⏹、▶。只有 D0 的手动脚本链(start_nav2 → record_d0 → send_goal → stop_record → analyze_attempt → stop_nav2)才需要先手动复位再尽快启动 Nav2(原因见 docs/setup.md)。
 
-一次性安装(需 sudo 密码,用户在 Ubuntu 终端运行):`bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh`,然后 `setup_workspace.sh`;防火墙规则(管理员):`scripts\windows\allow_wsl_to_isaac_firewall.ps1`。
+一次性安装(需 sudo 密码,用户在 Ubuntu 终端运行):`bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh`,然后 `setup_workspace.sh`;防火墙规则(管理员):`powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\allow_wsl_to_isaac_firewall.ps1`。
 
 ## 硬规则(来自计划文档 §0.2 与两份 harness pack)
 

@@ -11,7 +11,7 @@
 | WSL `Ubuntu` 内 ROS 2 Jazzy + Nav2 + 依赖闭包 | 已装 | Ubuntu 终端(需 sudo 密码):`bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh` |
 | 钉住工作区 `~/robotics/vendor/isaac-ros-6.1`(IsaacSim-6.1.0 @ a9e8471)+ `colcon build --packages-up-to carter_navigation` | 已建 | `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/setup_workspace.sh`(可重跑;rosdep 模拟失败时以 7 退出) |
 | 安装自检 | PASS | `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_ros_install.sh` |
-| 分析脚本的固定输入测试(不需要仿真) | 14 passed | `wsl -d Ubuntu -- python3 -m pytest -q -p no:cacheprovider /mnt/d/RoboSim-Eval/tests` |
+| 固定输入测试(不需要仿真;任何目录下都能运行,根目录的 pytest.ini 负责导入路径) | 全部通过 | `wsl -d Ubuntu -- python3 -m pytest -q -p no:cacheprovider /mnt/d/RoboSim-Eval/tests` |
 
 ## 终端约定
 
@@ -113,7 +113,7 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_scenario.sh collisi
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_batch.sh      # normal、bypass、unreachable 各 3 次
 ```
 
-每次尝试都先复位并用真值核对;停车没确认会中止后续批次。结果在 `artifacts/d4/batch-<时间>/`:`batch.json`、`runs/<每次运行>/`、`runs/report.html`(静态页面,双击打开)、`runs/summary.json`。报告只从已保存的记录生成,可单独重建:`python3 -m robosim_eval.report <runs 目录>`。页头列出批次里出现的每个 commit 及其运行次数;"距目标"是真值算的最终距离(不可达情形也有值,不是到达误差);"Nav2 恢复"列能看出开头卡住(见 artifacts/d4/commands.md)。一次批量 9 次约 27 分钟墙钟。
+每次尝试都先复位并用真值核对;停车没确认会中止后续批次。结果在 `artifacts/d4/batch-<时间>/`:`batch.json`、`runs/<每次运行>/`、`runs/report.html`(静态页面,双击打开)、`runs/summary.json`。报告只从已保存的记录生成,可单独重建(在仓库根目录下):`wsl -d Ubuntu -- bash -lc "cd /mnt/d/RoboSim-Eval && python3 -m robosim_eval.report <runs 目录>"`。页头列出批次里出现的每个 commit 及其运行次数;"距目标"是真值算的最终距离(不可达情形也有值,不是到达误差);"Nav2 恢复"列能看出开头卡住(见 artifacts/d4/commands.md)。一次批量 9 次约 27 分钟墙钟。
 
 ## 声明的参数改动与演示(D5)
 
