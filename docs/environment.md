@@ -47,8 +47,8 @@
 
 ## 未确认项(留给后续阶段)
 
-- isaac-sim.bat 是否自动调用 setup_ros_env.bat(阶段 3 读脚本确认)。
-- Isaac 自带 `python.bat` 能否 `import rclpy`(决定无 GUI 发现预测试是否可行)。
+- ~~isaac-sim.bat 是否自动调用 setup_ros_env.bat~~ 已确认:`isaac-sim.bat` 与 `python.bat` 都会自动 `call setup_ros_env.bat`,除非传 `--no-ros-env`。
+- ~~Isaac 自带 `python.bat` 能否 `import rclpy`~~ 已测(2026-09-29 19:1x,两次):加 `PYTHONPATH=exts\isaacsim.ros2.core\jazzy\rclpy` 后能定位 rclpy,但 `import numpy`(自带 site 的 numpy 2.5.1)报 "DLL load failed while importing _multiarray_umath",无论 jazzy lib 前置还是追加到 PATH 末尾都一样;退出码 1。结论:无 GUI 的 Windows 侧 rclpy 发现预测试**不可行**,阶段 3 直接走 GUI 重启路线;不再花时间修 python.bat 环境。
 - 8 GB 显存能否承载 Nova Carter 示例场景(阶段 3 实测)。
 - WSLg 下 rviz2 能否渲染(阶段 2 实测)。
 - Windows Defender 对 kit.exe 的首次监听是否弹窗(阶段 3 观察)。

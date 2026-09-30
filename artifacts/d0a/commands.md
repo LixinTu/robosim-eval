@@ -9,4 +9,6 @@
 | 2026-09-29 19:03:31 | `wsl.exe -d Ubuntu -- bash --noprofile --norc /mnt/d/RoboSim-Eval/scripts/wsl/probe_env.sh` | Git Bash → wsl.exe | /mnt/d/RoboSim-Eval | 0(耗时 1 s,217 行) | wsl-probe-clean.txt | 干净 shell;与登录 shell 仅内存数字不同 |
 | 2026-09-29 19:03 | `cat D:\isaac-sim-standalone-6.1.0-windows-x86_64\setup_ros_env.bat`;`cat VERSION`;`grep -i -E 'ros2|rmw|fastrtps|zenoh' <kit 日志>`;`grep -E '\[Error\]|\[Fatal\]' <kit 日志>` | Git Bash | D:\RoboSim-Eval | 0 | 会话记录;结论写入 docs/environment.md | 只读 |
 
+| 2026-09-29 19:1x | `python.bat -c "import rclpy"`(先不设 PYTHONPATH;再设 PYTHONPATH=…\jazzy\rclpy + RMW=fastrtps,jazzy lib 前置;最后预设 ROS_DISTRO 并把 lib 追加到 PATH 末尾) | PowerShell → cmd → python.bat | D:\RoboSim-Eval | 1 / 1 / 1 | 会话记录;结论写入 docs/environment.md | 第一次 ModuleNotFoundError: rclpy;后两次定位到 rclpy 但 numpy DLL 加载失败;判定无 GUI 预测试不可行 |
+
 脚本内各段的单条退出码见对应 `*-probe*.txt` 中的 `EXIT:` 行。`sudo -n true` 的退出码 1("a password is required")是本次探测最重要的结果之一。

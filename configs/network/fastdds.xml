@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  RoboSim Eval: Fast DDS profile shared by Isaac Sim 6.1 (Windows) and ROS 2 Jazzy (WSL2 Ubuntu).
+
+  Derived from IsaacSim-ros_workspaces tag IsaacSim-6.1.0, file jazzy_ws/fastdds.xml, which matches the
+  fastdds.xml shown in the Isaac Sim 6.1 "ROS 2 installation" WSL2 section. One change: the upstream file has a
+  separate <license> element before <profiles>, i.e. two root elements, which is not well-formed XML. The license
+  text is kept below as a comment so this document has a single root and passes an XML parser on both sides.
+
+  Effect: UDPv4 transport only, built-in transports (including shared memory) disabled, so the Windows host and
+  WSL2 can discover each other over the vEthernet (WSL) link.
+
+  Windows: set FASTRTPS_DEFAULT_PROFILES_FILE=D:\RoboSim-Eval\configs\network\fastdds.xml (done by
+  scripts\windows\start_isaac_ros2.ps1). WSL: source scripts/wsl/dds_env.sh, which points at
+  /mnt/d/RoboSim-Eval/configs/network/fastdds.xml.
+
+  Upstream license:
+  SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION &amp; AFFILIATES. All rights reserved.
+  SPDX-License-Identifier: Apache-2.0
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+  compliance with the License. You may obtain a copy of the License at
+  http://www.apache.org/licenses/LICENSE-2.0
+  Unless required by applicable law or agreed to in writing, software distributed under the License is
+  distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and limitations under the License.
+-->
+<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles" >
+    <transport_descriptors>
+        <transport_descriptor>
+            <transport_id>UdpTransport</transport_id>
+            <type>UDPv4</type>
+        </transport_descriptor>
+    </transport_descriptors>
+
+    <participant profile_name="udp_transport_profile" is_default_profile="true">
+        <rtps>
+            <userTransports>
+                <transport_id>UdpTransport</transport_id>
+            </userTransports>
+            <useBuiltinTransports>false</useBuiltinTransports>
+        </rtps>
+    </participant>
+</profiles>

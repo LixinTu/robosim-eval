@@ -66,8 +66,15 @@ if [[ "$WITH_UPGRADE" == "yes" ]]; then
   sudo apt-get upgrade -y
 fi
 
-step "4. install ROS 2 Jazzy desktop, dev tools and navigation packages"
-PKGS=(ros-dev-tools ros-jazzy-desktop ros-jazzy-navigation2 ros-jazzy-nav2-bringup ros-jazzy-nav2-simple-commander ros-jazzy-pointcloud-to-laserscan ros-jazzy-rmw-fastrtps-cpp)
+step "4. install ROS 2 Jazzy desktop, dev tools, navigation packages and the carter_navigation dependency closure"
+# Closure computed 2026-09-29 from package.xml of carter_navigation, isaacsim_bringup and isaac_ros_navigation_goal
+# (IsaacSim-ros_workspaces tag IsaacSim-6.1.0, commit a9e8471); rosdep keys mapped to noble/jazzy apt names.
+PKGS=(ros-dev-tools ros-jazzy-desktop
+      ros-jazzy-navigation2 ros-jazzy-nav2-bringup ros-jazzy-nav2-simple-commander ros-jazzy-nav2-rviz-plugins
+      ros-jazzy-pointcloud-to-laserscan ros-jazzy-rmw-fastrtps-cpp
+      ros-jazzy-joint-state-publisher ros-jazzy-robot-state-publisher ros-jazzy-xacro
+      ros-jazzy-ament-flake8 ros-jazzy-ament-pep257
+      python3-numpy python3-pil python3-pytest python3-yaml)
 sudo apt-get install -y "${PKGS[@]}"
 
 step "5. rosdep (init only if missing; update runs as the normal user)"
