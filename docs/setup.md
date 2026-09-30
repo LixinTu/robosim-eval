@@ -67,6 +67,29 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/doctor.sh --out /mnt/d/
 
 话题与阈值在 `configs/baseline.yaml`,依据是 D0 的实测频率。不需要仿真的检查:`python3 -m pytest tests`(在仓库根目录);假节点测试:`scripts/wsl/test_doctor_fake.sh <目录>`,用 ROS domain 42,不影响正在运行的 Isaac。
 
+## 仿真控制与单次运行(D2)
+
+`start_isaac_ros2.ps1` 默认打开 Isaac 的 sim_control 扩展(ROS 2 simulation_interfaces 服务);加 `-PythonServer` 还会打开只监听本机、需要令牌的 Python 执行服务(D3 接触检测用)。打开后不需要点 GUI:
+
+```powershell
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/sim.sh state         # stopped / playing / paused
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/sim.sh load          # 加载 Nova Carter 场景(约 8 s)
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/sim.sh play          # 也有 pause、stop、reset、pose、reset-check
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_scenario.sh normal   # 一次完整的 A→B 运行
+```
+
+`run_scenario.sh <情形>` 依次:复位场景并用真值核对机器人回到出生点 → doctor → 启动 Nav2 并等就绪 → 开始录制 → 发目标 → 监控超时与中断 → 确认停车 → 停止录制、离线分析、停止 Nav2。Ctrl-C 只会让它取消目标并照常收尾。情形与超时在 `configs/baseline.yaml` 的 `run`、`scenarios` 两节。
+
+每次运行一个目录 `artifacts/d2/runs/<情形>-<时间>/`:manifest.json、config.resolved.yaml、events.jsonl、goal-*.txt、rosbag/、trajectory.csv、result.json,以及各脚本的输出。
+
+| 退出码 | 含义 |
+| --- | --- |
+| 0 / 10 / 11 | 流程完整;评测结论分别为 pass / fail / inconclusive |
+| 20 | 被中断(已取消目标、确认停车并收尾) |
+| 30 | 出错(例如复位核验或 doctor 失败、Nav2 没有就绪) |
+| 31 | 出错且应中止后续批次(取消或停车没有确认) |
+| 2 | 用法或配置错误 |
+
 ## 关闭顺序
 
 1. `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh /mnt/d/RoboSim-Eval/artifacts/d0d/<run_dir>`:先核对归属(开机 ID、包装进程启动时刻、命令行都要与启动时记录的一致,否则拒绝并以 5 退出),然后 SIGINT 只发给 `ros2 launch`,最多等 45 s,必要时对本会话升级 SIGTERM、SIGKILL;launch 真实退出码写在 `<run_dir>/nav2.exit`;最后用不走 daemon 的 fresh discovery 核对没有残留 Nav2 节点。退出 0 = 无残留;1 = 有残留;3 = 残留检查本身失败。实测 10–13 s 结束;launch 退出码为 1,因为 Nav2 组件容器在清理阶段 SIGSEGV、rviz2 以 -9 或 -11 退出(上游已知问题,见 docs/plan.md §9)。

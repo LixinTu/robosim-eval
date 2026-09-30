@@ -7,7 +7,7 @@
 
 用现成机器人(Nova Carter)与导航系统(ROS 2 Jazzy + Nav2)做机器人仿真评测工具:运行任务、记录数据、检查异常、解释结果、复跑。仿真在 Windows 上的 Isaac Sim 6.1.0,ROS 在 WSL2 的 Ubuntu 24.04。
 
-当前阶段:D0 已跑通、待独立审查与用户验收;D1(doctor)已实现并验证、待独立审查;D2–D5 未开始。
+当前阶段:D0 已跑通、待独立审查与用户验收;D1(doctor)与 D2(单次运行器)已实现并在真实 Isaac 上验证、待独立审查;D3–D5 进行中或未开始,见 docs/plan.md。
 
 ## 先读什么
 
@@ -35,6 +35,9 @@ powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\check_i
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_ros_install.sh                    # 安装自检,PASS/FAIL
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/doctor.sh --out <dir>                  # D1 诊断:0 正常 / 10 不推进 / 11 缺数据 / 12 降级 / 13 环境
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/test_doctor_fake.sh <dir>                # doctor 假节点测试(ROS domain 42,不需要 Isaac)
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/sim.sh <state|load|play|pause|reset|reset-check|pose>   # D2 仿真控制(sim_control)
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_scenario.sh <normal|bypass|unreachable>             # D2 一次完整运行
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/test_runner_fake.sh <dir>                # 运行器假节点测试(假 Nav2 action server)
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/probe_topics.sh <out_dir>                # Isaac 数据是否到达(/clock 等)
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/start_nav2.sh <run_dir>                  # Nav2 + RViz,独立进程组
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_nav2_ready.sh <run_dir>            # 就绪判定:0 READY / 1 NOT READY

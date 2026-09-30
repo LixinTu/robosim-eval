@@ -13,7 +13,8 @@
 | D0d · 一次真实 A→B | 完成(2026-09-29 20:13–20:52) | artifacts/d0d/commands.md;run-01/(nav2-launch.log、ready-check-01、map-overview、rviz 截图、usd-inspection);run-01/attempt-01/(goal-202437.txt、result.json、trajectory.csv、bag-info、文本流);run-02/03/04-stoptest(停止路径验证) | 目标 map (-4.0,-1.0,yaw 0) 由 CLI action client 发送:SUCCEEDED、error_code 0、0 次恢复、8.47 s 仿真时间、停稳确认;**AMCL 独立来源**(理想里程计 + USD 出生位姿)在停稳确认时刻误差 0.091 m,AMCL 估计 0.231 m → validation=pass(内部预审后用新分析脚本重算)。发现见 §9 |
 | D0 交付 + 独立审查 | 进行中:**待独立审查** | docs/setup.md;docs/review/2026-09-29-d0-handoff.md;docs/review/2026-09-29-d0/REVIEW.md | Codex 第 1 轮两次因账户用量上限中止、无意见(20:59 用 82,531 tokens;23:23 重跑用 102,685 tokens);同一范围已拆成 4 个分片,由排队脚本从 2026-09-30 03:38 起自动运行,见 REVIEW.md;Claude 内部预审第 2 次完成(38 条,确认 35 条),有效项已修复并回归,见 REVIEW.md |
 | D1 doctor | 实现与验证完成(2026-09-29 23:3x–23:49),**待独立审查**与用户验收 | 分支 `feature/d1-doctor`;`robosim_eval/doctor*.py`、`configs/baseline.yaml`、`scripts/wsl/doctor.sh`;证据 `artifacts/d1/commands.md` | 固定输入测试 37 passed、改坏检查 7/7、假节点测试 6/6;真实 Isaac:运行时退出 0,用户按 ⏸ 后 2 s 窗口判"不推进"退出 10,恢复后退出 0 |
-| D2 单次运行 / D3 判定 / D4 批量复跑 / D5 作品交付 | 未开始 | — | 按序进行 |
+| D2 单次运行器 | 实现与验证完成(2026-09-30 00:1x–00:47),**待独立审查**与用户验收 | 分支 `feature/d2-runner`;`robosim_eval/runner*.py`、`sim_adapter.py`、`run_io.py`;`scripts/wsl/run_scenario.sh`、`sim.sh`;证据 `artifacts/d2/commands.md` | 固定输入测试 77 passed;运行器假节点测试 8/8;真实 Isaac:正常 A→B reached(真值误差 0.264 m),导航中 SIGINT → 取消、停车、收尾(interrupted);Isaac 由 sim_control 复位、加载场景、读真值,不再需要 GUI 点击 |
+| D3 判定 / D4 批量复跑 / D5 作品交付 | D3 进行中 | — | 按序进行 |
 
 **当前任务:** D0 交付收尾(Codex 分片审查排队中 → 逐条核实、修复有效项、重跑受影响检查 → 必要时第二轮复核 → 用户三步验收)与 D1 诊断工具并行。D0 的修复在 `feature/d0-environment` 上做,再合进 `feature/d1-doctor`。
 
@@ -135,6 +136,10 @@
 - 首次 Play 后 7 s 时间线曾被停止(topic 在、无数据),重新 Play 恢复。
 - D1:rclpy 直接订阅测得点云约 3.0 Hz(artifacts/d1 的 real-01 与 real-02 恢复后),高于 D0 用 `ros2 topic hz` 测的 2.4–2.8 Hz,印证 topic hz 对 540 KB 的大消息读数偏低。
 - D1:Isaac 暂停时话题和发布者都还在,只是没有消息;doctor 用"有发布者但 /clock 不推进"判暂停(退出 10),用"没有发布者"判关闭或断连(退出 11)。
+- D2:sim_control 复位后用真值核对,机器人回到出生点(-6.001, -1.000),D0 的未验证项"⏹→▶ 回到出生点"由此验证;"出生位姿 + 理想里程计"来源与真值只差约 0.1 mm。
+- D2:复位后点云发布者约 1.5–2 s 才重建,头几秒可能只有 0–1 帧;准备阶段的 doctor 对此有限重查(artifacts/d2/repro-doctor-after-reset)。
+- D2:AMCL 的 map→odom 在导航中两次出现 2.3–2.5 s 的空档(D0 为 1.86 s),超过 2 s 断流门槛;D3 起把它归为"仅作参考"的数据流,判定必需的是 /clock、odom 与 Isaac 侧 TF。
+- D2:Nav2 从启动到就绪 13.3–13.6 s(远低于 60 s 预算);正常通路(6 m,先转 180°)约 15–18 s 仿真时间。
 
 **已知问题:**
 - Nav2 停止时组件容器在清理阶段 SIGSEGV("Magick: abort due to signal 11",exit -6):run-01、run-04、run-05 三次都出现。rviz2 每次退出方式不同:run-01 为 -6,run-04 为 -9(launch 在 SIGINT/SIGTERM 超时后 SIGKILL),run-05 为 -11。launch 退出码 1 只在 run-04、run-05 记录到;run-01 用的是旧脚本,没有记录。三次都没有残留进程,不影响导航与记录。
@@ -157,9 +162,8 @@
 - sudo/管理员、colcon 构建时间、rosdep 网络、10 分钟工具上限(后台作业规避)。
 - 总时长粗估半天到一天,并受用户在 GUI 步骤的可用时间影响。
 
-## 11. 下一项:D2 单次运行器的第一个小验收
-- 目标(计划 A4 D2、A5、A6):用配置运行一次 A→B;状态机的每一段都有超时;保存接受、反馈、结果与轨迹;中断时也收尾(取消目标、确认停车、停止记录、写出 interrupted 结果)。
-- 先定配置:`configs/baseline.yaml` 补齐 A5 要求的字段(坐标系、单位、到达容差、朝向是否考核、停稳条件、导航仿真时限、现实等待上限、断流阈值、接触过滤),正式比较前冻结。
-- 先定冲突:导航时实时因子约 0.32,120 s 仿真时间约等于 375 s 现实时间,会先触发 300 s 现实上限,需要写明取舍。
-- 每次运行一个 run_id 目录:manifest.json、config.resolved.yaml、events.jsonl、trajectory.csv、result.json,可选 rosbag。
-- 验证:状态机用假 action server 测;真实 Isaac 各跑一次正常 A→B 与一次中断收尾,分开记录。
+## 11. 下一项:D3 判定与失败处理
+- 目标(计划 A4 D3、A5):跑正常、不可达、取消与断流情形;到达、超时、碰撞、取消分开判定;停止可验证;原始数据、判定理由与回归测试齐全。
+- 独立真值:sim_control 的 GetEntityState(底盘刚体);接触:Isaac 内的 PhysX 接触报告,经用户同意打开的 Python 执行服务取数(只监听本机、需要令牌)。
+- 必做的坏数据测试:虚假成功、缺接触数据、时间倒退、取消无回执,都不能判为普通通过。
+- 数据流分级:判定必需(/clock、odom、Isaac 侧 TF、真值)与仅作参考(AMCL 估计),规则在正式比较前冻结并写明理由。
