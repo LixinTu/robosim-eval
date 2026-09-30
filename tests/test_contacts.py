@@ -6,9 +6,11 @@ Windows interop, no Isaac and no network. The byte strings reproduce what powers
 """
 from __future__ import annotations
 
+import base64
 import json
+import subprocess
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import pytest
 
@@ -181,3 +183,210 @@ def test_fetch_without_a_completeness_field_is_a_contact_error(tmp_path, monkeyp
     _stub(tmp_path, monkeypatch, stdout=_envelope(out))
     with pytest.raises(ContactError):
         contacts.fetch()
+
+
+# ---- the Windows side: scripts/windows/isaac_py.ps1 through WSL interop ----------------------------------------------
+# Each case is its own powershell.exe that dot-sources the client (functions only), points it at a fake token file and
+# at a private listener on an ephemeral 127.0.0.1 port, and then runs the client's main flow. The harness exits 99
+# before the main flow if the port were ever python_server's 8226, so nothing can reach the live Isaac.
+
+REPO = Path(__file__).resolve().parents[1]
+FAKE_TOKEN = "robosim-test-token-7f3a"
+windows_only = pytest.mark.skipif(not (Path(contacts.POWERSHELL).exists() and str(REPO).startswith("/mnt/")),
+                                  reason="needs Windows PowerShell through WSL interop and the checkout on a Windows drive")
+
+# python_server stand-in, run in a second runspace: one reply mode per accepted connection
+FAKE_SERVER = r"""
+param($Listener, $Modes, $Token)
+foreach ($mode in $Modes) {
+    $c = $Listener.AcceptTcpClient()
+    $s = $c.GetStream()
+    $ms = New-Object System.IO.MemoryStream
+    $buf = New-Object byte[] 65536
+    while (($n = $s.Read($buf, 0, $buf.Length)) -gt 0) { $ms.Write($buf, 0, $n) }
+    $req = [System.Text.Encoding]::UTF8.GetString($ms.ToArray()) | ConvertFrom-Json
+    if ($mode -eq 'reset') {  # RST: close the socket itself with linger 0 (TcpClient.Close would send a FIN first)
+        $c.Client.LingerState = New-Object System.Net.Sockets.LingerOption($true, 0); $c.Client.Close(); continue
+    }
+    if ($mode -eq 'silent') { Start-Sleep -Seconds 5; $c.Close(); continue }
+    if ($mode -eq 'empty') { $c.Close(); continue }
+    $reply = '<html>not json'
+    if ($mode -eq 'ok') {
+        if ($req.auth_token -eq $Token -and $req.context -eq 'robosim' -and $req.code) {
+            $reply = '{"status": "ok", "output": "", "result": "{\"ok\": true}"}'
+        } else {
+            $reply = '{"status": "error", "ename": "AuthError", "evalue": "unexpected envelope"}'
+        }
+    }
+    $b = [System.Text.Encoding]::UTF8.GetBytes($reply)
+    $s.Write($b, 0, $b.Length)
+    $c.Close()
+}
+"""
+
+CLOSED_PORT = """
+$l = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, 0)
+$l.Start(); $Port = $l.LocalEndpoint.Port; $l.Stop()
+"""
+
+SERVER_PORT = """
+$srv = New-Object System.Net.Sockets.TcpListener([System.Net.IPAddress]::Loopback, 0)
+$srv.Start(); $Port = $srv.LocalEndpoint.Port
+$rs = [PowerShell]::Create().AddScript(@'
+__SERVER__
+'@).AddArgument($srv).AddArgument(@(__MODES__)).AddArgument('__TOKEN__')
+$null = $rs.BeginInvoke()
+"""
+
+
+def _winpath(path: Path) -> str:
+    return subprocess.run(["wslpath", "-w", str(path)], capture_output=True, text=True, check=True).stdout.strip()
+
+
+def _ps_script(args: str, setup: str, code_file: str = "", run: str = "Invoke-IsaacPy") -> str:
+    """Dot-source the client with `args`, set $Port in `setup`, then assign $CodeFile (a PowerShell expression that may
+    use $kit, the client's allowed root) and run `run`."""
+    client = _winpath(REPO / "scripts" / "windows" / "isaac_py.ps1")
+    return (f"$ErrorActionPreference = 'Stop'\n"
+            f". '{client}' {args}\n"
+            f"$kit = Get-AllowedKitRoot\n"
+            f"{setup}\n"
+            f"if ($Port -eq 8226) {{ exit 99 }}\n"
+            + (f"$CodeFile = {code_file}\n" if code_file else "")
+            + f"{run}\n")
+
+
+def _run_ps(scripts: Dict[str, Any]) -> Dict[str, Tuple[int, bytes, bytes]]:
+    """Run the PowerShell scripts (text, or a list of -File arguments) in parallel; name -> (exit code, stdout bytes,
+    stderr bytes)."""
+    procs = {}
+    for name, script in scripts.items():
+        if isinstance(script, list):
+            cmd = ["-File"] + script
+        else:
+            cmd = ["-EncodedCommand", base64.b64encode(script.encode("utf-16-le")).decode("ascii")]
+        procs[name] = subprocess.Popen([contacts.POWERSHELL, "-NoProfile", "-NonInteractive", "-ExecutionPolicy",
+                                        "Bypass"] + cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out = {}
+    for name, p in procs.items():
+        stdout, stderr = p.communicate(timeout=60)
+        out[name] = (p.returncode, stdout, stderr)
+    return out
+
+
+# -CodeFile values as PowerShell expressions ($kit = the client's allowed root, with a trailing backslash); all exit 2
+PATH_CASES = {
+    "kit_dir_itself": '"$kit"',
+    "bracket_wildcard": '"${kit}contact_monito[r].py"',
+    "star_wildcard": '"${kit}*.py"',
+    "ads_stream": '"${kit}contact_monitor.py::`$DATA"',
+    "missing_file": '"${kit}no_such_file.py"',
+    "parent_escape": '"${kit}..\\contacts.py"',
+    "empty": "''",
+    "non_ascii_name": '"${kit}中文.py"',
+}
+TRANSPORT_CASES = {  # fake server modes per connection, -Call given?, expected exit code
+    "ok_file_only": ("'ok'", False, 0),
+    "ok_with_call": ("'ok','ok'", True, 0),
+    "refused": (None, True, 3),
+    "reset_on_file": ("'reset'", True, 3),
+    "reset_on_call": ("'ok','reset'", True, 3),
+    "garbage_reply": ("'garbage'", False, 5),
+    "garbage_on_call": ("'ok','garbage'", True, 5),
+    "empty_reply": ("'empty'", True, 5),
+}
+
+
+@pytest.fixture(scope="module")
+def ps_results(tmp_path_factory) -> Dict[str, Tuple[int, bytes, bytes]]:
+    token_log = tmp_path_factory.mktemp("isaac_py") / "isaac-console.log"
+    token_log.write_text(f"[Info] Python server authentication token: {FAKE_TOKEN}\n", encoding="utf-8")
+    args = f"-CodeFile 'unset' -ConsoleLog '{_winpath(token_log)}'"
+
+    def server(modes: str) -> str:
+        return SERVER_PORT.replace("__SERVER__", FAKE_SERVER).replace("__MODES__", modes).replace("__TOKEN__", FAKE_TOKEN)
+
+    scripts = {f"path:{name}": _ps_script(args, CLOSED_PORT, code_file) for name, code_file in PATH_CASES.items()}
+    scripts["path:not_given"] = _ps_script(f"-ConsoleLog '{_winpath(token_log)}'", CLOSED_PORT)
+    for name, (modes, with_call, _) in TRANSPORT_CASES.items():
+        call = " -Call 'robosim_diag_bodies()'" if with_call else ""
+        scripts[f"net:{name}"] = _ps_script(args + call, CLOSED_PORT if modes is None else server(modes),
+                                            "$kit + 'diag_stage.py'")
+    scripts["fn:receive_timeout"] = _ps_script(args, server("'silent'"), run=(
+        "try { $r = Invoke-Kit 'x' 'token' $Port 'robosim' 1 1000; "
+        "@{ threw = $false; error = [string]$r.error; reply = [string]$r.reply } | ConvertTo-Json -Compress } "
+        "catch { @{ threw = $true; error = $_.Exception.GetType().Name } | ConvertTo-Json -Compress }"))
+    scripts["fn:allowed_root"] = _ps_script(args, "$Port = 1", run="Write-Output (Get-AllowedKitRoot)")
+    # any other failure inside the client (simulated by replacing one of its functions after dot-sourcing)
+    scripts["fn:unexpected"] = _ps_script(args, CLOSED_PORT, "$kit + 'diag_stage.py'", run=(
+        "function Read-ServerToken { throw 'simulated client failure' }\nInvoke-IsaacPy"))
+    # run as a file, the way contacts._call starts it; both stop before any connection (port 9 is never used)
+    client, kit = _winpath(REPO / "scripts" / "windows" / "isaac_py.ps1"), _winpath(REPO / "robosim_eval" / "kit")
+    missing_log = _winpath(token_log.parent / "no-such-console.log")
+    scripts["file:missing_code_file"] = [client, "-CodeFile", kit + "\\no_such_file.py", "-ConsoleLog", missing_log,
+                                         "-Port", "9"]
+    scripts["file:no_token"] = [client, "-CodeFile", kit + "\\diag_stage.py", "-ConsoleLog", missing_log, "-Port", "9"]
+    return _run_ps(scripts)
+
+
+def _json_status_line(stdout: bytes) -> Dict[str, Any]:
+    lines = [ln for ln in contacts._decode(stdout).splitlines() if ln.strip()]
+    assert lines, "no output on stdout"
+    obj = json.loads(lines[-1])
+    assert isinstance(obj, dict) and obj.get("status") in ("ok", "error"), obj
+    return obj
+
+
+@windows_only
+@pytest.mark.parametrize("name", sorted(PATH_CASES) + ["not_given"])
+def test_client_rejects_bad_code_files_with_exit_2_and_a_json_line(ps_results, name):
+    # the documented "2 bad arguments" with a JSON status line, never an uncaught .NET error (exit 1, stderr only)
+    rc, stdout, stderr = ps_results[f"path:{name}"]
+    assert rc == 2, (rc, contacts._decode(stdout), contacts._decode(stderr)[-600:])
+    assert _json_status_line(stdout)["status"] == "error"
+    assert stdout.isascii()  # no console code page can garble it
+
+
+@windows_only
+def test_client_escapes_non_ascii_text_in_its_json(ps_results):
+    rc, stdout, _ = ps_results["path:non_ascii_name"]
+    assert stdout.isascii() and "中文.py" in _json_status_line(stdout)["evalue"]
+
+
+@windows_only
+@pytest.mark.parametrize("name", sorted(TRANSPORT_CASES))
+def test_client_turns_transport_failures_into_a_json_line_and_exit_code(ps_results, name):
+    rc, stdout, stderr = ps_results[f"net:{name}"]
+    expected = TRANSPORT_CASES[name][2]
+    assert rc == expected, (rc, contacts._decode(stdout), contacts._decode(stderr)[-600:])
+    assert _json_status_line(stdout)["status"] == ("ok" if expected == 0 else "error")
+    assert stdout.isascii()
+
+
+@windows_only
+def test_client_receive_timeout_is_returned_not_thrown(ps_results):
+    rc, stdout, stderr = ps_results["fn:receive_timeout"]
+    out = json.loads(contacts._decode(stdout).strip().splitlines()[-1])
+    assert out["threw"] is False and out["error"] and not out["reply"], (out, contacts._decode(stderr)[-600:])
+
+
+@windows_only
+def test_client_accepts_only_its_own_checkouts_kit_dir(ps_results):
+    rc, stdout, _ = ps_results["fn:allowed_root"]
+    assert rc == 0
+    assert contacts._decode(stdout).strip() == _winpath(REPO / "robosim_eval" / "kit") + "\\"
+
+
+@windows_only
+def test_client_reports_an_unexpected_failure_as_json(ps_results):
+    rc, stdout, stderr = ps_results["fn:unexpected"]
+    assert rc == 6, (rc, contacts._decode(stdout), contacts._decode(stderr)[-600:])
+    assert "simulated client failure" in _json_status_line(stdout)["evalue"] and stdout.isascii()
+
+
+@windows_only
+@pytest.mark.parametrize("name, expected", [("missing_code_file", 2), ("no_token", 4)])
+def test_client_run_as_a_file_still_runs_its_main_flow(ps_results, name, expected):
+    rc, stdout, stderr = ps_results[f"file:{name}"]
+    assert rc == expected, (rc, contacts._decode(stdout), contacts._decode(stderr)[-600:])
+    assert _json_status_line(stdout)["status"] == "error" and stdout.isascii()
