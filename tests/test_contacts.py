@@ -115,3 +115,69 @@ def test_client_that_hangs_is_a_contact_error(tmp_path, monkeypatch):
     _stub(tmp_path, monkeypatch, stdout=_envelope(INSTALLED), sleep_s=5)
     with pytest.raises(ContactError, match="did not run"):
         contacts._call("robosim_contacts_install()", timeout=0.5)
+
+
+# ---- simctl-2 / contract C4: completeness signals reach the caller ---------------------------------------------------
+
+ROBOT = "/World/Nova_Carter_ROS"
+GROUND = "/World/warehouse_with_forklifts/GroundPlane/collisionPlane"
+BOX = "/World/RoboSimObstacles/low_box"
+
+
+def _kit_fetch(events=(), persist=None, dropped=0) -> Dict[str, Any]:
+    """robosim_contacts_fetch() output (shape of artifacts/d3/contact-fetch-after-reset.json)."""
+    return {"ok": True, "events": list(events), "persist_counts": dict(persist or {}), "dropped": dropped,
+            "bodies": [f"{ROBOT}/chassis_link", f"{ROBOT}/wheel_left"], "subscribed": True, "timeline_time": 1.08}
+
+
+def _event(kind: str, a0: str, a1: str) -> Dict[str, Any]:
+    return {"type": kind, "actor0": a0, "actor1": a1, "collider0": a0, "collider1": a1}
+
+
+def test_fetch_returns_persist_pairs_and_dropped(tmp_path, monkeypatch):
+    persist = {f"{ROBOT}/wheel_left|{GROUND}": 132, f"{ROBOT}/wheel_left|{BOX}": 40}
+    _stub(tmp_path, monkeypatch, stdout=_envelope(_kit_fetch(persist=persist, dropped=7)))
+    got = contacts.fetch()
+    assert got["dropped"] == 7
+    assert sorted(got["persist_pairs"]) == sorted([[f"{ROBOT}/wheel_left", GROUND], [f"{ROBOT}/wheel_left", BOX]])
+    assert got["events"] == []
+
+
+def test_persist_only_contact_is_a_found_pair(tmp_path, monkeypatch):
+    # an obstacle already touching the robot at the pre-run clear: its FOUND was cleared, only PERSIST remains
+    persist = {f"{ROBOT}/wheel_left|{GROUND}": 3000, f"{ROBOT}/wheel_left|{BOX}": 2900}
+    _stub(tmp_path, monkeypatch, stdout=_envelope(_kit_fetch(persist=persist)))
+    pairs = contacts.found_pairs(contacts.fetch())
+    assert (f"{ROBOT}/wheel_left", BOX) in pairs
+    assert (f"{ROBOT}/wheel_left", GROUND) in pairs  # ground contacts are dropped later by the evaluator's policy
+
+
+def test_found_pairs_keep_found_events_and_add_each_persist_pair_once():
+    fetched = {"events": [_event("found", f"{ROBOT}/chassis_link", BOX), _event("lost", f"{ROBOT}/chassis_link", BOX),
+                          _event("found", f"{ROBOT}/chassis_link", BOX)],
+               "persist_pairs": [[BOX, f"{ROBOT}/chassis_link"], [f"{ROBOT}/wheel_left", BOX]], "dropped": 0}
+    assert contacts.found_pairs(fetched) == [(f"{ROBOT}/chassis_link", BOX), (f"{ROBOT}/chassis_link", BOX),
+                                             (f"{ROBOT}/wheel_left", BOX)]
+
+
+@pytest.mark.parametrize("broken", [
+    {"dropped": None}, {"dropped": "0"}, {"dropped": -1}, {"dropped": True}, {"dropped": 1.5},
+    {"events": None}, {"events": {"type": "found"}}, {"events": [{"type": "found", "actor0": ROBOT}]},
+    {"events": ["found"]}, {"persist_counts": None}, {"persist_counts": {"no-separator": 3}},
+    {"persist_counts": {f"{ROBOT}|": 3}},
+])
+def test_fetch_with_missing_or_malformed_completeness_data_is_a_contact_error(tmp_path, monkeypatch, broken):
+    # without these the caller could not tell "no contact" from "not measured"; unknown must not become pass
+    out = {**_kit_fetch(), **broken}
+    _stub(tmp_path, monkeypatch, stdout=_envelope(out))
+    with pytest.raises(ContactError):
+        contacts.fetch()
+
+
+@pytest.mark.parametrize("key", ["dropped", "events", "persist_counts"])
+def test_fetch_without_a_completeness_field_is_a_contact_error(tmp_path, monkeypatch, key):
+    out = _kit_fetch()
+    del out[key]
+    _stub(tmp_path, monkeypatch, stdout=_envelope(out))
+    with pytest.raises(ContactError):
+        contacts.fetch()

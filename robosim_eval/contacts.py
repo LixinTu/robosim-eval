@@ -76,14 +76,52 @@ def install() -> Dict[str, Any]:
     return out
 
 
+def _persist_pairs(counts: Any) -> List[List[str]]:
+    """[actor0, actor1] of every persist_counts key "actor0|actor1" (USD paths cannot contain '|')."""
+    if not isinstance(counts, dict):
+        raise ContactError(f"fetch: persist_counts is not an object: {str(counts)[:300]}")
+    pairs = []
+    for key in counts:
+        a0, sep, a1 = str(key).partition("|")
+        if not (sep and a0 and a1):
+            raise ContactError(f"fetch: malformed persist_counts key {key!r}")
+        pairs.append([a0, a1])
+    return pairs
+
+
 def fetch() -> Dict[str, Any]:
-    """Contact events since the previous fetch (the monitor's buffer is cleared)."""
+    """Contact events since the previous fetch (the monitor's buffer is cleared).
+
+    Besides the monitor's own fields the result carries 'persist_pairs' ([actor0, actor1] of every pair still in contact
+    during the batch, from persist_counts) and 'dropped' (FOUND/LOST events lost at the monitor's buffer cap). Both are
+    completeness signals, so a reply without them, or with malformed events, is a ContactError: the caller must not
+    read missing data as "no contact".
+    """
     out = _call("robosim_contacts_fetch()")
     if not out.get("ok") or not out.get("subscribed"):
         raise ContactError(f"fetch failed or monitor not subscribed: {str(out)[:300]}")
+    dropped, events = out.get("dropped"), out.get("events")
+    if not isinstance(dropped, int) or isinstance(dropped, bool) or dropped < 0:
+        raise ContactError(f"fetch: 'dropped' missing or not a count: {dropped!r}")
+    if not isinstance(events, list) or not all(
+            isinstance(e, dict) and all(isinstance(e.get(k), str) for k in ("type", "actor0", "actor1"))
+            for e in events):
+        raise ContactError(f"fetch: 'events' missing or malformed: {str(events)[:300]}")
+    out["persist_pairs"] = _persist_pairs(out.get("persist_counts"))
     return out
 
 
 def found_pairs(fetched: Dict[str, Any]) -> List[Tuple[str, str]]:
-    """(actor0, actor1) of every contact that started ('found') in a fetched batch."""
-    return [(e["actor0"], e["actor1"]) for e in fetched.get("events", []) if e.get("type") == "found"]
+    """(actor0, actor1) of every contact in a fetched batch: each 'found' event, then each persisting pair not already
+    found in the batch (a contact that started before the pre-run clear only persists during the run).
+
+    The monitor reports only contacts of bodies with contact reporting, i.e. the robot's; which of them are allowed
+    (ground, self contacts) is decided by the evaluator's ContactPolicy.
+    """
+    pairs = [(e["actor0"], e["actor1"]) for e in fetched.get("events", []) if e.get("type") == "found"]
+    seen = {frozenset(p) for p in pairs}
+    for a0, a1 in fetched.get("persist_pairs", []):
+        if frozenset((a0, a1)) not in seen:
+            seen.add(frozenset((a0, a1)))
+            pairs.append((a0, a1))
+    return pairs
