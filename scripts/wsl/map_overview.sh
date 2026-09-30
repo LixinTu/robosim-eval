@@ -5,12 +5,13 @@
 # Legend: '#' occupied, '.' free, '?' unknown, 'R' robot, digits = candidate points in argument order. Read-only.
 # Exit: the rendering step's status (0 = overview written).
 set -uo pipefail
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 OUT="${1:-/dev/stdout}"; shift || true
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2
+source "$REPO/scripts/wsl/ros_env.sh" --full || exit 2
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
+source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
 SHARE=$(ros2 pkg prefix carter_navigation)/share/carter_navigation
 ROBOT=$(timeout 6 ros2 run tf2_ros tf2_echo map base_link 2>/dev/null | grep -m1 'Translation' | sed -E 's/.*\[([^]]*)\].*/\1/')

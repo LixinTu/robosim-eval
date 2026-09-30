@@ -6,7 +6,8 @@
 # sample (`ros2 topic echo --once --no-arr`). TF is read with tf2_echo (bounded). Nothing is published.
 # Exit 0 when /clock is advancing; 1 otherwise (the raw evidence is written either way).
 set -uo pipefail
-OUT="${1:-/mnt/d/RoboSim-Eval/artifacts/d0c/$(date +%Y%m%d-%H%M%S)}"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
+OUT="${1:-$REPO/artifacts/d0c/$(date +%Y%m%d-%H%M%S)}"
 shift || true
 mkdir -p "$OUT"
 CANDIDATES=("$@")
@@ -16,9 +17,9 @@ fi
 
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
+source "$REPO/scripts/wsl/ros_env.sh" --base-only || exit 2
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
+source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
 
 run() { local title="$1"; shift; echo; echo "===== $title ====="; echo "CMD: $*"; "$@"; echo "EXIT: $?"; }

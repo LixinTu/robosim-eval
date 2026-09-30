@@ -7,9 +7,11 @@
 # Read-only by construction: `codex exec --sandbox read-only`; no paid options are used.
 param(
     [string]$Round = 'round1',
-    [string]$Dir = 'D:\RoboSim-Eval\docs\review\2026-09-29-d0'
+    [string]$Dir = ''
 )
 $ErrorActionPreference = 'Stop'
+$repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent   # this checkout (a worktree reviews its own tree)
+if (-not $Dir) { $Dir = Join-Path $repo 'docs\review\2026-09-29-d0' }
 $promptFile = Join-Path $Dir "codex-prompt-$Round.md"
 if (-not (Test-Path $promptFile)) { throw "prompt file not found: $promptFile" }
 $report = Join-Path $Dir "codex-$Round-report.md"
@@ -20,7 +22,7 @@ $prompt = "Read the file $promptFile (UTF-8, Chinese) and carry out exactly the 
 
 "start $(Get-Date -Format o) round=$Round prompt_file=$promptFile" | Out-File $status -Encoding utf8
 $t0 = Get-Date
-$p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', "codex exec --sandbox read-only -C D:\RoboSim-Eval -o `"$report`" `"$prompt`"" `
+$p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', "codex exec --sandbox read-only -C `"$repo`" -o `"$report`" `"$prompt`"" `
     -RedirectStandardOutput $stdout -RedirectStandardError $stderr -NoNewWindow -Wait -PassThru
 . (Join-Path $PSScriptRoot 'codex_queue_lib.ps1')
 $limit = Test-UsageLimitText -Text ((Get-Content -Raw $stderr -ErrorAction SilentlyContinue) + '')

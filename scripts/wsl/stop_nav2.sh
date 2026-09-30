@@ -12,12 +12,13 @@
 # Exit: 0 nothing left behind; 1 leftover processes or Nav2 nodes; 3 leftover-node check could not run (unknown);
 #       5 refused: the session cannot be confirmed as this run's launch.
 set -uo pipefail
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 RUN_DIR="${1:?run dir required}"
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
+source "$REPO/scripts/wsl/ros_env.sh" --base-only || exit 2
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
+source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
 META="$RUN_DIR/nav2-launch.meta"
 [[ -f "$RUN_DIR/nav2.pid" ]] || { echo "no nav2.pid in $RUN_DIR"; exit 1; }

@@ -4,13 +4,14 @@
 # need to install something, the script stops and prints the list instead of calling sudo).
 #   bash /mnt/d/RoboSim-Eval/scripts/wsl/setup_workspace.sh
 # Idempotent: an existing checkout is verified (tag commit, clean tree, submodules) and reused, never force-reset.
-# Log: /mnt/d/RoboSim-Eval/artifacts/d0b/setup-workspace.log ; exit code: .../setup-workspace.exit
+# Log: $REPO/artifacts/d0b/setup-workspace.log ; exit code: .../setup-workspace.exit
 set -euo pipefail
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 
 EXPECTED_COMMIT=a9e8471ee901bc2332c1e4aca94ac580713ca3ab
 TAG=IsaacSim-6.1.0
 WS_ROOT="${ROBOSIM_VENDOR_ROOT:-$HOME/robotics/vendor/isaac-ros-6.1}"
-LOG_DIR=/mnt/d/RoboSim-Eval/artifacts/d0b
+LOG_DIR="$REPO/artifacts/d0b"
 mkdir -p "$LOG_DIR"
 LOG="${ROBOSIM_SETUP_LOG:-$LOG_DIR/setup-workspace.log}"            # override to re-run without touching D0b evidence
 EXIT_FILE="${LOG%.log}.exit"
@@ -25,7 +26,7 @@ step "0. base ROS environment"
 # ROS setup scripts are not `set -u` clean (AMENT_TRACE_SETUP_FILES), so relax -u while sourcing.
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only
+source "$REPO/scripts/wsl/ros_env.sh" --base-only
 set -u
 
 step "1. checkout $TAG"

@@ -5,13 +5,14 @@
 # Isaac Sim. A pause shows up as a gap in the stream (no /clock messages) with equal sim time before and after it.
 # Output lines: <wall time ISO with ns> <sim seconds as float>. Exit code 124 from timeout = full window, by design.
 set -uo pipefail
-SECS="${1:-90}"; OUT="${2:-/mnt/d/RoboSim-Eval/artifacts/d0c/clock-watch.txt}"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
+SECS="${1:-90}"; OUT="${2:-$REPO/artifacts/d0c/clock-watch.txt}"
 mkdir -p "$(dirname "$OUT")"
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
+source "$REPO/scripts/wsl/ros_env.sh" --base-only || exit 2
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
+source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
 {
 echo "# watch_clock.sh start $(date -Is) duration=${SECS}s (continuous /clock stream)"

@@ -11,14 +11,15 @@
 # (which contains this run dir's nav2.exit path) are written to nav2-launch.meta.
 # Exit: 0 started; 2 environment; 3 refused (already running or cannot check); 4 launch did not start.
 set -uo pipefail
-RUN_DIR="${1:-/mnt/d/RoboSim-Eval/artifacts/d0d/$(date +%Y%m%d-%H%M%S)}"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
+RUN_DIR="${1:-$REPO/artifacts/d0d/$(date +%Y%m%d-%H%M%S)}"
 shift || true
 mkdir -p "$RUN_DIR"
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2   # /opt/ros/jazzy + pinned overlay
+source "$REPO/scripts/wsl/ros_env.sh" --full || exit 2   # /opt/ros/jazzy + pinned overlay
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
+source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
 
 starttime_of() { sed -E 's/^.*\) //' "/proc/$1/stat" 2>/dev/null | awk '{print $20}'; }

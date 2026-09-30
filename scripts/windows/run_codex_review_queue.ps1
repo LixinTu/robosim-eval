@@ -14,12 +14,15 @@
 param(
     [string]$Items = '',
     [string]$Rounds = 'round1c-a,round1c-b,round1c-c,round1c-d',
-    [string]$Dir = 'D:\RoboSim-Eval\docs\review\2026-09-29-d0',
-    [string]$ReviewRoot = 'D:\RoboSim-Eval\docs\review',
+    [string]$Dir = '',
+    [string]$ReviewRoot = '',
     [int]$MaxAttempts = 4,
     [string]$NotBefore = ''
 )
 $ErrorActionPreference = 'Stop'
+$repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent   # this checkout (a worktree queues its own reviews)
+if (-not $ReviewRoot) { $ReviewRoot = Join-Path $repo 'docs\review' }
+if (-not $Dir) { $Dir = Join-Path $repo 'docs\review\2026-09-29-d0' }
 # Start-Process joins -ArgumentList items with spaces without quoting them: pass -NotBefore without spaces (ISO form
 # 2026-09-30T03:38); a value containing a space is split and parameter binding fails before anything is logged.
 $log = Join-Path $ReviewRoot 'codex-queue.log'

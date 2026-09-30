@@ -3,7 +3,10 @@
 #   source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh
 # Verifies the profile exists and is well-formed XML before exporting FASTRTPS_DEFAULT_PROFILES_FILE.
 
-_robosim_dds="${ROBOSIM_DDS_PROFILE:-/mnt/d/RoboSim-Eval/configs/network/fastdds.xml}"
+# Default: the profile of the checkout this file belongs to (a worktree uses its own configs/).
+_robosim_repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+_robosim_dds="${ROBOSIM_DDS_PROFILE:-$_robosim_repo/configs/network/fastdds.xml}"
+unset _robosim_repo
 
 if [ ! -f "$_robosim_dds" ]; then
   echo "dds_env.sh: profile not found: $_robosim_dds" >&2; return 1 2>/dev/null || exit 1

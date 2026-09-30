@@ -8,13 +8,14 @@
 #   3. Discovery with a longer wait: daemon restart, 10 s, then node/topic list; then a no-daemon list with spin time
 #   4. WSL's own DDS sockets (ss)
 set -uo pipefail
-OUT="${1:-/mnt/d/RoboSim-Eval/artifacts/d0c/diag-$(date +%Y%m%d-%H%M%S)}"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
+OUT="${1:-$REPO/artifacts/d0c/diag-$(date +%Y%m%d-%H%M%S)}"
 mkdir -p "$OUT"
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
+source "$REPO/scripts/wsl/ros_env.sh" --base-only || exit 2
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
+source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
 run() { local title="$1"; shift; echo; echo "===== $title ====="; echo "CMD: $*"; "$@"; echo "EXIT: $?"; }
 

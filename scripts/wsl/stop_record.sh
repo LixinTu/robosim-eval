@@ -11,10 +11,11 @@
 #       `ros2 bag info` failed or the copy failed; 6 a required topic has 0 messages. The first failure's code is used;
 #       every failure is printed.
 set -uo pipefail
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 ATT="${1:?attempt dir required}"
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
+source "$REPO/scripts/wsl/ros_env.sh" --base-only || exit 2
 set -u
 [[ -f "$ATT/record.pids" ]] || { echo "no record.pids in $ATT"; exit 1; }
 RC=0

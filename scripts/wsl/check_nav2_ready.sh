@@ -9,6 +9,7 @@
 #   received, /scan and /clock have a measured rate; 1 not ready (the failed items are listed at the end); 2 environment
 #   or output-file problem.
 set -uo pipefail
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 RUN_DIR="${1:?run dir required}"
 mkdir -p "$RUN_DIR" || exit 2
 OUT="$RUN_DIR/ready-$(date +%H%M%S).txt"
@@ -16,9 +17,9 @@ OUT="$RUN_DIR/ready-$(date +%H%M%S).txt"
 exec > >(tee -a "$OUT") 2>&1
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2
+source "$REPO/scripts/wsl/ros_env.sh" --full || exit 2
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
+source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
 NOT_READY=()
 run() { local title="$1"; shift; echo; echo "===== $title ====="; echo "CMD: $*"; LAST=$("$@" 2>&1); LAST_RC=$?; echo "$LAST"; echo "EXIT: $LAST_RC"; }

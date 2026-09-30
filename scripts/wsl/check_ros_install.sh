@@ -3,13 +3,14 @@
 #   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_ros_install.sh
 # Exit code is non-zero when any required executable or package is missing.
 set -uo pipefail
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 rc=0
 fail() { echo "FAIL: $*"; rc=1; }
 
 echo "=== check_ros_install.sh $(date -Is) ==="
 set +u
 # shellcheck disable=SC1091
-if ! source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only; then echo "FAIL: ros_env.sh --base-only"; exit 1; fi
+if ! source "$REPO/scripts/wsl/ros_env.sh" --base-only; then echo "FAIL: ros_env.sh --base-only"; exit 1; fi
 set -u
 
 echo "--- executables ---"

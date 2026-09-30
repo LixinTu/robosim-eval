@@ -15,13 +15,14 @@
 # Stop with stop_record.sh <attempt_dir>, which also checks that data arrived.
 # Exit: 0 when every recorder is running 2 s after start; 1 otherwise (see <name>.log / <name>.err).
 set -uo pipefail
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 ATT="${1:?attempt dir required}"; MAX="${2:-320}"
 mkdir -p "$ATT"
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2
+source "$REPO/scripts/wsl/ros_env.sh" --full || exit 2
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
+source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
 BAG="$HOME/robosim_bags/$(basename "$ATT")-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$(dirname "$BAG")"

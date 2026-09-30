@@ -13,6 +13,7 @@
 #       5 goal finished but not SUCCEEDED (ABORTED/CANCELED/unknown); 6 goal rejected; other = action client exit code
 #       (e.g. 124 when the 330 s client timeout fired).
 set -uo pipefail
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 ATT="${1:?attempt dir}"; X="${2:?x}"; Y="${3:?y}"; YAW="${4:?yaw rad}"; shift 4
 CHECK_ONLY=no; ACTION=/navigate_to_pose; SETTLE=6
 while [[ $# -gt 0 ]]; do case "$1" in --check-only) CHECK_ONLY=yes;; --action) ACTION="$2"; shift;; --settle) SETTLE="$2"; shift;; *) echo "unknown arg $1"; exit 2;; esac; shift; done
@@ -22,9 +23,9 @@ fi
 mkdir -p "$ATT"
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2
+source "$REPO/scripts/wsl/ros_env.sh" --full || exit 2
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
+source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
 SHARE=$(ros2 pkg prefix carter_navigation)/share/carter_navigation
 MAPYAML="$SHARE/maps/carter_warehouse_navigation.yaml"

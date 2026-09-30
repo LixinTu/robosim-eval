@@ -11,13 +11,14 @@
 # locale steps only run when the current locale is not UTF-8; navigation packages needed by the pinned Isaac
 # workspace are added. Re-running is safe: apt only installs what is missing.
 #
-# Log: /mnt/d/RoboSim-Eval/artifacts/d0b/install-jazzy.log ; exit code: .../install-jazzy.exit
+# Log: $REPO/artifacts/d0b/install-jazzy.log ; exit code: .../install-jazzy.exit
 set -euo pipefail
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 
 WITH_UPGRADE=no
 [[ "${1:-}" == "--with-upgrade" ]] && WITH_UPGRADE=yes
 
-LOG_DIR=/mnt/d/RoboSim-Eval/artifacts/d0b
+LOG_DIR="$REPO/artifacts/d0b"
 mkdir -p "$LOG_DIR"
 LOG="$LOG_DIR/install-jazzy.log"
 exec > >(tee -a "$LOG") 2>&1
