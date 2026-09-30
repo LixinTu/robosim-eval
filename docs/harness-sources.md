@@ -51,14 +51,14 @@
 | 编号 | 来源 | 阅读状态 | 采用 / 暂缓 | 依据 |
 | --- | --- | --- | --- | --- |
 | C01 Best practices / C03 Customization | 未读 | 暂缓(供 Codex 会话自己读) | — |
-| C02 AGENTS.md | 未读 | 阶段 5 前读全文 | 确认 Codex 如何发现 AGENTS.md |
+| C02 AGENTS.md | 摘录(WebFetch,主会话,2026-09-29 21:0x):全局 `~/.codex` 先查 AGENTS.override.md 再 AGENTS.md;项目从 Git 根向下到当前目录逐级查找并按顺序拼接,越近越靠后;合计超过 `project_doc_max_bytes`(默认 32 KiB)后不再加入;可配置回退文件名;可让 Codex 自述已加载的说明来核实 | 采用:项目只放一份 AGENTS.md(远小于 32 KiB),CLAUDE.md 仅转发;Codex 审查提示词第 0 步要求它自述加载了哪些说明 | 摘录非全文;第 1 轮 Codex 中止前未输出第 0 步结论,入口发现仍待核实 |
 | C04 Build skills | 未读 | 不适用 | 无重复流程需求 |
-| C05 Code review | 未读 | 阶段 5 前读全文 | 审查范围与只读语义 |
+| C05 Code review | 摘录(WebFetch,主会话,2026-09-29 21:0x):`/review` 可选基线分支、未提交改动、单个提交或自定义说明;默认只读,只报告不改工作区;项目必须在 Git 仓库内 | 采用:审查用固定提交范围 + 只读;本机另有 `codex exec review --base/--commit/--uncommitted`(见本机 `--help`),本轮用 `codex exec --sandbox read-only` 配 harness pack 的完整提示词 | 摘录非全文 |
 | C06 Long horizon tasks | 未读 | 暂缓 | — |
 | C07 Hooks | 未读 | 暂缓 | — |
-| C08 Non-interactive mode | 未读 | 阶段 5 前读全文 | `codex exec` 当前参数、只读沙箱 |
+| C08 Non-interactive mode | 摘录(WebFetch,主会话,2026-09-29 21:0x):`codex exec` 默认只读沙箱;`-C`、`-o/--output-last-message`、`--json`、`--output-schema`、`--ephemeral`;`--full-auto` 已弃用;提示词可作参数或经 stdin `-` 传入;需在 Git 仓库内运行 | 采用:`codex exec --sandbox read-only -C D:\RoboSim-Eval -o <报告>`(参数与本机 codex-cli 0.157.0 `--help` 一致),见 scripts/windows/run_codex_review.ps1 | 摘录非全文;退出码语义页面未说明,以实测为准(第 1 轮用量上限时退出 1) |
 | C09 Evals | 未读 | 暂缓 | — |
 | C10 Subagents / C11 Docs MCP | 未读 | 不适用 | 无需求 |
-| C12 Developer commands | 未读 | 阶段 5 前读全文 | 命令语法 |
+| C12 Developer commands | 未读 | 以本机 `codex --help`、`codex exec --help`、`codex exec review --help` 代替(2026-09-29 实际运行并保存于会话) | 本机帮助对安装版本最权威 |
 | C13 Windows sandbox / C14 WSL | 未读 | 阶段 5 前读入口页 | Codex 在本机运行环境 |
 | C15 GPT-6 Astra | 未读 | 不适用 | 不假定模型 |
