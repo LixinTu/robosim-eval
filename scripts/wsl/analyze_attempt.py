@@ -11,7 +11,9 @@ Exit: 0 validation pass; 10 fail; 11 inconclusive; 2 bad arguments / --goal diff
 Result contract (plan doc A5): execution_status completed|error|interrupted; task_outcome reached|canceled|unknown (this
 tool never emits unreachable or timeout: aborted/rejected goals are "unknown" with the raw Nav2 status kept; timeouts are
 D3 scope); safety_status is always "unknown" in D0 (contact not measured); data_status complete|incomplete;
-validation_status pass|fail|inconclusive for the D0 expectation "reach the goal and come to rest".
+validation_status pass|fail|inconclusive for the D0 expectation "reach the goal and come to rest". Run by the D3 runner,
+this whole output is kept under result.json "analyzer" (only timing, nav2_raw, data_integrity, goal and target_goal stay
+at the top level); the runner's verdict also checks the "coverage" block (what the bag holds) against its own times.
 
 Target goal: the goal id printed by the CLI action client (goal-*.txt); without a transcript, the first goal id that
 becomes ACCEPTED/EXECUTING inside the bag. Status and feedback of any other goal id (e.g. a finished goal that is still
@@ -250,6 +252,11 @@ def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0
     t_accept = next((t for t, _, s in st if s in (1, 2)), None)
     term = next(((t, s) for t, _, s in st if s in (4, 5, 6)), None)
     t_end, raw_status = term if term else (None, None)
+    coverage = {"target_goal_observed": bool(st), "accepted_recorded": t_accept is not None,
+                "terminal_recorded": term is not None,
+                "streams": {n: {"first_sim_s": bag[n][0][1] if bag[n] else None,
+                                "last_sim_s": bag[n][-1][1] if bag[n] else None}
+                            for n in ("clock", "odom", "tf_odom_base", "tf_map_odom")}}
     if t_accept is None and st:
         t_accept = st[0][0]
         inconclusive.append("the target goal's ACCEPTED/EXECUTING status was not recorded")
@@ -389,6 +396,9 @@ def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0
         "stop_still": {"rule": f"|v|<{stop_lin} m/s and |w|<{stop_ang} rad/s for {stop_hold} s sim time after the terminal "
                                f"status (/chassis/odom twist; window restarts on gaps > {max_stop_gap} s)", **stop},
         "data_integrity": {"window": "goal accept .. arrival check (receive time)", "dropout_threshold_wall_s": dropout, **integrity},
+        "coverage": {"note": "what the recording holds: target goal status, and the first/last sim stamp per stream in "
+                             "receive order; the D3 runner compares these with its own acceptance..stop times",
+                     **coverage},
         "message_counts": {k: len(v) for k, v in bag.items()},
         "preconditions_for_sim_state_source": PRECONDITIONS if spawn else None,
         "notes": [
