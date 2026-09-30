@@ -358,3 +358,32 @@ def test_cap_stops_the_batch_after_the_attempt_and_keeps_its_exit_code(tmp_path:
     assert started == 1 and signals == [[]] and rec["attempts"][0]["exit"] == 0
     assert rec["state"] == "interrupted" and rec["stopped_by"] == "SIGTERM"
     assert (bdir / "runs" / "report.html").exists()
+
+
+# ---- evidence script: artifacts/d4/stuck-start/run_bag_scans.sh (report_batch-11) ------------------------------------
+
+@needs_terminal
+def test_bag_scan_covers_every_run_dir_the_cmd_vel_scan_covers(tmp_path: Path):
+    """Both halves use cmd_vel_scan.py's rule: dirs named <scenario>-2026093*-* holding a cmd_vel.txt, at any depth."""
+    here = tmp_path / "artifacts" / "d4" / "stuck-start"
+    here.mkdir(parents=True)
+    shutil.copy(batch.REPO / "artifacts" / "d4" / "stuck-start" / "run_bag_scans.sh", here)
+    (here / "plan_heading.py").write_text("import sys\nfor d in sys.argv[1:]:\n    print('PLAN', d)\n", "utf-8")
+    (here / "cmd_vel_scan.py").write_text("print('run | x')\nprint('a | 1')\nprint('b | 2')\n", "utf-8")
+    (tmp_path / "scripts" / "wsl").mkdir(parents=True)
+    (tmp_path / "scripts" / "wsl" / "ros_env.sh").write_text("return 0\n", encoding="utf-8")
+    a = tmp_path / "artifacts"
+    want = [a / "d2/runs/normal-20260930-002844", a / "d4/batch-20260930-013010/runs/bypass-20260930-013406",
+            a / "d5/batch-20260930-021530/runs/normal-20260930-021530", a / "d5/demo/runs/cancel-20260930-021343"]
+    for d in want:
+        (d / "rosbag").mkdir(parents=True)
+        (d / "cmd_vel.txt").write_text("", encoding="utf-8")
+    (a / "d0d/run-01/attempt-01/rosbag").mkdir(parents=True)          # D0 layout: neither half covers it
+    (a / "d2/fake-01/abort/fake-20260930-002401").mkdir(parents=True)  # fake-node run: no cmd_vel.txt
+    env = {"PATH": os.environ["PATH"], "HOME": os.environ.get("HOME", "/tmp"), "LANG": "C.UTF-8",
+           "PYTHONDONTWRITEBYTECODE": "1"}
+    p = subprocess.run(["bash", str(here / "run_bag_scans.sh")], capture_output=True, text=True, env=env, timeout=60)
+    assert p.returncode == 0, p.stdout + p.stderr
+    got = [line.split(" ", 1)[1] for line in p.stdout.splitlines() if line.startswith("PLAN ")]
+    assert got == sorted(str(d) for d in want)
+    assert "plan_heading.py: 4 run dirs" in p.stdout and "cmd_vel_scan.py: 2 rows" in p.stdout
