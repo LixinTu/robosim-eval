@@ -14,7 +14,9 @@
 | D0 交付 + 独立审查 | 进行中:**待独立审查** | docs/setup.md;docs/review/2026-09-29-d0-handoff.md;docs/review/2026-09-29-d0/REVIEW.md | Codex 第 1 轮两次因账户用量上限中止、无意见(20:59 用 82,531 tokens;23:23 重跑用 102,685 tokens);同一范围已拆成 4 个分片,由排队脚本从 2026-09-30 03:38 起自动运行,见 REVIEW.md;Claude 内部预审第 2 次完成(38 条,确认 35 条),有效项已修复并回归,见 REVIEW.md |
 | D1 doctor | 实现与验证完成(2026-09-29 23:3x–23:49),**待独立审查**与用户验收 | 分支 `feature/d1-doctor`;`robosim_eval/doctor*.py`、`configs/baseline.yaml`、`scripts/wsl/doctor.sh`;证据 `artifacts/d1/commands.md` | 固定输入测试 37 passed、改坏检查 7/7、假节点测试 6/6;真实 Isaac:运行时退出 0,用户按 ⏸ 后 2 s 窗口判"不推进"退出 10,恢复后退出 0 |
 | D2 单次运行器 | 实现与验证完成(2026-09-30 00:1x–00:47),**待独立审查**与用户验收 | 分支 `feature/d2-runner`;`robosim_eval/runner*.py`、`sim_adapter.py`、`run_io.py`;`scripts/wsl/run_scenario.sh`、`sim.sh`;证据 `artifacts/d2/commands.md` | 固定输入测试 77 passed;运行器假节点测试 8/8;真实 Isaac:正常 A→B reached(真值误差 0.264 m),导航中 SIGINT → 取消、停车、收尾(interrupted);Isaac 由 sim_control 复位、加载场景、读真值,不再需要 GUI 点击 |
-| D3 判定 / D4 批量复跑 / D5 作品交付 | D3 进行中 | — | 按序进行 |
+| D3 判定与失败处理 | 实现与验证完成(2026-09-30 00:5x–01:29),**待独立审查**与用户验收 | 分支 `feature/d3-verdicts`;`robosim_eval/evaluator.py`、`contacts.py`、`kit/contact_monitor.py`;证据 `artifacts/d3/commands.md`;缺陷记录 `docs/defect-record.md` | 固定输入测试 109 passed;判定模块改坏检查 8/8(含 4 种必做的坏数据);真实 Isaac:正常、绕行、不可达、取消、超时 pass,断流正确判 inconclusive,碰撞抓到轮子与矮箱子的接触判 fail;修复一个运行器缺陷(复位前 odom 残留) |
+| D4 批量复跑 | 进行中(01:30 起) | `robosim_eval/batch.py`、`report.py`、`scripts/wsl/run_batch.sh` | 3 个情形 × 3 次 |
+| D5 作品交付 | 未开始 | — | — |
 
 **当前任务:** D0 交付收尾(Codex 分片审查排队中 → 逐条核实、修复有效项、重跑受影响检查 → 必要时第二轮复核 → 用户三步验收)与 D1 诊断工具并行。D0 的修复在 `feature/d0-environment` 上做,再合进 `feature/d1-doctor`。
 
@@ -140,6 +142,9 @@
 - D2:复位后点云发布者约 1.5–2 s 才重建,头几秒可能只有 0–1 帧;准备阶段的 doctor 对此有限重查(artifacts/d2/repro-doctor-after-reset)。
 - D2:AMCL 的 map→odom 在导航中两次出现 2.3–2.5 s 的空档(D0 为 1.86 s),超过 2 s 断流门槛;D3 起把它归为"仅作参考"的数据流,判定必需的是 /clock、odom 与 Isaac 侧 TF。
 - D2:Nav2 从启动到就绪 13.3–13.6 s(远低于 60 s 预算);正常通路(6 m,先转 180°)约 15–18 s 仿真时间。
+- D3:Isaac 内的 PhysX 接触报告经 Python 执行服务取数可用;复位后机器人只与两个地面碰撞平面接触,由此确定地面过滤规则(artifacts/d3/contact-fetch-after-reset.json)。
+- D3:"开头卡住"间歇出现(开接触监视的 3 次正常路线中 2 次),发目标后约 38 s 仿真时间不动,Nav2 恢复后到达;/scan 与正常时相同,机制未查明,见 artifacts/d3/commands.md。
+- D3:不可达目标 (-10.05, -1.0) 实测 Nav2 返回 ABORTED、error_code 208,恢复 15 次(离线预测 4 次)。
 
 **已知问题:**
 - Nav2 停止时组件容器在清理阶段 SIGSEGV("Magick: abort due to signal 11",exit -6):run-01、run-04、run-05 三次都出现。rviz2 每次退出方式不同:run-01 为 -6,run-04 为 -9(launch 在 SIGINT/SIGTERM 超时后 SIGKILL),run-05 为 -11。launch 退出码 1 只在 run-04、run-05 记录到;run-01 用的是旧脚本,没有记录。三次都没有残留进程,不影响导航与记录。
@@ -162,8 +167,7 @@
 - sudo/管理员、colcon 构建时间、rosdep 网络、10 分钟工具上限(后台作业规避)。
 - 总时长粗估半天到一天,并受用户在 GUI 步骤的可用时间影响。
 
-## 11. 下一项:D3 判定与失败处理
-- 目标(计划 A4 D3、A5):跑正常、不可达、取消与断流情形;到达、超时、碰撞、取消分开判定;停止可验证;原始数据、判定理由与回归测试齐全。
-- 独立真值:sim_control 的 GetEntityState(底盘刚体);接触:Isaac 内的 PhysX 接触报告,经用户同意打开的 Python 执行服务取数(只监听本机、需要令牌)。
-- 必做的坏数据测试:虚假成功、缺接触数据、时间倒退、取消无回执,都不能判为普通通过。
-- 数据流分级:判定必需(/clock、odom、Isaac 侧 TF、真值)与仅作参考(AMCL 估计),规则在正式比较前冻结并写明理由。
+## 11. 下一项:D4 批量复跑与 D5 作品交付
+- D4(计划 A4):normal、bypass、unreachable 各 3 次,每次复位并用真值核对;9 次全部留档;静态 HTML 报告按情形分组、失败尝试计入、成功时间只统计到达的运行并注明。
+- D5(计划 A4、§D):README 从新终端启动;三个真实操作(正常导航并打开记录、一个失败或取消案例并解释、改一个事先说明的参数并预测、复跑对比);写明哪些来自 NVIDIA/Nav2、哪些自写、哪些由 AI 编写。
+- 审查:D0–D3 的 Codex 审查在队列里(03:38 起);D4、D5 完成后加入。
