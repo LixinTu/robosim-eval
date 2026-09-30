@@ -240,7 +240,7 @@ index 0000000..b9204bc
 +- Windows Defender 对 kit.exe 的首次监听是否弹窗(阶段 3 观察)。
 diff --git a/docs/harness-sources.md b/docs/harness-sources.md
 new file mode 100644
-index 0000000..114fda3
+index 0000000..659d9fb
 --- /dev/null
 +++ b/docs/harness-sources.md
 @@ -0,0 +1,64 @@
@@ -297,15 +297,15 @@ index 0000000..114fda3
 +| 编号 | 来源 | 阅读状态 | 采用 / 暂缓 | 依据 |
 +| --- | --- | --- | --- | --- |
 +| C01 Best practices / C03 Customization | 未读 | 暂缓(供 Codex 会话自己读) | — |
-+| C02 AGENTS.md | 未读 | 阶段 5 前读全文 | 确认 Codex 如何发现 AGENTS.md |
++| C02 AGENTS.md | 摘录(WebFetch,主会话,2026-09-29 21:0x):全局 `~/.codex` 先查 AGENTS.override.md 再 AGENTS.md;项目从 Git 根向下到当前目录逐级查找并按顺序拼接,越近越靠后;合计超过 `project_doc_max_bytes`(默认 32 KiB)后不再加入;可配置回退文件名;可让 Codex 自述已加载的说明来核实 | 采用:项目只放一份 AGENTS.md(远小于 32 KiB),CLAUDE.md 仅转发;Codex 审查提示词第 0 步要求它自述加载了哪些说明 | 摘录非全文;第 1 轮 Codex 中止前未输出第 0 步结论,入口发现仍待核实 |
 +| C04 Build skills | 未读 | 不适用 | 无重复流程需求 |
-+| C05 Code review | 未读 | 阶段 5 前读全文 | 审查范围与只读语义 |
++| C05 Code review | 摘录(WebFetch,主会话,2026-09-29 21:0x):`/review` 可选基线分支、未提交改动、单个提交或自定义说明;默认只读,只报告不改工作区;项目必须在 Git 仓库内 | 采用:审查用固定提交范围 + 只读;本机另有 `codex exec review --base/--commit/--uncommitted`(见本机 `--help`),本轮用 `codex exec --sandbox read-only` 配 harness pack 的完整提示词 | 摘录非全文 |
 +| C06 Long horizon tasks | 未读 | 暂缓 | — |
 +| C07 Hooks | 未读 | 暂缓 | — |
-+| C08 Non-interactive mode | 未读 | 阶段 5 前读全文 | `codex exec` 当前参数、只读沙箱 |
++| C08 Non-interactive mode | 摘录(WebFetch,主会话,2026-09-29 21:0x):`codex exec` 默认只读沙箱;`-C`、`-o/--output-last-message`、`--json`、`--output-schema`、`--ephemeral`;`--full-auto` 已弃用;提示词可作参数或经 stdin `-` 传入;需在 Git 仓库内运行 | 采用:`codex exec --sandbox read-only -C D:\RoboSim-Eval -o <报告>`(参数与本机 codex-cli 0.157.0 `--help` 一致),见 scripts/windows/run_codex_review.ps1 | 摘录非全文;退出码语义页面未说明,以实测为准(第 1 轮用量上限时退出 1) |
 +| C09 Evals | 未读 | 暂缓 | — |
 +| C10 Subagents / C11 Docs MCP | 未读 | 不适用 | 无需求 |
-+| C12 Developer commands | 未读 | 阶段 5 前读全文 | 命令语法 |
++| C12 Developer commands | 未读 | 以本机 `codex --help`、`codex exec --help`、`codex exec review --help` 代替(2026-09-29 实际运行并保存于会话) | 本机帮助对安装版本最权威 |
 +| C13 Windows sandbox / C14 WSL | 未读 | 阶段 5 前读入口页 | Codex 在本机运行环境 |
 +| C15 GPT-6 Astra | 未读 | 不适用 | 不假定模型 |
 diff --git a/docs/plan.md b/docs/plan.md
@@ -740,6 +740,41 @@ index 0000000..14f105f
 +Section 'git' 'git -C D:\RoboSim-Eval log --oneline -3; git -C D:\RoboSim-Eval status --short'
 +Write-Output ''
 +Write-Output "PROBE END: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')"
+diff --git a/scripts/windows/run_codex_review.ps1 b/scripts/windows/run_codex_review.ps1
+new file mode 100644
+index 0000000..fffb192
+--- /dev/null
++++ b/scripts/windows/run_codex_review.ps1
+@@ -0,0 +1,29 @@
++# run_codex_review.ps1 — RoboSim Eval: run one read-only Codex review round, detached-friendly, with full logs.
++#   powershell -NoProfile -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\run_codex_review.ps1 -Round round1
++# Inputs:  <Dir>\codex-prompt-<Round>.md (UTF-8 prompt; the short command-line prompt only tells Codex to read it,
++#          which avoids Windows PowerShell 5.1 re-encoding Chinese text on the pipe).
++# Outputs: <Dir>\codex-<Round>-report.md (last agent message, via -o), -stdout.txt, -stderr.txt,
++#          -status.txt (start/end, real exit code, duration, and whether the account usage limit was hit).
++# Read-only by construction: `codex exec --sandbox read-only`; no paid options are used.
++param(
++    [string]$Round = 'round1',
++    [string]$Dir = 'D:\RoboSim-Eval\docs\review\2026-09-29-d0'
++)
++$ErrorActionPreference = 'Stop'
++$promptFile = Join-Path $Dir "codex-prompt-$Round.md"
++if (-not (Test-Path $promptFile)) { throw "prompt file not found: $promptFile" }
++$report = Join-Path $Dir "codex-$Round-report.md"
++$status = Join-Path $Dir "codex-$Round-status.txt"
++$stdout = Join-Path $Dir "codex-$Round-stdout.txt"
++$stderr = Join-Path $Dir "codex-$Round-stderr.txt"
++$prompt = "Read the file $promptFile (UTF-8, Chinese) and carry out exactly the review it describes. Do not modify any file. Write the final report in Chinese."
++
++"start $(Get-Date -Format o) round=$Round prompt_file=$promptFile" | Out-File $status -Encoding utf8
++$t0 = Get-Date
++$p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', "codex exec --sandbox read-only -C D:\RoboSim-Eval -o `"$report`" `"$prompt`"" `
++    -RedirectStandardOutput $stdout -RedirectStandardError $stderr -NoNewWindow -Wait -PassThru
++$limit = [bool](Select-String -Path $stderr -Pattern 'hit your usage limit' -Quiet)
++"end $(Get-Date -Format o) exit=$($p.ExitCode) duration_s=$([int]((Get-Date) - $t0).TotalSeconds) report_written=$(Test-Path $report) usage_limit_hit=$limit" |
++    Out-File $status -Append -Encoding utf8
++Get-Content $status
++exit $p.ExitCode
 diff --git a/scripts/windows/start_isaac_ros2.ps1 b/scripts/windows/start_isaac_ros2.ps1
 new file mode 100644
 index 0000000..bd07b9e

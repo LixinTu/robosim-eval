@@ -1,6 +1,6 @@
 {
- "base": "dbf67ce",
- "head": "6365dcb",
+ "base": "dbf67cee7c386fcbfb5f9f6a58f47ff1db73061d",
+ "head": "8bce97b2dbf8df078867b60c162591573b211ea0",
  "files": [
   {
    "path": ".gitignore",
@@ -738,6 +738,76 @@
    "kind": "docs"
   },
   {
+   "path": "docs/review/2026-09-29-d0-handoff.md",
+   "status": "A",
+   "added": "66",
+   "deleted": "0",
+   "kind": "review-material"
+  },
+  {
+   "path": "docs/review/2026-09-29-d0/REVIEW.md",
+   "status": "A",
+   "added": "21",
+   "deleted": "0",
+   "kind": "review-material"
+  },
+  {
+   "path": "docs/review/2026-09-29-d0/artifacts-diffstat.txt",
+   "status": "A",
+   "added": "99",
+   "deleted": "0",
+   "kind": "review-material"
+  },
+  {
+   "path": "docs/review/2026-09-29-d0/changed-files.json",
+   "status": "A",
+   "added": "928",
+   "deleted": "0",
+   "kind": "review-material"
+  },
+  {
+   "path": "docs/review/2026-09-29-d0/codex-prompt-round1.md",
+   "status": "A",
+   "added": "46",
+   "deleted": "0",
+   "kind": "review-material"
+  },
+  {
+   "path": "docs/review/2026-09-29-d0/codex-round1-status.txt",
+   "status": "A",
+   "added": "2",
+   "deleted": "0",
+   "kind": "review-material"
+  },
+  {
+   "path": "docs/review/2026-09-29-d0/codex-round1-stderr.txt",
+   "status": "A",
+   "added": "4186",
+   "deleted": "0",
+   "kind": "review-material"
+  },
+  {
+   "path": "docs/review/2026-09-29-d0/codex-round1-stdout.txt",
+   "status": "A",
+   "added": "0",
+   "deleted": "0",
+   "kind": "review-material"
+  },
+  {
+   "path": "docs/review/2026-09-29-d0/range.txt",
+   "status": "A",
+   "added": "2",
+   "deleted": "0",
+   "kind": "review-material"
+  },
+  {
+   "path": "docs/review/2026-09-29-d0/task.diff",
+   "status": "A",
+   "added": "2127",
+   "deleted": "0",
+   "kind": "review-material"
+  },
+  {
    "path": "docs/setup.md",
    "status": "A",
    "added": "62",
@@ -769,6 +839,13 @@
    "path": "scripts/windows/probe_env.ps1",
    "status": "A",
    "added": "57",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/windows/run_codex_review.ps1",
+   "status": "A",
+   "added": "29",
    "deleted": "0",
    "kind": "code/config"
   },
@@ -920,9 +997,5 @@
    "kind": "code/config"
   }
  ],
- "untracked_at_snapshot": [
-  "?? docs/review/2026-09-29-d0/artifacts-diffstat.txt",
-  "?? docs/review/2026-09-29-d0/range.txt",
-  "?? docs/review/2026-09-29-d0/task.diff"
- ]
+ "note": "working tree clean at head; review materials under docs/review/ are listed but not part of the code under review"
 }
