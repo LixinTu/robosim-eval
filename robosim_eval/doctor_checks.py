@@ -4,8 +4,9 @@ No ROS imports here, so every rule is testable with fixed inputs (tests/test_doc
 Time bases: receive times are wall-clock seconds (monotonic); header stamps and /clock values are simulation seconds.
 
 Verdict precedence (first match wins):
-  13 env_or_interface_error  RMW / domain / DDS profile / ROS distro differ from the expected values, or a topic has
-                             an unexpected message type
+  13 env_or_interface_error  RMW / domain / DDS profile / ROS distro differ from the expected values, or a publisher
+                             of a configured topic has another message type than configured (types are taken from the
+                             publishers, never from the doctor's own subscriptions in the ROS graph)
   11 sim_data_missing        /clock has no publisher (Isaac closed, bridge not loaded, or DDS discovery broken)
   10 sim_not_advancing       /clock has a publisher but did not advance: no messages, frozen value, or it stalled for
                              longer than clock_stall_s before the window ended (typically: simulation paused/stopped)
@@ -74,7 +75,7 @@ class EnvFacts:
 @dataclass(frozen=True)
 class StreamObservation:
     present: bool
-    msg_type: Optional[str]
+    msg_types: Tuple[str, ...]  # message types of the topic's publishers; empty without a publisher
     samples: Sequence[Sample]
 
 
@@ -83,7 +84,7 @@ class Observation:
     window_start: float
     window_end: float
     clock_present: bool
-    clock_type: Optional[str]
+    clock_types: Tuple[str, ...]  # message types of the /clock publishers
     clock: Sequence[Tuple[float, float]]
     streams: Mapping[str, StreamObservation]
     env: EnvFacts
@@ -99,18 +100,19 @@ class ClockStats:
     last_age_s: Optional[float]
     backward_jumps: int
     last_sim_s: Optional[float]
+    msg_types: Tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class StreamStats:
     present: bool
-    msg_type: Optional[str]
+    msg_types: Tuple[str, ...]
     count: int
     rate_hz: float
     max_gap_s: Optional[float]
     last_age_s: Optional[float]
     stamp_lag_s: Optional[float]
-    status: str  # ok | missing | silent | stale | slow
+    status: str  # ok | missing | silent | stale | slow | not_observed
     detail: str
 
 
@@ -123,6 +125,7 @@ class DoctorReport:
     window_s: float
     clock: ClockStats
     streams: Mapping[str, StreamStats]
+    observed: bool = True  # False: judged from the environment alone, the ROS graph was not looked at
 
     def to_dict(self) -> dict:
         """Plain JSON-serializable dict (nested dataclasses become dicts, tuples become lists)."""
@@ -148,6 +151,7 @@ def _clock_stats(obs: Observation, window: float) -> Tuple[ClockStats, List[str]
         last_age_s=(obs.window_end - samples[-1][0]) if samples else None,
         backward_jumps=backward,
         last_sim_s=samples[-1][1] if samples else None,
+        msg_types=tuple(obs.clock_types),
     )
     return stats, warnings
 
@@ -171,11 +175,12 @@ def _stream_stats(name: str, so: StreamObservation, th: StreamThresholds, window
         status, detail = "slow", f"{name}: {rate:.2f} Hz < {th.min_rate_hz} Hz"
     else:
         status, detail = "ok", f"{name}: {rate:.2f} Hz, last message {last_age:.2f} s old"
-    return StreamStats(present=so.present, msg_type=so.msg_type, count=count, rate_hz=rate, max_gap_s=max_gap,
+    return StreamStats(present=so.present, msg_types=tuple(so.msg_types), count=count, rate_hz=rate, max_gap_s=max_gap,
                        last_age_s=last_age, stamp_lag_s=lag, status=status, detail=detail)
 
 
-def _env_reasons(env: EnvFacts, expected: EnvFacts) -> List[str]:
+def env_reasons(env: EnvFacts, expected: EnvFacts) -> List[str]:
+    """Differences between the current environment and the expected one (13 when non-empty)."""
     reasons = []
     if expected.rmw and env.rmw != expected.rmw:
         reasons.append(f"RMW_IMPLEMENTATION is {env.rmw!r}, expected {expected.rmw!r}")
@@ -195,23 +200,22 @@ def evaluate(obs: Observation, thresholds: DoctorThresholds, expected_types: Map
     clock, warnings = _clock_stats(obs, window)
     streams: Dict[str, StreamStats] = {}
     for name, th in thresholds.streams.items():
-        so = obs.streams.get(name, StreamObservation(present=False, msg_type=None, samples=()))
+        so = obs.streams.get(name, StreamObservation(present=False, msg_types=(), samples=()))
         streams[name] = _stream_stats(name, so, th, obs.window_end, window, clock.last_sim_s)
 
-    env_reasons = _env_reasons(obs.env, expected_env)
-    if obs.clock_present and obs.clock_type and obs.clock_type != expected_types.get("clock", obs.clock_type):
-        env_reasons.append(f"clock: message type {obs.clock_type} != expected {expected_types['clock']}")
-    for name, st in streams.items():
+    problems = env_reasons(obs.env, expected_env)
+    for name, published in [("clock", obs.clock_types)] + [(n, st.msg_types) for n, st in streams.items()]:
         want = expected_types.get(name)
-        if st.present and st.msg_type and want and st.msg_type != want:
-            env_reasons.append(f"{name}: message type {st.msg_type} != expected {want}")
+        wrong = [t for t in published if want and t != want]
+        if wrong:  # one wrong publisher is enough: its messages never reach the doctor's subscription
+            problems.append(f"{name}: publisher message type {', '.join(wrong)} != expected {want}")
 
     def report(verdict: str, code: int, reasons: List[str]) -> DoctorReport:
         return DoctorReport(verdict=verdict, exit_code=code, reasons=tuple(reasons), warnings=tuple(warnings),
                             window_s=window, clock=clock, streams=streams)
 
-    if env_reasons:
-        return report("env_or_interface_error", EXIT_ENV, env_reasons)
+    if problems:
+        return report("env_or_interface_error", EXIT_ENV, problems)
     if not obs.clock_present:
         return report("sim_data_missing", EXIT_DATA_MISSING,
                       ["clock: no publisher for /clock (Isaac Sim closed, ROS 2 bridge not loaded, or DDS discovery "
@@ -234,3 +238,15 @@ def evaluate(obs: Observation, thresholds: DoctorThresholds, expected_types: Map
     if degraded:
         return report("degraded", EXIT_DEGRADED, degraded)
     return report("healthy", EXIT_HEALTHY, [])
+
+
+def not_observed_report(reasons: Sequence[str], thresholds: DoctorThresholds) -> DoctorReport:
+    """Exit 13 judged from the environment alone, before any ROS use: observing with a wrong RMW, domain or profile
+    would be meaningless, and an RMW library that cannot be loaded makes rcl end the process on import."""
+    clock = ClockStats(present=False, count=0, rate_hz=0.0, sim_progress_s=0.0, rtf=None, last_age_s=None,
+                       backward_jumps=0, last_sim_s=None)
+    streams = {name: StreamStats(present=False, msg_types=(), count=0, rate_hz=0.0, max_gap_s=None, last_age_s=None,
+                                 stamp_lag_s=None, status="not_observed", detail=f"{name}: not observed")
+               for name in thresholds.streams}
+    return DoctorReport(verdict="env_or_interface_error", exit_code=EXIT_ENV, reasons=tuple(reasons), warnings=(),
+                        window_s=0.0, clock=clock, streams=streams, observed=False)
