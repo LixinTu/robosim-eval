@@ -2,8 +2,8 @@
 
 ## 范围
 
-- 基线 `02de625`(D4 分支末端),被审版本 `@FROZEN@`(分支 `feature/d5-demo`)。
-- `git diff 02de625 @FROZEN@ -- . ':(exclude)artifacts' ':(exclude)docs/review'`。
+- 基线 `02de625`(D4 分支末端),被审版本 `24fa308`(分支 `feature/d5-demo`)。
+- `git diff 02de625 24fa308 -- . ':(exclude)artifacts' ':(exclude)docs/review'`。
 - 证据:`artifacts/d5/commands.md`;演示记录 `docs/demo.md`;缺陷记录 `docs/defect-record.md` 的缺陷 3。
 
 ## 需求
