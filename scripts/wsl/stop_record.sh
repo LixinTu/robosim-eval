@@ -76,8 +76,11 @@ classify() {
   if [[ "$(cat "$PROC/sys/kernel/random/boot_id" 2>/dev/null)" != "$BOOT" ]]; then
     STATE[i]=foreign; WHY[i]="boot_id differs from the recording's (WSL restarted); the id belongs to other processes now"; return
   fi
-  if [[ -d "$PROC/$sid" ]]; then
-    STATE[i]=foreign; WHY[i]="process $sid is not this attempt's ${NAMES[$i]} wrapper (start time, command line or token differ)"; return
+  if [[ -d "$PROC/$sid" ]]; then   # pid + start time identify a process: only a different start time proves ours is gone
+    if [[ "$(stat_field "$sid" 20)" == "${STARTS[$i]}" ]]; then
+      WHY[i]="process $sid has the recorded start time, but its command line or ownership token does not match"; return
+    fi
+    STATE[i]=foreign; WHY[i]="process $sid is not this attempt's ${NAMES[$i]} wrapper (its start time differs)"; return
   fi
   for p in $members; do
     if ! has_token "$p" || [[ "$(stat_field "$p" 20)" -lt "${STARTS[$i]}" ]]; then
@@ -99,7 +102,7 @@ signal_all() {
     sid=${SIDS[$i]}
     pkill "-$sig" -s "$sid"
     # a wrapper that has not called setsid yet is not in its own session: signal it directly (env: the external kill)
-    if [[ -d "$PROC/$sid" && "$(stat_field "$sid" 4)" != "$sid" ]]; then env kill "-$sig" "$sid"; fi
+    if [[ -d "$PROC/$sid" && "$(stat_field "$sid" 4)" != "$sid" ]] && own_leader "$i"; then env kill "-$sig" "$sid"; fi
     echo "SIG$sig -> session ${NAMES[$i]} ($sid)"
   done
 }

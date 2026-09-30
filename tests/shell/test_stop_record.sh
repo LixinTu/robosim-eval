@@ -181,6 +181,16 @@ check "G2: leftovers without the token -> exit 7" 7 "$RC"
 check_no_grep "G2: not signalled" 'session 5100002' "$T/signals.log"
 check "G2: bag not copied (cannot tell whether a recorder still runs)" no "$(copied)"
 
+# G3. the wrapper with the recorded start time but without this attempt's token: cannot be ours or foreign -> unknown.
+t_new stop_record.sh; cd "$T" || exit 1; baginfo
+attempt "$T/att"; six_sessions
+rm -rf "$ROBOSIM_PROC_ROOT"/5100002
+mkproc 5100002 5100002 1 1010 "{\"argv\": [\"bash\", \"-c\", \"wrapper\", \"$A/odom.exit\"], \"env\": {}}"
+stop
+check "G3: recorded start time but no token -> exit 7" 7 "$RC"
+check_no_grep "G3: not signalled" 'session 5100002' "$T/signals.log"
+check "G3: bag not copied (it may be our recorder)" no "$(copied)"
+
 # H. required text stream empty.
 t_new stop_record.sh; cd "$T" || exit 1; baginfo
 attempt "$T/att"; six_sessions
