@@ -1,0 +1,49 @@
+
+===== tf2_echo odom -> base_link (5 s) =====
+CMD: timeout 5 ros2 run tf2_ros tf2_echo odom base_link
+At time 40.283333333
+- Translation: [0.045, -0.000, -0.000]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, -0.000]
+- Rotation: in RPY (degree) [-0.000, 0.000, -0.008]
+- Matrix:
+  1.000  0.000  0.000  0.045
+ -0.000  1.000  0.000 -0.000
+ -0.000 -0.000  1.000 -0.000
+  0.000  0.000  0.000  1.000
+At time 40.716666666
+- Translation: [0.045, -0.000, -0.000]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, -0.000]
+- Rotation: in RPY (degree) [-0.000, 0.000, -0.008]
+- Matrix:
+  1.000  0.000  0.000  0.045
+ -0.000  1.000  0.000 -0.000
+ -0.000 -0.000  1.000 -0.000
+  0.000  0.000  0.000  1.000
+At time 41.133333333
+- Translation: [0.046, -0.000, -0.000]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, -0.000]
+- Rotation: in RPY (degree) [-0.000, 0.000, -0.008]
+- Matrix:
+  1.000  0.000  0.000  0.046
+ -0.000  1.000  0.000 -0.000
+ -0.000 -0.000  1.000 -0.000
+  0.000  0.000  0.000  1.000
+At time 41.566666666
+- Translation: [0.046, -0.000, -0.000]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, -0.000]
+- Rotation: in RPY (degree) [-0.000, 0.000, -0.008]
+- Matrix:
+  1.000  0.000  0.000  0.046
+ -0.000  1.000  0.000 -0.000
+ -0.000 -0.000  1.000 -0.000
+  0.000  0.000  0.000  1.000
+EXIT: 124
+
+===== tf frames yaml =====
+CMD: bash -c timeout 12 ros2 run tf2_ros tf2_echo --help >/dev/null 2>&1; timeout 15 ros2 topic echo --once --no-arr /tf_static
+WARNING: topic [/tf_static] does not appear to be published yet
+EXIT: 1

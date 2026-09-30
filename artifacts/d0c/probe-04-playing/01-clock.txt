@@ -1,0 +1,28 @@
+
+===== /clock hz (10 s) =====
+CMD: timeout 10 ros2 topic hz /clock --window 50
+average rate: 25.193
+	min: 0.022s max: 0.063s std dev: 0.01504s window: 26
+average rate: 25.315
+	min: 0.022s max: 0.063s std dev: 0.01504s window: 50
+average rate: 25.345
+	min: 0.022s max: 0.061s std dev: 0.01453s window: 50
+average rate: 25.524
+	min: 0.023s max: 0.063s std dev: 0.01439s window: 50
+average rate: 26.049
+	min: 0.004s max: 0.063s std dev: 0.01551s window: 50
+average rate: 26.570
+	min: 0.004s max: 0.060s std dev: 0.01509s window: 50
+average rate: 25.961
+	min: 0.021s max: 0.060s std dev: 0.01439s window: 50
+average rate: 26.091
+	min: 0.020s max: 0.060s std dev: 0.01482s window: 50
+EXIT: 124
+
+===== /clock sample =====
+CMD: timeout 10 ros2 topic echo --once /clock
+clock:
+  sec: 19
+  nanosec: 50000000
+---
+EXIT: 0

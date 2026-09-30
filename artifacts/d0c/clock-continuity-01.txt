@@ -1,0 +1,9 @@
+=== /clock continuity check (D0c) ===
+command (PowerShell -> wsl.exe -> bash -lc): source /opt/ros/jazzy/setup.bash; export RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml; timeout 50 ros2 topic echo /clock --field clock.sec | uniq | tr '\n' ' '
+wall clock: start 2026-09-29 20:04:03, end 20:04:57 (local)
+result: clock.sec ran monotonically 76 -> 97 (21 s of simulation time in ~50 s of wall time, real-time factor ~0.42); no wrap-around, no backwards step.
+context: kit log shows "[omni.usd.audio] resetting the animation timeline" at 03:01:36Z, 03:02:17Z, 03:02:58Z, 03:03:41Z (every ~41-43 s) each paired with one
+  "[omni.graph.core.plugin] /World/Nova_Carter_ROS/differential_drive/differential_controller_01: Invalid deltaTime 0.000000, cannot check for acceleration limits, skipping current step".
+  A reset was due during the observation window and the ROS /clock did NOT reset, so the loop affects the USD animation timeline only, not simulation time.
+  Known blemish for D0d: one dt=0 frame in the differential controller every ~41 s; watch odom for jumps during navigation.
+exit code of the timeout-wrapped echo: 124 (ran the full window, by design)

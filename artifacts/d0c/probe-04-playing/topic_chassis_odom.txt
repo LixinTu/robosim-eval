@@ -1,0 +1,77 @@
+
+===== info -v /chassis/odom =====
+CMD: timeout 15 ros2 topic info -v /chassis/odom
+Type: nav_msgs/msg/Odometry
+
+Publisher count: 1
+
+Node name: _World_Nova_Carter_ROS_transform_tree_odometry_ros2_publish_odometry
+Node namespace: /
+Topic type: nav_msgs/msg/Odometry
+Topic type hash: RIHS01_3cc97dc7fb7502f8714462c526d369e35b603cfc34d946e3f2eda2766dfec6e0
+Endpoint type: PUBLISHER
+GID: 01.0f.54.eb.50.81.de.ca.09.00.00.00.00.00.03.03
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Subscription count: 0
+
+EXIT: 0
+
+===== hz /chassis/odom (8 s) =====
+CMD: timeout 8 ros2 topic hz /chassis/odom --window 20
+average rate: 25.880
+	min: 0.022s max: 0.055s std dev: 0.01391s window: 20
+average rate: 13.944
+	min: 0.024s max: 0.695s std dev: 0.14353s window: 20
+average rate: 25.922
+	min: 0.022s max: 0.058s std dev: 0.01487s window: 20
+average rate: 25.844
+	min: 0.023s max: 0.059s std dev: 0.01456s window: 20
+average rate: 25.748
+	min: 0.023s max: 0.061s std dev: 0.01380s window: 20
+average rate: 25.797
+	min: 0.020s max: 0.058s std dev: 0.01438s window: 20
+average rate: 25.870
+	min: 0.022s max: 0.056s std dev: 0.01417s window: 20
+EXIT: 124
+
+===== sample /chassis/odom =====
+CMD: timeout 10 ros2 topic echo --once --no-arr /chassis/odom
+header:
+  stamp:
+    sec: 27
+    nanosec: 483333333
+  frame_id: odom
+child_frame_id: base_link
+pose:
+  pose:
+    position:
+      x: 0.03041502007639744
+      y: -2.060862166060654e-06
+      z: -4.813413264751001e-05
+    orientation:
+      x: -4.876942869974023e-07
+      y: 3.4213741281696735e-07
+      z: -4.894629002048591e-05
+      w: 0.9999999988019529
+  covariance: '<array type: double[36]>'
+twist:
+  twist:
+    linear:
+      x: 0.0006806194109892813
+      y: -0.00013804628302193606
+      z: -4.008095009484856e-05
+    angular:
+      x: 0.0003107104275841266
+      y: 2.5965173335862346e-05
+      z: 0.0016751937801018357
+  covariance: '<array type: double[36]>'
+---
+EXIT: 0
