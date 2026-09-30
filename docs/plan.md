@@ -15,7 +15,7 @@
 | D1 doctor | 实现与验证完成(2026-09-29 23:3x–23:49),**待独立审查**与用户验收 | 分支 `feature/d1-doctor`;`robosim_eval/doctor*.py`、`configs/baseline.yaml`、`scripts/wsl/doctor.sh`;证据 `artifacts/d1/commands.md` | 固定输入测试 37 passed、改坏检查 7/7、假节点测试 6/6;真实 Isaac:运行时退出 0,用户按 ⏸ 后 2 s 窗口判"不推进"退出 10,恢复后退出 0 |
 | D2 单次运行器 | 实现与验证完成(2026-09-30 00:1x–00:47),**待独立审查**与用户验收 | 分支 `feature/d2-runner`;`robosim_eval/runner*.py`、`sim_adapter.py`、`run_io.py`;`scripts/wsl/run_scenario.sh`、`sim.sh`;证据 `artifacts/d2/commands.md` | 固定输入测试 77 passed;运行器假节点测试 8/8;真实 Isaac:正常 A→B reached(真值误差 0.264 m),导航中 SIGINT → 取消、停车、收尾(interrupted);Isaac 由 sim_control 复位、加载场景、读真值,不再需要 GUI 点击 |
 | D3 判定与失败处理 | 实现与验证完成(2026-09-30 00:5x–01:29),**待独立审查**与用户验收 | 分支 `feature/d3-verdicts`;`robosim_eval/evaluator.py`、`contacts.py`、`kit/contact_monitor.py`;证据 `artifacts/d3/commands.md`;缺陷记录 `docs/defect-record.md` | 固定输入测试 109 passed;判定模块改坏检查 8/8(含 4 种必做的坏数据);真实 Isaac:正常、绕行、不可达、取消、超时 pass,断流正确判 inconclusive,碰撞抓到轮子与矮箱子的接触判 fail;修复一个运行器缺陷(复位前 odom 残留) |
-| D4 批量复跑 | 进行中(01:30 起) | `robosim_eval/batch.py`、`report.py`、`scripts/wsl/run_batch.sh` | 3 个情形 × 3 次 |
+| D4 批量复跑 | 实现与验证完成(2026-09-30 01:30–02:0x),**待独立审查**与用户验收 | 分支 `feature/d4-batch`;`robosim_eval/batch.py`、`report.py`、`scripts/wsl/run_batch.sh`;证据 `artifacts/d4/commands.md`、`artifacts/d4/batch-20260930-013010/runs/report.html` | 9 次全部留档、全部 pass(normal 3/3 到达、bypass 3/3 到达且未碰箱子、unreachable 3/3 判不可达);每次复位后真值距出生点 0.07 mm;报告改进 1 处(列出全部 commit、恢复次数列);"开头卡住"查到大部分机制(见 §9) |
 | D5 作品交付 | 未开始 | — | — |
 
 **当前任务:** D0 交付收尾(Codex 分片审查排队中 → 逐条核实、修复有效项、重跑受影响检查 → 必要时第二轮复核 → 用户三步验收)与 D1 诊断工具并行。D0 的修复在 `feature/d0-environment` 上做,再合进 `feature/d1-doctor`。
@@ -145,6 +145,8 @@
 - D3:Isaac 内的 PhysX 接触报告经 Python 执行服务取数可用;复位后机器人只与两个地面碰撞平面接触,由此确定地面过滤规则(artifacts/d3/contact-fetch-after-reset.json)。
 - D3:"开头卡住"间歇出现(开接触监视的 3 次正常路线中 2 次),发目标后约 38 s 仿真时间不动,Nav2 恢复后到达;/scan 与正常时相同,机制未查明,见 artifacts/d3/commands.md。
 - D3:不可达目标 (-10.05, -1.0) 实测 Nav2 返回 ABORTED、error_code 208,恢复 15 次(离线预测 4 次)。
+- D4:9 次批量全部 pass,sim_control 复位的真值误差每次都是 0.07 mm(复位是确定的)。
+- D4:"开头卡住"在本批 6 次可到达的运行中出现 5 次。机器人开头正好背对全局路径;DWB 常选最小转向档 +0.0368 rad/s,直接实验证实机器人对它基本不转;DWB 为何选它未查明。见 artifacts/d4/commands.md。平均用时因此主要反映卡住,不是导航速度。
 
 **已知问题:**
 - Nav2 停止时组件容器在清理阶段 SIGSEGV("Magick: abort due to signal 11",exit -6):run-01、run-04、run-05 三次都出现。rviz2 每次退出方式不同:run-01 为 -6,run-04 为 -9(launch 在 SIGINT/SIGTERM 超时后 SIGKILL),run-05 为 -11。launch 退出码 1 只在 run-04、run-05 记录到;run-01 用的是旧脚本,没有记录。三次都没有残留进程,不影响导航与记录。

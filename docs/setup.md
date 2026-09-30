@@ -113,7 +113,7 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_scenario.sh collisi
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_batch.sh      # normal、bypass、unreachable 各 3 次
 ```
 
-每次尝试都先复位并用真值核对;停车没确认会中止后续批次。结果在 `artifacts/d4/batch-<时间>/`:`batch.json`、`runs/<每次运行>/`、`runs/report.html`(静态页面,双击打开)、`runs/summary.json`。报告只从已保存的记录生成,可单独重建:`python3 -m robosim_eval.report <runs 目录>`。
+每次尝试都先复位并用真值核对;停车没确认会中止后续批次。结果在 `artifacts/d4/batch-<时间>/`:`batch.json`、`runs/<每次运行>/`、`runs/report.html`(静态页面,双击打开)、`runs/summary.json`。报告只从已保存的记录生成,可单独重建:`python3 -m robosim_eval.report <runs 目录>`。页头列出批次里出现的每个 commit 及其运行次数;"距目标"是真值算的最终距离(不可达情形也有值,不是到达误差);"Nav2 恢复"列能看出开头卡住(见 artifacts/d4/commands.md)。一次批量 9 次约 27 分钟墙钟。
 
 ## 关闭顺序
 
