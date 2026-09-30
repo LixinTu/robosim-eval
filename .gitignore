@@ -1,0 +1,28 @@
+# ---- Claude Code / agent local files (session residue, machine-local settings) ----
+.claude/logs/
+.claude/settings.local.json
+.claude/settings.json
+.superpowers/
+
+# ---- Scratch / temp (project rule: temp files live in temp/) ----
+temp/
+tmp/
+__pycache__/
+*.pyc
+
+# ---- Raw run data: bags are large; artifacts/ keeps samples, summaries and logs ----
+artifacts/**/rosbag/
+*.db3
+*.mcap
+
+# ---- Machine-specific network config generated from a tracked template ----
+configs/network/*.generated.xml
+configs/network/*.peers.xml
+
+# ---- Secrets ----
+.env
+.env.*
+
+# ---- OS / IDE noise ----
+.DS_Store
+Thumbs.db
