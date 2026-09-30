@@ -1,0 +1,81 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "inconclusive",
+  "execution_status_analyzer": null,
+  "execution_status": "completed",
+  "runner": {
+    "run_id": "fake-20260930-004115",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 101303.014240608,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 101308.186468333,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 101308.18730295,
+        "t_sim": 2.704090352,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 101308.193836916,
+        "t_sim": 2.768121539,
+        "reason": "goal accepted 2f112c5d003a41948f6f5e0a4f8af488"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 101310.205372932,
+        "t_sim": 3.568093597,
+        "reason": "terminal status SUCCEEDED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 101312.685521678,
+        "t_sim": 4.5760939480000005,
+        "reason": "robot at rest (stop-still confirmed at sim 4.576)"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 101312.687064248,
+        "t_sim": 4.5760939480000005,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0,
+    "terminal_sim": 3.568093597,
+    "terminal": {
+      "status": 4,
+      "name": "SUCCEEDED",
+      "error_code": 0,
+      "error_msg": "",
+      "feedback_count": 21,
+      "last_feedback": {
+        "distance_remaining": 0.0,
+        "recoveries": 0
+      }
+    },
+    "stop_confirmed_sim": 4.576188806
+  }
+}

@@ -1,0 +1,16 @@
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=full overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+dds_env.sh: FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml
+record start 2026-09-30T00:47:03-07:00 attempt=/mnt/d/RoboSim-Eval/artifacts/d2/runs/normal-20260930-004634 max=480s bag=/home/administrator/robosim_bags/normal-20260930-004634-20260930-004703
+sessions:
+bag 75992
+odom 76001
+amcl_pose 76011
+cmd_vel 76036
+action_status 76048
+tf_map_base 76063
+  running bag (session 75992)
+  running odom (session 76001)
+  running amcl_pose (session 76011)
+  running cmd_vel (session 76036)
+  running action_status (session 76048)
+  running tf_map_base (session 76063)

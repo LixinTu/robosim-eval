@@ -1,0 +1,11 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Z"
+    doc = "RoboSim Eval test stage: an empty /World, to reproduce a run that starts before the warehouse scene is loaded."
+)
+
+def Xform "World"
+{
+}

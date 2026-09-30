@@ -1,0 +1,326 @@
+=== setup_workspace.sh start 2026-09-29T19:29:51-07:00 user=administrator ws=/home/administrator/robotics/vendor/isaac-ros-6.1 ===
+
+--- [19:29:51] 0. base ROS environment ---
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=--base-only overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+
+--- [19:29:52] 1. checkout IsaacSim-6.1.0 ---
+Cloning into '/home/administrator/robotics/vendor/isaac-ros-6.1'...
+Note: switching to 'a9e8471ee901bc2332c1e4aca94ac580713ca3ab'.
+
+You are in 'detached HEAD' state. You can look around, make experimental
+changes and commit them, and you can discard any commits you make in this
+state without impacting any branches by switching back to a branch.
+
+If you want to create a new branch to retain commits you create, you may
+do so (now or later) by using -c with the switch command. Example:
+
+  git switch -c <new-branch-name>
+
+Or undo this operation with:
+
+  git switch -
+
+Turn off this advice by setting config variable advice.detachedHead to false
+
+Submodule 'humble_ws/src/greenwave_monitor' (https://github.com/NVIDIA-ISAAC-ROS/greenwave_monitor.git) registered for path 'humble_ws/src/greenwave_monitor'
+Submodule 'humble_ws/src/moveit/moveit_resources' (https://github.com/ayushgnv/moveit_resources.git) registered for path 'humble_ws/src/moveit/moveit_resources'
+Submodule 'jazzy_ws/src/greenwave_monitor' (https://github.com/NVIDIA-ISAAC-ROS/greenwave_monitor.git) registered for path 'jazzy_ws/src/greenwave_monitor'
+Submodule 'jazzy_ws/src/moveit/moveit_resources' (https://github.com/ayushgnv/moveit_resources.git) registered for path 'jazzy_ws/src/moveit/moveit_resources'
+Submodule 'jazzy_ws/src/moveit/topic_based_ros2_control' (https://github.com/ayushgnv/topic_based_ros2_control.git) registered for path 'jazzy_ws/src/moveit/topic_based_ros2_control'
+Submodule 'jazzy_ws/src/pal_statistics' (https://github.com/pal-robotics/pal_statistics.git) registered for path 'jazzy_ws/src/pal_statistics'
+Submodule 'jazzy_ws/src/ros2_control' (https://github.com/ros-controls/ros2_control.git) registered for path 'jazzy_ws/src/ros2_control'
+Submodule 'jazzy_ws/src/ros2_control_cmake' (https://github.com/ros-controls/ros2_control_cmake.git) registered for path 'jazzy_ws/src/ros2_control_cmake'
+Cloning into '/home/administrator/robotics/vendor/isaac-ros-6.1/humble_ws/src/greenwave_monitor'...
+Cloning into '/home/administrator/robotics/vendor/isaac-ros-6.1/humble_ws/src/moveit/moveit_resources'...
+Cloning into '/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/src/greenwave_monitor'...
+Cloning into '/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/src/moveit/moveit_resources'...
+Cloning into '/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/src/moveit/topic_based_ros2_control'...
+Cloning into '/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/src/pal_statistics'...
+Cloning into '/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/src/ros2_control'...
+Cloning into '/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/src/ros2_control_cmake'...
+Submodule path 'humble_ws/src/greenwave_monitor': checked out '544eab035178d0aaae9b66711cc59fb80a664b55'
+From https://github.com/ayushgnv/moveit_resources
+ * branch            c97596ea67c146a35b0de816ddfb961c1b9ee2b5 -> FETCH_HEAD
+Submodule path 'humble_ws/src/moveit/moveit_resources': checked out 'c97596ea67c146a35b0de816ddfb961c1b9ee2b5'
+Submodule path 'jazzy_ws/src/greenwave_monitor': checked out '544eab035178d0aaae9b66711cc59fb80a664b55'
+From https://github.com/ayushgnv/moveit_resources
+ * branch            13a6ac2820c8118af3f35d0fce5249d5e746e423 -> FETCH_HEAD
+Submodule path 'jazzy_ws/src/moveit/moveit_resources': checked out '13a6ac2820c8118af3f35d0fce5249d5e746e423'
+From https://github.com/ayushgnv/topic_based_ros2_control
+ * branch            592ea35fd771d930e6a7e9150bd53053a3d3b5ca -> FETCH_HEAD
+Submodule path 'jazzy_ws/src/moveit/topic_based_ros2_control': checked out '592ea35fd771d930e6a7e9150bd53053a3d3b5ca'
+Submodule path 'jazzy_ws/src/pal_statistics': checked out '57dcaf4c4dd61ed184f6b9062f9d38b90eb19bd7'
+From https://github.com/ros-controls/ros2_control
+ * branch              527e21bf40ec3adf8ade2b22fec1a33a3e734924 -> FETCH_HEAD
+Submodule path 'jazzy_ws/src/ros2_control': checked out '527e21bf40ec3adf8ade2b22fec1a33a3e734924'
+From https://github.com/ros-controls/ros2_control_cmake
+ * branch            929a94a169b4a6255edf27dd19c694ca20092686 -> FETCH_HEAD
+Submodule path 'jazzy_ws/src/ros2_control_cmake': checked out '929a94a169b4a6255edf27dd19c694ca20092686'
+HEAD=a9e8471ee901bc2332c1e4aca94ac580713ca3ab  expected=a9e8471ee901bc2332c1e4aca94ac580713ca3ab
+describe: IsaacSim-6.1.0
+status:
+submodules:
+ 544eab035178d0aaae9b66711cc59fb80a664b55 humble_ws/src/greenwave_monitor (1.0.0-1-g544eab0)
+ c97596ea67c146a35b0de816ddfb961c1b9ee2b5 humble_ws/src/moveit/moveit_resources (2.0.1-60-gc97596e)
+ 544eab035178d0aaae9b66711cc59fb80a664b55 jazzy_ws/src/greenwave_monitor (1.0.0-1-g544eab0)
+ 13a6ac2820c8118af3f35d0fce5249d5e746e423 jazzy_ws/src/moveit/moveit_resources (2.0.1-62-g13a6ac2)
+ 592ea35fd771d930e6a7e9150bd53053a3d3b5ca jazzy_ws/src/moveit/topic_based_ros2_control (heads/main-3-g592ea35)
+ 57dcaf4c4dd61ed184f6b9062f9d38b90eb19bd7 jazzy_ws/src/pal_statistics (2.7.0-2-g57dcaf4)
+ 527e21bf40ec3adf8ade2b22fec1a33a3e734924 jazzy_ws/src/ros2_control (4.29.0-253-g527e21bf)
+ 929a94a169b4a6255edf27dd19c694ca20092686 jazzy_ws/src/ros2_control_cmake (0.3.0-13-g929a94a)
+
+--- [19:30:07] 2. package closure ---
+carter_navigation	src/navigation/carter_navigation	(ros.ament_cmake)
+isaac_ros_navigation_goal	src/navigation/isaac_ros_navigation_goal	(ros.ament_python)
+isaacsim_bringup	src/isaacsim_bringup	(ros.ament_python)
+paths: src/isaacsim_bringup
+src/navigation/carter_navigation
+src/navigation/isaac_ros_navigation_goal
+
+--- [19:30:08] 3. rosdep (simulate; stop if anything would be installed) ---
+rosdep: nothing to install
+
+--- [19:30:09] 4. colcon build --packages-up-to carter_navigation ---
+Starting >>> isaac_ros_navigation_goal
+Starting >>> isaacsim_bringup
+running egg_info
+creating ../../build/isaacsim_bringup/isaacsim_bringup.egg-info
+running egg_info
+creating ../../../build/isaac_ros_navigation_goal/isaac_ros_navigation_goal.egg-info
+writing ../../build/isaacsim_bringup/isaacsim_bringup.egg-info/PKG-INFO
+writing dependency_links to ../../build/isaacsim_bringup/isaacsim_bringup.egg-info/dependency_links.txt
+writing entry points to ../../build/isaacsim_bringup/isaacsim_bringup.egg-info/entry_points.txt
+writing requirements to ../../build/isaacsim_bringup/isaacsim_bringup.egg-info/requires.txt
+writing top-level names to ../../build/isaacsim_bringup/isaacsim_bringup.egg-info/top_level.txt
+writing manifest file '../../build/isaacsim_bringup/isaacsim_bringup.egg-info/SOURCES.txt'
+writing ../../../build/isaac_ros_navigation_goal/isaac_ros_navigation_goal.egg-info/PKG-INFO
+writing dependency_links to ../../../build/isaac_ros_navigation_goal/isaac_ros_navigation_goal.egg-info/dependency_links.txt
+writing entry points to ../../../build/isaac_ros_navigation_goal/isaac_ros_navigation_goal.egg-info/entry_points.txt
+writing requirements to ../../../build/isaac_ros_navigation_goal/isaac_ros_navigation_goal.egg-info/requires.txt
+writing top-level names to ../../../build/isaac_ros_navigation_goal/isaac_ros_navigation_goal.egg-info/top_level.txt
+writing manifest file '../../../build/isaac_ros_navigation_goal/isaac_ros_navigation_goal.egg-info/SOURCES.txt'
+reading manifest file '../../build/isaacsim_bringup/isaacsim_bringup.egg-info/SOURCES.txt'
+writing manifest file '../../build/isaacsim_bringup/isaacsim_bringup.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaacsim_bringup/build
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaacsim_bringup/build/lib
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaacsim_bringup/build/lib/isaacsim_bringup
+copying isaacsim_bringup/run_isaacsim.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaacsim_bringup/build/lib/isaacsim_bringup
+copying isaacsim_bringup/__init__.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaacsim_bringup/build/lib/isaacsim_bringup
+running install
+running install_lib
+reading manifest file '../../../build/isaac_ros_navigation_goal/isaac_ros_navigation_goal.egg-info/SOURCES.txt'
+writing manifest file '../../../build/isaac_ros_navigation_goal/isaac_ros_navigation_goal.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal
+copying isaac_ros_navigation_goal/obstacle_map.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal
+copying isaac_ros_navigation_goal/set_goal.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal
+copying isaac_ros_navigation_goal/__init__.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/goal_generators
+copying isaac_ros_navigation_goal/goal_generators/goal_generator.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/goal_generators
+copying isaac_ros_navigation_goal/goal_generators/goal_reader.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/goal_generators
+copying isaac_ros_navigation_goal/goal_generators/random_goal_generator.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/goal_generators
+copying isaac_ros_navigation_goal/goal_generators/__init__.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/goal_generators
+running install
+running install_lib
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/lib/python3.12/site-packages/isaacsim_bringup
+copying /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaacsim_bringup/build/lib/isaacsim_bringup/run_isaacsim.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/lib/python3.12/site-packages/isaacsim_bringup
+copying /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaacsim_bringup/build/lib/isaacsim_bringup/__init__.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/lib/python3.12/site-packages/isaacsim_bringup
+byte-compiling /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/lib/python3.12/site-packages/isaacsim_bringup/run_isaacsim.py to run_isaacsim.cpython-312.pyc
+byte-compiling /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/lib/python3.12/site-packages/isaacsim_bringup/__init__.py to __init__.cpython-312.pyc
+running install_data
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/share/ament_index
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/share/ament_index/resource_index
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/share/ament_index/resource_index/packages
+copying resource/isaacsim_bringup -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/share/ament_index/resource_index/packages
+copying package.xml -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/share/isaacsim_bringup
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/share/isaacsim_bringup/launch
+copying launch/run_isaacsim.launch.xml -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/share/isaacsim_bringup/launch
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/share/isaacsim_bringup/scripts
+copying scripts/open_isaacsim_stage.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/share/isaacsim_bringup/scripts
+copying scripts/add_cube_and_lights.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/share/isaacsim_bringup/scripts
+running install_egg_info
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/goal_generators
+copying /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/goal_generators/goal_generator.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/goal_generators
+copying /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/goal_generators/goal_reader.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/goal_generators
+copying /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/goal_generators/random_goal_generator.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/goal_generators
+copying /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/goal_generators/__init__.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/goal_generators
+copying /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/obstacle_map.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal
+copying /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/set_goal.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal
+copying /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/build/lib/isaac_ros_navigation_goal/__init__.py -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal
+byte-compiling /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/goal_generators/goal_generator.py to goal_generator.cpython-312.pyc
+byte-compiling /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/goal_generators/goal_reader.py to goal_reader.cpython-312.pyc
+byte-compiling /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/goal_generators/random_goal_generator.py to random_goal_generator.cpython-312.pyc
+byte-compiling /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/goal_generators/__init__.py to __init__.cpython-312.pyc
+byte-compiling /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/obstacle_map.py to obstacle_map.cpython-312.pyc
+byte-compiling /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/set_goal.py to set_goal.cpython-312.pyc
+byte-compiling /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal/__init__.py to __init__.cpython-312.pyc
+running install_data
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/share/ament_index
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/share/ament_index/resource_index
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/share/ament_index/resource_index/packages
+copying resource/isaac_ros_navigation_goal -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/share/ament_index/resource_index/packages
+copying package.xml -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/share/isaac_ros_navigation_goal
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/share/isaac_ros_navigation_goal/launch
+copying launch/isaac_ros_navigation_goal.launch.xml -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/share/isaac_ros_navigation_goal/launch
+creating /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/share/isaac_ros_navigation_goal/assets
+copying assets/carter_warehouse_navigation.png -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/share/isaac_ros_navigation_goal/assets
+copying assets/carter_warehouse_navigation.yaml -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/share/isaac_ros_navigation_goal/assets
+copying assets/goals.txt -> /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/share/isaac_ros_navigation_goal/assets
+running install_egg_info
+Copying ../../build/isaacsim_bringup/isaacsim_bringup.egg-info to /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/lib/python3.12/site-packages/isaacsim_bringup-0.2.2-py3.12.egg-info
+running install_scripts
+Copying ../../../build/isaac_ros_navigation_goal/isaac_ros_navigation_goal.egg-info to /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/python3.12/site-packages/isaac_ros_navigation_goal-0.0.1-py3.12.egg-info
+running install_scripts
+Installing run_isaacsim script to /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaacsim_bringup/lib/isaacsim_bringup
+writing list of installed files to '/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaacsim_bringup/install.log'
+Installing SetNavigationGoal script to /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/isaac_ros_navigation_goal/lib/isaac_ros_navigation_goal
+writing list of installed files to '/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/isaac_ros_navigation_goal/install.log'
+Finished <<< isaacsim_bringup [0.93s]
+Finished <<< isaac_ros_navigation_goal [0.94s]
+Starting >>> carter_navigation
+-- The C compiler identification is GNU 13.3.0
+-- The CXX compiler identification is GNU 13.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+-- Configuring done (2.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/build/carter_navigation
+-- Install configuration: "Release"
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/launch
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/launch/multiple_robot_carter_navigation_hospital.launch.xml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/launch/carter_navigation_individual.launch.xml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/launch/carter_navigation_goal_on_isaacsim_ready.launch.py
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/launch/multiple_robot_carter_navigation_office.launch.xml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/launch/carter_navigation.launch.xml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/launch/carter_navigation_robot.launch.xml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/launch/multiple_robot_carter_navigation.launch.xml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/launch/nova_carter_description_isaac_sim.launch.xml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/launch/carter_navigation_isaacsim.launch.xml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/scripts
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/scripts/nova_carter_robot_description
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params/hospital
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params/hospital/multi_robot_carter_navigation_params_2.yaml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params/hospital/multi_robot_carter_navigation_params_3.yaml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params/hospital/multi_robot_carter_navigation_params_1.yaml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params/office
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params/office/multi_robot_carter_navigation_params_2.yaml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params/office/multi_robot_carter_navigation_params_3.yaml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params/office/multi_robot_carter_navigation_params_1.yaml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params/carter_navigation_params.yaml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/maps
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/maps/carter_office_navigation.png
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/maps/carter_warehouse_navigation.png
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/maps/carter_hospital_navigation.yaml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/maps/carter_warehouse_navigation.yaml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/maps/carter_hospital_navigation.png
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/maps/carter_office_navigation.yaml
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/rviz2
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/rviz2/carter_navigation_namespaced.rviz
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/rviz2/carter_navigation.rviz
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/ament_index/resource_index/package_run_dependencies/carter_navigation
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/ament_index/resource_index/parent_prefix_path/carter_navigation
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/environment/ament_prefix_path.sh
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/environment/ament_prefix_path.dsv
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/environment/path.sh
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/environment/path.dsv
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/local_setup.bash
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/local_setup.sh
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/local_setup.zsh
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/local_setup.dsv
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/package.dsv
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/ament_index/resource_index/packages/carter_navigation
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/cmake/carter_navigationConfig.cmake
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/cmake/carter_navigationConfig-version.cmake
+-- Installing: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/package.xml
+Finished <<< carter_navigation [2.27s]
+
+Summary: 3 packages finished [3.35s]
+build finished; packages in install/: COLCON_IGNORE _local_setup_util_ps1.py _local_setup_util_sh.py carter_navigation isaac_ros_navigation_goal isaacsim_bringup local_setup.bash local_setup.ps1 local_setup.sh local_setup.zsh setup.bash setup.ps1 setup.sh setup.zsh 
+
+--- [19:30:12] 5. overlay checks ---
+carter_navigation prefix: /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'map':
+        Full path to map file to load
+        (default: FindPackageShare(pkg='carter_navigation') + '/maps/carter_warehouse_navigation.yaml')
+
+    'params_file':
+        Full path to parameter file to load
+        (default: FindPackageShare(pkg='carter_navigation') + '/params/carter_navigation_params.yaml')
+
+    'use_sim_time':
+        Use simulation (Isaac Sim) clock if true
+        (default: 'True')
+
+    'namespace':
+        Top-level namespace. The value will be used to replace the <robot_namespace> keyword on the rviz config file.
+        (default: 'navigation')
+
+    'use_namespace':
+        Whether to apply a namespace to the navigation stack
+        (default: 'false')
+
+    'rviz_config':
+        Full path to the RVIZ config file to use
+        (default: '/opt/ros/jazzy/share/nav2_bringup/rviz/nav2_default_view.rviz')
+
+    'slam':
+        Whether run a SLAM
+        (default: 'False')
+
+    'autostart':
+        Automatically startup the nav2 stack
+        (default: 'true')
+
+    'use_composition':
+        Whether to use composed bringup
+        (default: 'True')
+
+    'use_respawn':
+        Whether to respawn if a node crashes. Applied when composition is disabled.
+        (default: 'False')
+
+    'log_level':
+        log level
+        (default: 'info')
+
+    'use_localization':
+        Whether to enable localization or not
+        (default: 'True')
+
+    'use_lifecycle_manager':
+        Enable bond connection during node activation
+        (default: 'false')
+
+    'slam_params_file':
+        Full path to the ROS2 parameters file to use for the slam_toolbox node
+        (default: '/opt/ros/jazzy/share/slam_toolbox/config/mapper_params_online_sync.yaml')
+
+    'container_name':
+        the name of conatiner that nodes will load in if use composition
+        (default: 'nav2_container')
+map yaml sha256:   05263f31a87ef9510145b4606eda7f2f849f5740e5668f9e4fb1fc520e76f012  /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/maps/carter_warehouse_navigation.yaml
+map image sha256:  dd2f5e382a5f331866becaeaffb391a7e46b595873bf25c9cbb4e280ec261b8e  /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/maps/carter_warehouse_navigation.png
+params sha256:     8349fe3ba9d871139637850555f3d7e7fe3569ce46983fe90e02ec12eb3cf798  /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params/carter_navigation_params.yaml
+launch sha256:     7071bcad546915bd9aa50115038adee7861c5137ac51a7fb36a73564963b332e  /home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/launch/carter_navigation.launch.xml
+ALL STEPS COMPLETED
+
+=== setup_workspace.sh end 2026-09-29T19:30:13-07:00 exit=0 ===

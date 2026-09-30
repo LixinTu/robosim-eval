@@ -1,0 +1,11 @@
+2026-09-29T20:24:26.699 Usage: tf2_echo source_frame target_frame [options]
+2026-09-29T20:24:26.701 
+2026-09-29T20:24:26.702 This will echo the transform from the coordinate frame of the source_frame
+2026-09-29T20:24:26.704 to the coordinate frame of the target_frame.
+2026-09-29T20:24:26.706 Note: This is the transform to get data from target_frame into the source_frame.
+2026-09-29T20:24:26.708 
+2026-09-29T20:24:26.710 Options:
+2026-09-29T20:24:26.711   -r <rate>       Echo rate in Hz (default: 1.0)
+2026-09-29T20:24:26.713   -t <time>       Fixed time to do the lookup (in seconds)
+2026-09-29T20:24:26.714   -p <precision>  Output precision (default: 3)
+2026-09-29T20:24:26.720 [ros2run]: Process exited with failure 5

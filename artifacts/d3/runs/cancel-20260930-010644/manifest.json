@@ -1,0 +1,35 @@
+{
+  "schema": "robosim-eval run manifest (plan doc A6)",
+  "run_id": "cancel-20260930-010644",
+  "scenario": "cancel",
+  "created": "2026-09-30T01:06:47.200-07:00",
+  "host": "WIN-THIV01L0JAE",
+  "git": {
+    "commit": "a79290c6a5c499b99bc864b50057002fa47eb847",
+    "branch": "feature/d3-verdicts",
+    "dirty_tracked_files": false
+  },
+  "versions": {
+    "ros_distro": "jazzy",
+    "rmw": "rmw_fastrtps_cpp",
+    "ros_domain_id": "0",
+    "navigation2": "1.3.13-1noble.20260905.072714",
+    "isaac_sim": "6.1.0-rc.26+release.49347.2d230af4.gl"
+  },
+  "digests": {
+    "config": "4842b39393ff6df66ca1db92ad32fc143841166305d755d349af04ecf4f132da",
+    "map_yaml": "05263f31a87ef9510145b4606eda7f2f849f5740e5668f9e4fb1fc520e76f012",
+    "map_image": "dd2f5e382a5f331866becaeaffb391a7e46b595873bf25c9cbb4e280ec261b8e",
+    "nav2_params": "8349fe3ba9d871139637850555f3d7e7fe3569ce46983fe90e02ec12eb3cf798"
+  },
+  "config_path": "/mnt/d/RoboSim-Eval/configs/baseline.yaml",
+  "seed": null,
+  "note": "no random seed is used; the scene is reset through sim_control before the run (see events.jsonl)",
+  "options": {
+    "no_sim": false,
+    "no_nav2": false,
+    "no_record": false,
+    "no_analyze": false,
+    "no_contacts": false
+  }
+}

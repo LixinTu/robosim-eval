@@ -1,0 +1,116 @@
+# configs/baseline.yaml - RoboSim Eval baseline configuration (plan doc A3: scenes, goals, topic mapping, thresholds,
+# timeouts). D1 fills in the environment expectations, the topic mapping and the doctor thresholds; later deliveries add
+# scenarios and run timeouts here.
+#
+# Rates measured on this machine (unsupported configuration: Windows 10 + 8 GB VRAM), wall clock:
+#   /clock          25.2-26.6 Hz with the sample scene playing (artifacts/d0c/probe-04-playing), 21.0-22.3 Hz with
+#                   Nav2 running (artifacts/d0d/run-01/ready-check-01.txt), about 19 Hz while navigating (attempt-01)
+#   /chassis/odom   about 25.8 Hz playing (one ros2 topic hz window 13.9 Hz, max gap 0.695 s), about 19 Hz navigating
+#   /tf             25-26 Hz playing
+#   lidar points    2.4-2.8 Hz by ros2 topic hz (possibly under-reported; /scan converted from it ran 3.54-3.60 Hz)
+#   real-time factor 0.38-0.42 without Nav2, about 0.32 navigating
+# Thresholds sit well below the lowest measured values so that navigation load does not raise false alarms, while a
+# paused simulation (no /clock at all) is still detected within clock_stall_s (plan doc: max(5 normal periods, 2 s)).
+
+env:
+  rmw: rmw_fastrtps_cpp        # Isaac 6.1 on Windows defaults to Zenoh; both sides must use Fast DDS
+  domain_id: "0"
+  ros_distro: jazzy
+  require_dds_profile: true    # FASTRTPS_DEFAULT_PROFILES_FILE -> configs/network/fastdds.xml (UDPv4 only)
+
+topics:
+  clock: {name: /clock, type: rosgraph_msgs/msg/Clock}
+  odom: {name: /chassis/odom, type: nav_msgs/msg/Odometry}
+  tf: {name: /tf, type: tf2_msgs/msg/TFMessage, parent: odom, child: base_link}   # only odom->base_link is counted
+  lidar: {name: /front_3d_lidar/lidar_points, type: sensor_msgs/msg/PointCloud2}
+
+doctor:
+  discovery_timeout_s: 5.0     # wall; wait at most this long for the topics to appear in the ROS graph
+  window_s: 5.0                # wall; observation window (ends early once /clock has stalled for clock_stall_s)
+  clock_stall_s: 2.0           # wall; no new /clock for this long => simulation not advancing
+  min_sim_progress_s: 0.2      # sim s; /clock must advance at least this much during the window
+  streams:
+    odom: {min_rate_hz: 8.0, max_age_s: 2.0}
+    tf: {min_rate_hz: 8.0, max_age_s: 2.0}
+    lidar: {min_rate_hz: 1.0, max_age_s: 2.5}
+
+# Isaac control through isaacsim.ros2.sim_control (D2; scripts/windows/start_isaac_ros2.ps1 enables it).
+sim:
+  world_uri: https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.1/Isaac/Samples/ROS2/Scenario/carter_warehouse_navigation.usd
+  robot_entity: /World/Nova_Carter_ROS/chassis_link   # rigid body + articulation root: live pose and twist
+  spawn: {x: -6.0, y: -1.0, yaw: 3.141592653589793}    # authored USD pose of /World/Nova_Carter_ROS (D0)
+  reset_check: {position_m: 0.05, yaw_rad: 0.05, speed: 0.02}
+  obstacle_usd: D:/RoboSim-Eval/configs/assets/box_1m.usda   # resolved by Isaac on Windows
+  obstacle_assets:
+    box_1m: D:/RoboSim-Eval/configs/assets/box_1m.usda      # 1.0 x 1.0 x 1.0 m, seen by the lidar
+    low_box: D:/RoboSim-Eval/configs/assets/low_box.usda    # 0.8 x 0.8 x 0.10 m, below the /scan band (fault injection)
+
+# One run (D2, plan doc A5). Values are frozen before any formal comparison; every change needs a written reason.
+run:
+  frame: map                     # goals and positions are in the Nav2 map frame (= Isaac world frame, checked in D0/D2)
+  units: {length: m, angle: rad}
+  position_tolerance_m: 0.5      # arrival: distance to the goal at the stop-confirmation instant
+  heading_assessed: false        # a valid heading is still sent to Nav2 and recorded
+  stop_still: {linear_mps: 0.05, angular_radps: 0.1, hold_sim_s: 1.0, max_gap_sim_s: 0.25}
+  timeouts:
+    ready_wall_s: 60             # A5 candidate; to be checked against the measured Nav2 start-up on this machine
+    accept_wall_s: 10
+    nav_sim_s: 120               # at a real-time factor of about 0.32 the wall cap below binds first (about 96 s sim);
+    nav_wall_s: 300              # kept as in A5 because the scenario routes need about 15-40 s of sim time
+    cancel_wall_s: 10
+    stop_wall_s: 10
+  dropout_wall_s: 2.0            # max(5 normal periods, 2 s wall) with the measured periods (see doctor section)
+  contact_filter: "ignore contacts between robot bodies and with the two ground collision planes; any other contact of a robot body is a collision"
+  contact:
+    robot_root: /World/Nova_Carter_ROS
+    ignore_prefixes:                  # measured after a reset, artifacts/d3/contact-fetch-after-reset.json
+      - /World/warehouse_with_forklifts/GroundPlane/
+      - /World/warehouse_with_forklifts/Warehouse_Empty_small_realtime/GroundPlane/
+  streams:
+    required: [clock, odom, tf_odom_base]   # inputs of the verdict (with the sim_control ground truth)
+    informational: [tf_map_odom]            # AMCL estimate: its 2.3-2.5 s gaps (D2) are warnings, not missing data
+  record_cap_s: 480              # recorder time cap, above ready + navigation wall caps
+
+# Scenarios for D3/D4. Start: the USD spawn after a sim_control reset. expect_outcome is the A5 task outcome the scenario
+# should produce; validation compares against it. Injected faults (cancel, pause, low box, short limit) are labelled.
+scenarios:
+  normal:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    expect_outcome: reached
+    expect: "SUCCEEDED; about 6 m east after a 180 degree turn"
+  normal_slow:   # D5 declared parameter change: same as normal, Nav2 DWB max_vel_x 0.8 -> 0.4 m/s (docs/demo.md)
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    expect_outcome: reached
+    expect: "SUCCEEDED as in normal; peak odometry speed about 0.4 m/s instead of about 0.8; longer drive"
+    nav2_params: {controller_server.ros__parameters.FollowPath.max_vel_x: 0.4}
+  bypass:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    obstacles: [{name: box_1, x: -3.0, y: -1.3, yaw: 0.0, asset: box_1m}]   # on the straight route; detour expected
+    expect_outcome: reached
+    expect: "SUCCEEDED with a detour around box_1"
+  unreachable:
+    goal: {x: -10.05, y: -1.0, yaw: 3.141592653589793}   # free map cell in a 0.45 m slot, narrower than the robot
+    expect_outcome: unreachable
+    preset_unreachable: true
+    evidence: "offline map analysis 2026-09-30 (read-only research): the cell is in a 0.45 m slot between the west wall and shelving; the nearest cell NavFn can reach is 1.65 m away, beyond its 0.5 m tolerance; the robot is 0.50 m wide"
+    expect: "ABORTED (error_code 208 or 207 expected) and not reached by ground truth"
+  cancel:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    inject: {cancel_after_sim_s: 5.0}     # fault injection: the runner cancels 5 s (sim) after the goal is accepted
+    expect_outcome: canceled
+    expect: "CANCELED, robot confirmed at rest within the stop deadline"
+  dropout:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    inject: {pause_after_sim_s: 5.0, pause_wall_s: 6.0}   # fault injection: sim paused 6 s wall mid-route (data stops)
+    expect_outcome: reached
+    expect: "reached, but the verdict must not be a normal pass: data incomplete (clock gap > 2 s)"
+  timeout:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    timeouts: {nav_sim_s: 6.0}            # fault injection: navigation limit far below the ~15 s the route needs
+    expect_outcome: timeout
+    expect: "the runner cancels at the sim limit; outcome timeout, robot confirmed at rest"
+  collision:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    obstacles: [{name: low_box, x: -3.0, y: -1.0, yaw: 0.0, asset: low_box}]   # 0.10 m tall, below the /scan band
+    expect_outcome: reached
+    expect: "fault injection: the robot is expected to hit the unseen low box; safety must be fail, never pass"

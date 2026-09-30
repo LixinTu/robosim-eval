@@ -1,0 +1,1 @@
+{"command": "load", "uri": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.1/Isaac/Samples/ROS2/Scenario/carter_warehouse_navigation.usd", "state": "stopped"}

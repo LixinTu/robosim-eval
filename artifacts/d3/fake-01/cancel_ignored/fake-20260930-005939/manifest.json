@@ -1,0 +1,35 @@
+{
+  "schema": "robosim-eval run manifest (plan doc A6)",
+  "run_id": "fake-20260930-005939",
+  "scenario": "fake",
+  "created": "2026-09-30T00:59:41.315-07:00",
+  "host": "WIN-THIV01L0JAE",
+  "git": {
+    "commit": "3db8a0be16b2b5e0367ed7a5eb70be5670c3c177",
+    "branch": "feature/d3-verdicts",
+    "dirty_tracked_files": true
+  },
+  "versions": {
+    "ros_distro": "jazzy",
+    "rmw": "rmw_fastrtps_cpp",
+    "ros_domain_id": "42",
+    "navigation2": "1.3.13-1noble.20260905.072714",
+    "isaac_sim": "6.1.0-rc.26+release.49347.2d230af4.gl"
+  },
+  "digests": {
+    "config": "b906b84d675484c371820da0c1428700b8d9e4ef031018728327c68c32c38aff",
+    "map_yaml": "05263f31a87ef9510145b4606eda7f2f849f5740e5668f9e4fb1fc520e76f012",
+    "map_image": "dd2f5e382a5f331866becaeaffb391a7e46b595873bf25c9cbb4e280ec261b8e",
+    "nav2_params": "8349fe3ba9d871139637850555f3d7e7fe3569ce46983fe90e02ec12eb3cf798"
+  },
+  "config_path": "/mnt/d/RoboSim-Eval/tests/ros_fake/runner_fake.yaml",
+  "seed": null,
+  "note": "no random seed is used; the scene is reset through sim_control before the run (see events.jsonl)",
+  "options": {
+    "no_sim": true,
+    "no_nav2": true,
+    "no_record": true,
+    "no_analyze": true,
+    "no_contacts": true
+  }
+}

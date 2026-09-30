@@ -1,0 +1,6 @@
+send_goal start 2026-09-30T02:07:31.346-07:00 action=/navigate_to_pose frame=map x=1.0 y=0.0 yaw=0.0 (robosim_eval.runner, rclpy action client)
+2026-09-30T02:07:31.349-07:00 Goal accepted with ID: 4d7cf4a0c555481baaaea367e2579e19
+2026-09-30T02:07:33.359-07:00 error_code: 208
+2026-09-30T02:07:33.359-07:00 error_msg: 'fake: no valid path'
+2026-09-30T02:07:33.359-07:00 Goal finished with status: ABORTED
+send_goal end 2026-09-30T02:07:35.856-07:00 action_client_exit=0

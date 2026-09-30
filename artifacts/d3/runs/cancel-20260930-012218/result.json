@@ -1,0 +1,471 @@
+{
+  "schema": "robosim-eval attempt result, D0 (plan doc A5)",
+  "goal": {
+    "frame": "map",
+    "x": 0.0,
+    "y": -1.0,
+    "yaw": 0.0,
+    "source": "goal sent by the CLI action client (transcript goal-012253.txt)",
+    "verified_against_transcript": true,
+    "position_tolerance_m": 0.5,
+    "orientation_assessed": false
+  },
+  "target_goal": {
+    "id": "0e95a5cec05d460eb146c91f7d76faf0",
+    "id_source": "transcript",
+    "other_goal_ids_in_recording": []
+  },
+  "execution_status": "error",
+  "task_outcome": "canceled",
+  "safety_status": "pass",
+  "data_status": "complete",
+  "validation_status": "fail",
+  "verdict_reasons": {
+    "fail": [
+      "runner errors: stop_timeout"
+    ],
+    "inconclusive": [],
+    "warnings": [
+      "informational stream tf_map_odom: wall gap 2.321 s"
+    ]
+  },
+  "arrival_check": {
+    "source": "sim_state_odom_plus_spawn",
+    "event": "stop_confirmed",
+    "sim_time_s": 13.783333333,
+    "error_to_goal_m": 6.010650305040342,
+    "tolerance_m": 0.5
+  },
+  "nav2_raw": {
+    "terminal_status_code": 5,
+    "terminal_status_name": "CANCELED",
+    "rejected": false,
+    "status_text_from_client": "CANCELED",
+    "error_code": 0,
+    "error_msg": "",
+    "client_exit": 0,
+    "transcript": "goal-012253.txt",
+    "recoveries": 0,
+    "distance_remaining_last_feedback_m": 6.056066036224365
+  },
+  "timing": {
+    "accepted_wall": "2026-09-30T01:22:53.021-07:00",
+    "result_wall": "2026-09-30T01:23:05.225-07:00",
+    "accept_to_result_wall_s": 12.202903987,
+    "sim_time_at_accept_s": 9.0,
+    "sim_time_at_result_s": 12.533333333,
+    "accept_to_result_sim_s": 3.533333333
+  },
+  "positions": {
+    "nav2_feedback_map": {
+      "source": "Nav2 feedback current_pose of the target goal (map frame; AMCL-based estimate)",
+      "at_arrival": {
+        "frame": "map",
+        "x": -6.085880567726214,
+        "y": -0.979416223142204,
+        "yaw": -2.9552907070922863,
+        "sim_stamp_s": 12.516666666,
+        "recv_wall_ns": 1790756585202605855,
+        "error_to_goal_m": 6.08591537704044
+      },
+      "at_recording_end": {
+        "frame": "map",
+        "x": -6.085880567726214,
+        "y": -0.979416223142204,
+        "yaw": -2.9552907070922863,
+        "sim_stamp_s": 12.516666666,
+        "recv_wall_ns": 1790756585202605855,
+        "error_to_goal_m": 6.08591537704044
+      }
+    },
+    "tf_map_base_link": {
+      "source": "/tf map->odom (AMCL) (+) odom->base_link (Isaac odometry); map frame; estimate",
+      "at_arrival": {
+        "frame": "map",
+        "x": -6.082890588666133,
+        "y": -0.9787379593118046,
+        "yaw": -2.8837769137087106,
+        "sim_stamp_s": 13.766666666,
+        "recv_wall_ns": 1790756588983823404,
+        "error_to_goal_m": 6.08292774805498
+      },
+      "at_recording_end": {
+        "frame": "map",
+        "x": -6.082901761754391,
+        "y": -0.9787410129707488,
+        "yaw": -2.88387373111086,
+        "sim_stamp_s": 16.25,
+        "recv_wall_ns": 1790756596541339443,
+        "error_to_goal_m": 6.082938910402124
+      }
+    },
+    "odom": {
+      "source": "ideal odometry /chassis/odom (IsaacComputeOdometry; odom frame = pose at Play start)",
+      "at_arrival": {
+        "frame": "odom",
+        "x": 0.010649701871705502,
+        "y": -0.0026927441656431684,
+        "yaw": 0.14603578310053655,
+        "sim_stamp_s": 13.783333333,
+        "recv_wall_ns": 1790756589029244792
+      },
+      "at_recording_end": {
+        "frame": "odom",
+        "x": 0.01066114592893495,
+        "y": -0.0026911346961522305,
+        "yaw": 0.1459398473082579,
+        "sim_stamp_s": 16.25,
+        "recv_wall_ns": 1790756596538234857
+      }
+    },
+    "sim_state_odom_plus_spawn": {
+      "source": "ideal odometry /chassis/odom (+) USD spawn [-6.0, -1.0, 3.141592653589793]; independent of AMCL; see preconditions",
+      "at_arrival": {
+        "frame": "map",
+        "x": -6.0106497018717056,
+        "y": -0.9973072558343569,
+        "yaw": -2.995556870489257,
+        "sim_stamp_s": 13.783333333,
+        "recv_wall_ns": 1790756589029244792,
+        "error_to_goal_m": 6.010650305040342
+      },
+      "at_recording_end": {
+        "frame": "map",
+        "x": -6.0106611459289345,
+        "y": -0.9973088653038478,
+        "yaw": -2.9956528062815355,
+        "sim_stamp_s": 16.25,
+        "recv_wall_ns": 1790756596538234857,
+        "error_to_goal_m": 6.010661748375605
+      }
+    }
+  },
+  "position_source_crosscheck": {
+    "at_goal_accept": {
+      "sim_state_xy": [
+        -6.0099,
+        -1.0
+      ],
+      "amcl_estimate_xy": [
+        -6.0041,
+        -1.0
+      ],
+      "amcl_minus_sim_state_m": 0.0058
+    },
+    "at_terminal_status": {
+      "sim_state_xy": [
+        -6.0135,
+        -0.9976
+      ],
+      "amcl_estimate_xy": [
+        -6.0857,
+        -0.9794
+      ],
+      "amcl_minus_sim_state_m": 0.0745
+    },
+    "at_arrival_check": {
+      "sim_state_xy": [
+        -6.0106,
+        -0.9973
+      ],
+      "amcl_estimate_xy": [
+        -6.0829,
+        -0.9787
+      ],
+      "amcl_minus_sim_state_m": 0.0746
+    },
+    "map_to_odom_first": [
+      -5.9942,
+      -1.0,
+      -3.1416
+    ],
+    "map_to_odom_last": [
+      -6.072,
+      -0.9802,
+      -3.0298
+    ],
+    "map_to_odom_implied_by_spawn": [
+      -6.0,
+      -1.0,
+      3.1416
+    ]
+  },
+  "stop_still": {
+    "rule": "|v|<0.05 m/s and |w|<0.1 rad/s for 1.0 s sim time after the terminal status (/chassis/odom twist; window restarts on gaps > 0.25 s)",
+    "state": "confirmed",
+    "confirmed_at_sim": 13.783333333,
+    "confirmed_at_t_ns": 1790756589029244792,
+    "observed_after_end_sim_s": 3.6999999999999993,
+    "max_gap_after_end_sim_s": 0.016666667000002633,
+    "max_lin_after_end": 0.06409949726713962,
+    "max_ang_after_end": 0.3614083230495453,
+    "samples_after_end": 223
+  },
+  "data_integrity": {
+    "window": "goal accept .. arrival check (receive time)",
+    "dropout_threshold_wall_s": 2.0,
+    "clock": {
+      "count": 468,
+      "count_in_window": 286,
+      "max_wall_gap_s": 1.229,
+      "backward_stamps": 0
+    },
+    "odom": {
+      "count": 473,
+      "count_in_window": 287,
+      "max_wall_gap_s": 1.226,
+      "backward_stamps": 0
+    },
+    "tf_odom_base": {
+      "count": 479,
+      "count_in_window": 286,
+      "max_wall_gap_s": 1.226,
+      "backward_stamps": 0
+    },
+    "tf_map_odom": {
+      "count": 75,
+      "count_in_window": 44,
+      "max_wall_gap_s": 2.321,
+      "backward_stamps": 0
+    },
+    "feedback_target_goal": {
+      "count": 1017
+    }
+  },
+  "message_counts": {
+    "clock": 468,
+    "odom": 473,
+    "cmd_vel": 265,
+    "status": 3,
+    "feedback": 1017,
+    "tf_map_odom": 75,
+    "tf_odom_base": 479
+  },
+  "preconditions_for_sim_state_source": [
+    "/chassis/odom is ideal odometry: isaacsim.core.nodes.IsaacComputeOdometry computes it from the simulated chassis state (its only input is the chassis prim; no wheel or noise model), expressed relative to the pose where it started (evidence: artifacts/d0d/run-01/usd-inspection.txt; odom ~0 right after Play).",
+    "The odometry started at the spawn: the simulation was (re)started with Play from the authored stage and was not stopped/reset between that Play and the end of this recording.",
+    "The USD-authored root pose of /World/Nova_Carter_ROS equals the chassis (base_link) pose at Play start (authored layer values; the composed stage was not inspected).",
+    "The Isaac world frame equals the Nav2 map frame (supported by the map yaml origin and by the amcl initial_pose in the pinned params being equal to the USD spawn)."
+  ],
+  "notes": [
+    "safety_status is unknown: contact/collision was not measured in D0 (D3).",
+    "task_outcome never uses 'unreachable' or 'timeout' here; rejected/aborted goals stay 'unknown' with the raw status.",
+    "The sim-state source is derived from Isaac odometry plus the USD spawn; it is not a separate ground-truth topic."
+  ],
+  "attempt_dir": "/mnt/d/RoboSim-Eval/artifacts/d3/runs/cancel-20260930-012218",
+  "analyzer": {
+    "execution_status": "completed",
+    "task_outcome": "canceled",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "fail",
+    "verdict_reasons": {
+      "fail": [
+        "goal canceled"
+      ],
+      "inconclusive": [
+        "data incomplete: tf_map_odom: gap of 2.321 s wall > 2.0 s"
+      ]
+    },
+    "arrival_check": {
+      "source": "sim_state_odom_plus_spawn",
+      "event": "stop_confirmed",
+      "sim_time_s": 13.783333333,
+      "error_to_goal_m": 6.010650305040342,
+      "tolerance_m": 0.5
+    }
+  },
+  "evaluator": {
+    "execution_status": "error",
+    "task_outcome": "canceled",
+    "safety_status": "pass",
+    "data_status": "complete",
+    "validation_status": "fail",
+    "fail_reasons": [
+      "runner errors: stop_timeout"
+    ],
+    "inconclusive_reasons": [],
+    "warnings": [
+      "informational stream tf_map_odom: wall gap 2.321 s"
+    ],
+    "arrival_error_m": 6.010723716354113,
+    "disallowed_contacts": []
+  },
+  "evaluator_inputs": {
+    "scenario_expect": "canceled",
+    "preset_unreachable": false,
+    "tolerance_m": 0.5,
+    "goal": [
+      0.0,
+      -1.0
+    ],
+    "execution_status": "error",
+    "runner_errors": [
+      "stop_timeout"
+    ],
+    "accepted": true,
+    "rejected": false,
+    "terminal_status": 5,
+    "error_code": 0,
+    "cancel_requested": true,
+    "cancel_reason": "injected",
+    "timeout_reason": null,
+    "stop_confirmed": false,
+    "gt_at_stop": [
+      -6.010723114013672,
+      -0.9973090887069702
+    ],
+    "contacts_measured": true,
+    "contacts": [],
+    "required_gaps": {
+      "clock": 1.229,
+      "odom": 1.226,
+      "tf_odom_base": 1.226
+    },
+    "required_backward": {
+      "clock": 0,
+      "odom": 0,
+      "tf_odom_base": 0
+    },
+    "informational_gaps": {
+      "tf_map_odom": 2.321
+    },
+    "dropout_threshold_wall_s": 2.0,
+    "clock_backward_jumps": 0
+  },
+  "runner": {
+    "run_id": "cancel-20260930-012218",
+    "scenario": "cancel",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 103613.111514129,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 103627.368770589,
+        "t_sim": 0.066666666,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 103640.417720129,
+        "t_sim": 7.533333333,
+        "reason": "nav2 ready after 13.05 s"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 103645.114529784,
+        "t_sim": 7.533333333,
+        "reason": "goal accepted 0e95a5cec05d460eb146c91f7d76faf0"
+      },
+      {
+        "state": "CANCELING",
+        "t_wall": 103655.281100899,
+        "t_sim": 12.533333333,
+        "reason": "injected cancel 5.00 s (sim) after acceptance"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 103655.299657173,
+        "t_sim": 12.533333333,
+        "reason": "terminal status CANCELED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 103665.340963982,
+        "t_sim": 15.816666666,
+        "reason": "stop_timeout"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 103682.533900802,
+        "t_sim": 15.833333333,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [
+      "stop_timeout"
+    ],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": true,
+    "exit_codes": {
+      "doctor": 0,
+      "start_nav2": 0,
+      "record_d0": 0,
+      "stop_record": 0,
+      "analyze": 10,
+      "stop_nav2": 0
+    },
+    "obstacles": [],
+    "ground_truth": {
+      "after_reset": {
+        "entity": "/World/Nova_Carter_ROS/chassis_link",
+        "frame": "nova_carter",
+        "x": -6.000069618225098,
+        "y": -1.0,
+        "z": 8.195638656616211e-07,
+        "yaw": 3.1415818296540095,
+        "linear_speed": 0.00045721673452715945,
+        "angular_speed": 0.0008622691384516656,
+        "received_wall": 1790756546.2072635
+      },
+      "at_end": {
+        "entity": "/World/Nova_Carter_ROS/chassis_link",
+        "frame": "nova_carter",
+        "x": -6.010723114013672,
+        "y": -0.9973090887069702,
+        "z": 8.046627044677734e-07,
+        "yaw": -2.9956649254869374,
+        "linear_speed": 0.0004226731963794429,
+        "angular_speed": 0.0004340587474871427,
+        "received_wall": 1790756595.3117275,
+        "sim_time_paired": 15.833333333
+      }
+    },
+    "injections": [
+      {
+        "kind": "cancel",
+        "sim": 12.533333333
+      }
+    ],
+    "contacts": {
+      "installed": true,
+      "measured": true,
+      "error": null,
+      "bodies": [
+        "/World/Nova_Carter_ROS/chassis_link",
+        "/World/Nova_Carter_ROS/caster_frame_base",
+        "/World/Nova_Carter_ROS/caster_swivel_left",
+        "/World/Nova_Carter_ROS/caster_wheel_left",
+        "/World/Nova_Carter_ROS/caster_swivel_right",
+        "/World/Nova_Carter_ROS/caster_wheel_right",
+        "/World/Nova_Carter_ROS/wheel_left",
+        "/World/Nova_Carter_ROS/wheel_right"
+      ],
+      "pre_run_events": 12,
+      "events": [],
+      "found_pairs": [],
+      "dropped": 0
+    },
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 13.05,
+    "goal_id": "0e95a5cec05d460eb146c91f7d76faf0",
+    "accept_sim": 7.533333333,
+    "terminal_sim": 12.533333333,
+    "terminal": {
+      "status": 5,
+      "name": "CANCELED",
+      "error_code": 0,
+      "error_msg": "",
+      "feedback_count": 1017,
+      "last_feedback": {
+        "distance_remaining": 6.056066036224365,
+        "recoveries": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,215 @@
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=full overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+dds_env.sh: FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml
+=== check_nav2_ready.sh 2026-09-29T22:08:06-07:00 run_dir=/mnt/d/RoboSim-Eval/artifacts/d0d/run-05-regress/neg-ready-without-nav2 ===
+
+===== node list =====
+CMD: timeout 15 ros2 node list
+
+EXIT: 0
+
+===== lifecycle map_server =====
+CMD: timeout 6 ros2 lifecycle get /map_server
+Node not found
+EXIT: 1
+
+===== lifecycle amcl =====
+CMD: timeout 6 ros2 lifecycle get /amcl
+Node not found
+EXIT: 1
+
+===== lifecycle planner_server =====
+CMD: timeout 6 ros2 lifecycle get /planner_server
+Node not found
+EXIT: 1
+
+===== lifecycle controller_server =====
+CMD: timeout 6 ros2 lifecycle get /controller_server
+Node not found
+EXIT: 1
+
+===== lifecycle bt_navigator =====
+CMD: timeout 6 ros2 lifecycle get /bt_navigator
+Node not found
+EXIT: 1
+
+===== lifecycle behavior_server =====
+CMD: timeout 6 ros2 lifecycle get /behavior_server
+Node not found
+EXIT: 1
+
+===== lifecycle smoother_server =====
+CMD: timeout 6 ros2 lifecycle get /smoother_server
+Node not found
+EXIT: 1
+
+===== lifecycle velocity_smoother =====
+CMD: timeout 6 ros2 lifecycle get /velocity_smoother
+Node not found
+EXIT: 1
+
+===== lifecycle collision_monitor =====
+CMD: timeout 6 ros2 lifecycle get /collision_monitor
+Node not found
+EXIT: 1
+
+===== lifecycle waypoint_follower =====
+CMD: timeout 6 ros2 lifecycle get /waypoint_follower
+Node not found
+EXIT: 1
+
+===== /scan hz (8 s) =====
+CMD: timeout 8 ros2 topic hz /scan --window 20
+WARNING: topic [/scan] does not appear to be published yet
+EXIT: 124
+
+===== /scan info =====
+CMD: timeout 10 ros2 topic info -v /scan
+Unknown topic '/scan'
+EXIT: 1
+
+===== /front_2d_lidar/scan hz (5 s, expected absent) =====
+CMD: timeout 5 ros2 topic hz /front_2d_lidar/scan --window 5
+WARNING: topic [/front_2d_lidar/scan] does not appear to be published yet
+EXIT: 124
+
+===== /map once (transient_local) =====
+CMD: timeout 15 ros2 topic echo --once --no-arr --qos-durability transient_local --qos-reliability reliable /map
+WARNING: topic [/map] does not appear to be published yet
+Could not determine the type for the passed topic
+EXIT: 1
+
+===== param use_sim_time amcl =====
+CMD: timeout 6 ros2 param get /amcl use_sim_time
+Node not found
+EXIT: 1
+
+===== param use_sim_time controller_server =====
+CMD: timeout 6 ros2 param get /controller_server use_sim_time
+Node not found
+EXIT: 1
+
+===== param amcl set_initial_pose =====
+CMD: timeout 6 ros2 param get /amcl set_initial_pose
+Node not found
+EXIT: 1
+
+===== param amcl initial_pose.x/y/yaw =====
+CMD: bash -c for k in initial_pose.x initial_pose.y initial_pose.yaw; do timeout 6 ros2 param get /amcl $k; done
+Node not found
+Node not found
+Node not found
+EXIT: 1
+
+===== action list -t =====
+CMD: timeout 15 ros2 action list -t
+
+EXIT: 0
+
+===== /cmd_vel info =====
+CMD: timeout 10 ros2 topic info -v /cmd_vel
+Type: geometry_msgs/msg/Twist
+
+Publisher count: 0
+
+Subscription count: 1
+
+Node name: _World_Nova_Carter_ROS_differential_drive_ros2_subscribe_twist
+Node namespace: /
+Topic type: geometry_msgs/msg/Twist
+Topic type hash: RIHS01_9c45bf16fe0983d80e3cfe750d6835843d265a9a6c46bd2e609fcddde6fb8d2a
+Endpoint type: SUBSCRIPTION
+GID: 01.0f.54.eb.50.81.de.ca.0e.00.00.00.00.00.03.04
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+EXIT: 0
+
+===== tf odom -> base_link (4 s) =====
+CMD: timeout 4 ros2 run tf2_ros tf2_echo odom base_link
+[INFO] [1790744916.243064959] [tf2_echo]: Waiting for transform odom ->  base_link: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+At time 3084.983333333
+- Translation: [-2.653, -0.150, 0.004]
+- Rotation: in Quaternion (xyzw) [0.002, 0.000, 0.955, -0.297]
+- Rotation: in RPY (radian) [-0.001, -0.003, -2.539]
+- Rotation: in RPY (degree) [-0.051, -0.165, -145.466]
+- Matrix:
+ -0.824  0.567  0.003 -2.653
+ -0.567 -0.824  0.001 -0.150
+  0.003 -0.001  1.000  0.004
+  0.000  0.000  0.000  1.000
+At time 3085.450000000
+- Translation: [-2.653, -0.150, 0.004]
+- Rotation: in Quaternion (xyzw) [0.002, -0.000, 0.955, -0.297]
+- Rotation: in RPY (radian) [-0.001, -0.003, -2.539]
+- Rotation: in RPY (degree) [-0.051, -0.165, -145.466]
+- Matrix:
+ -0.824  0.567  0.003 -2.653
+ -0.567 -0.824  0.001 -0.150
+  0.003 -0.001  1.000  0.004
+  0.000  0.000  0.000  1.000
+At time 3085.916666666
+- Translation: [-2.653, -0.150, 0.004]
+- Rotation: in Quaternion (xyzw) [0.002, -0.000, 0.955, -0.297]
+- Rotation: in RPY (radian) [-0.001, -0.003, -2.539]
+- Rotation: in RPY (degree) [-0.051, -0.165, -145.466]
+- Matrix:
+ -0.824  0.567  0.003 -2.653
+ -0.567 -0.824  0.001 -0.150
+  0.003 -0.001  1.000  0.004
+  0.000  0.000  0.000  1.000
+[INFO] [1790744920.002202162] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+EXIT: 124
+
+===== tf map -> odom (6 s) =====
+CMD: timeout 6 ros2 run tf2_ros tf2_echo map odom
+[INFO] [1790744920.364289873] [tf2_echo]: Waiting for transform map ->  odom: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1790744922.339973706] [tf2_echo]: Waiting for transform map ->  odom: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1790744924.340051478] [tf2_echo]: Waiting for transform map ->  odom: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1790744926.125536558] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+EXIT: 124
+
+===== tf map -> base_link (6 s) =====
+CMD: timeout 6 ros2 run tf2_ros tf2_echo map base_link
+[INFO] [1790744926.484372120] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1790744928.456559650] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1790744929.456584923] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1790744931.456585725] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1790744932.247057253] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+EXIT: 124
+
+===== /amcl_pose once (8 s) =====
+CMD: timeout 8 ros2 topic echo --once --no-arr /amcl_pose
+WARNING: topic [/amcl_pose] does not appear to be published yet
+Could not determine the type for the passed topic
+EXIT: 1
+
+===== /clock hz (5 s) =====
+CMD: timeout 5 ros2 topic hz /clock --window 20
+average rate: 26.423
+	min: 0.023s max: 0.056s std dev: 0.01219s window: 20
+average rate: 26.988
+	min: 0.025s max: 0.051s std dev: 0.00948s window: 20
+average rate: 26.828
+	min: 0.024s max: 0.063s std dev: 0.01027s window: 20
+EXIT: 124
+
+=== verdict: NOT READY (2026-09-29T22:08:57-07:00) ===
+  - lifecycle /map_server: Node not found
+  - lifecycle /amcl: Node not found
+  - lifecycle /planner_server: Node not found
+  - lifecycle /controller_server: Node not found
+  - lifecycle /bt_navigator: Node not found
+  - lifecycle /behavior_server: Node not found
+  - lifecycle /smoother_server: Node not found
+  - lifecycle /velocity_smoother: Node not found
+  - lifecycle /collision_monitor: Node not found
+  - lifecycle /waypoint_follower: Node not found
+  - /scan: no measured rate
+  - /map: not received (exit 1)
+  - /navigate_to_pose [nav2_msgs/action/NavigateToPose] not offered
+written /mnt/d/RoboSim-Eval/artifacts/d0d/run-05-regress/neg-ready-without-nav2/ready-220805.txt

@@ -1,0 +1,25 @@
+=== probe_topics.sh 2026-09-29T19:55:27-07:00 out=/mnt/d/RoboSim-Eval/artifacts/d0c/probe-03-after-firewall RMW=rmw_fastrtps_cpp DOMAIN=0 profile=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml ===
+
+===== ros2 daemon (fresh discovery) =====
+CMD: ros2 daemon stop
+The daemon is not running
+EXIT: 0
+
+===== node list =====
+CMD: timeout 15 ros2 node list
+EXIT: 0
+
+===== topic list -t =====
+CMD: timeout 15 ros2 topic list -t
+/back_stereo_camera/imu [sensor_msgs/msg/Imu]
+/chassis/imu [sensor_msgs/msg/Imu]
+/chassis/odom [nav_msgs/msg/Odometry]
+/clock [rosgraph_msgs/msg/Clock]
+/cmd_vel [geometry_msgs/msg/Twist]
+/front_stereo_camera/imu [sensor_msgs/msg/Imu]
+/left_stereo_camera/imu [sensor_msgs/msg/Imu]
+/parameter_events [rcl_interfaces/msg/ParameterEvent]
+/right_stereo_camera/imu [sensor_msgs/msg/Imu]
+/rosout [rcl_interfaces/msg/Log]
+/tf [tf2_msgs/msg/TFMessage]
+EXIT: 0

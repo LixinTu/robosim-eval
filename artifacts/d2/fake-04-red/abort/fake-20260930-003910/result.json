@@ -1,0 +1,80 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "inconclusive",
+  "execution_status_analyzer": null,
+  "execution_status": "completed",
+  "runner": {
+    "run_id": "fake-20260930-003910",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 101185.853452831,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 101191.04466437,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 101191.045434032,
+        "t_sim": 2.735943734,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 101191.051102313,
+        "t_sim": 2.783869215,
+        "reason": "goal accepted b288eb5f0cd14046b3d9234fc3f02334"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 101193.062114662,
+        "t_sim": 3.599882384,
+        "reason": "terminal status ABORTED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 101193.382658275,
+        "t_sim": 3.7377607900000003,
+        "reason": "robot at rest (stop-still confirmed at sim 3.738)"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 101193.383851811,
+        "t_sim": 3.7377607900000003,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0,
+    "terminal": {
+      "status": 6,
+      "name": "ABORTED",
+      "error_code": 208,
+      "error_msg": "fake: no valid path",
+      "feedback_count": 21,
+      "last_feedback": {
+        "distance_remaining": 0.0,
+        "recoveries": 0
+      }
+    },
+    "stop_confirmed_sim": 3.737904596
+  }
+}

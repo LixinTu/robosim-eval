@@ -1,0 +1,2 @@
+start_wall=fake session=61767 launch_pid=61767 boot_id=66057f38-f187-4fe5-808c-e9c73475d5f7 wrapper_starttime=1
+stop_wall=2026-09-29T22:07:55-07:00 method=refused reason="start time of process 61767 differs from the recorded wrapper start time"

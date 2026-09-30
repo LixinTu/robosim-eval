@@ -1,0 +1,103 @@
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=base-only overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+{
+  "execution_status": "completed",
+  "task_outcome": "canceled",
+  "safety_status": "unknown",
+  "data_status": "complete",
+  "validation_status": "fail",
+  "verdict_reasons": {
+    "fail": [
+      "goal canceled"
+    ],
+    "inconclusive": []
+  },
+  "arrival_check": {
+    "source": "sim_state_odom_plus_spawn",
+    "event": "stop_confirmed",
+    "sim_time_s": 12.45,
+    "error_to_goal_m": 5.894335423346196,
+    "tolerance_m": 0.5
+  },
+  "nav2_raw": {
+    "terminal_status_code": 5,
+    "terminal_status_name": "CANCELED",
+    "rejected": false,
+    "status_text_from_client": "CANCELED",
+    "error_code": 0,
+    "error_msg": "",
+    "client_exit": 0,
+    "transcript": "goal-021422.txt",
+    "recoveries": 0,
+    "distance_remaining_last_feedback_m": 6.65177583694458
+  },
+  "timing": {
+    "accepted_wall": "2026-09-30T02:14:22.811-07:00",
+    "result_wall": "2026-09-30T02:14:37.386-07:00",
+    "accept_to_result_wall_s": 13.535473622,
+    "sim_time_at_accept_s": 7.333333333,
+    "sim_time_at_result_s": 10.983333333000001,
+    "accept_to_result_sim_s": 3.6500000000000012
+  },
+  "stop_still": {
+    "rule": "|v|<0.05 m/s and |w|<0.1 rad/s for 1.0 s sim time after the terminal status (/chassis/odom twist; window restarts on gaps > 0.25 s)",
+    "state": "confirmed",
+    "confirmed_at_sim": 12.45,
+    "confirmed_at_t_ns": 1790759682736931650,
+    "observed_after_end_sim_s": 2.5833333330000006,
+    "max_gap_after_end_sim_s": 0.016666667000000857,
+    "max_lin_after_end": 0.6573297130515755,
+    "max_ang_after_end": 0.949758768081665,
+    "samples_after_end": 156
+  },
+  "position_source_crosscheck": {
+    "at_goal_accept": {
+      "sim_state_xy": [
+        -6.0081,
+        -1.0
+      ],
+      "amcl_estimate_xy": [
+        -6.0039,
+        -1.0
+      ],
+      "amcl_minus_sim_state_m": 0.0042
+    },
+    "at_terminal_status": {
+      "sim_state_xy": [
+        -5.9713,
+        -0.3773
+      ],
+      "amcl_estimate_xy": [
+        -6.1586,
+        -0.3458
+      ],
+      "amcl_minus_sim_state_m": 0.19
+    },
+    "at_arrival_check": {
+      "sim_state_xy": [
+        -5.8437,
+        -0.2291
+      ],
+      "amcl_estimate_xy": [
+        -6.0535,
+        -0.1808
+      ],
+      "amcl_minus_sim_state_m": 0.2153
+    },
+    "map_to_odom_first": [
+      -5.9958,
+      -1.0,
+      3.1416
+    ],
+    "map_to_odom_last": [
+      -6.098,
+      -0.9661,
+      -2.9982
+    ],
+    "map_to_odom_implied_by_spawn": [
+      -6.0,
+      -1.0,
+      3.1416
+    ]
+  }
+}
+written /mnt/d/RoboSim-Eval/artifacts/d5/demo/runs/cancel-20260930-021343/result.json and trajectory.csv

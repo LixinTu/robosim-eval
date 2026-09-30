@@ -1,0 +1,10 @@
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=--base-only overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+=== test_rviz.sh 2026-09-29T19:29:31-07:00 DISPLAY=:0 WAYLAND_DISPLAY=wayland-0 ===
+--- attempt 'default' env:  ---
+rviz2 exit=124 (124 = survived 20 s) -> /mnt/d/RoboSim-Eval/artifacts/d0b/rviz-default.log
+last lines:
+    [INFO] [1790735371.623131719] [rviz2]: Stereo is NOT SUPPORTED
+    [INFO] [1790735371.623389191] [rviz2]: OpenGl version: 4.5 (GLSL 4.5)
+    [INFO] [1790735371.680062102] [rviz2]: Stereo is NOT SUPPORTED
+    [INFO] [1790735391.088318449] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+=== result: PASS (default GL) ===

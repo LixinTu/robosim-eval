@@ -1,0 +1,42 @@
+=== check_ros_install.sh 2026-09-29T19:28:27-07:00 ===
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=--base-only overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+--- executables ---
+ok   ros2 -> /opt/ros/jazzy/bin/ros2
+ok   rviz2 -> /opt/ros/jazzy/bin/rviz2
+ok   colcon -> /usr/bin/colcon
+ok   rosdep -> /usr/bin/rosdep
+ok   python3 -> /usr/bin/python3
+--- packages (dpkg) ---
+ok   ros-dev-tools 1.0.3
+ok   ros-jazzy-desktop 0.11.0-1noble.20260905.070740
+ok   ros-jazzy-navigation2 1.3.13-1noble.20260905.072714
+ok   ros-jazzy-nav2-bringup 1.3.13-1noble.20260907.023821
+ok   ros-jazzy-nav2-simple-commander 1.3.13-1noble.20260903.065856
+ok   ros-jazzy-nav2-rviz-plugins 1.3.13-1noble.20260905.070215
+ok   ros-jazzy-pointcloud-to-laserscan 2.0.2-3noble.20260903.023151
+ok   ros-jazzy-rmw-fastrtps-cpp 8.4.4-1noble.20260902.041916
+ok   ros-jazzy-joint-state-publisher 2.4.3-1noble.20260902.054703
+ok   ros-jazzy-robot-state-publisher 3.3.4-1noble.20260903.022201
+ok   ros-jazzy-xacro 2.1.1-1noble.20260519.011123
+ok   ros-jazzy-ament-flake8 0.17.5-1noble.20260410.113507
+ok   ros-jazzy-ament-pep257 0.17.5-1noble.20260410.113520
+ok   ros-jazzy-demo-nodes-cpp 0.33.11-1noble.20260902.063221
+ok   python3-numpy 1:1.26.4+ds-6ubuntu1
+ok   python3-pil 10.2.0-1ubuntu1.3
+ok   python3-pytest 7.4.4-1
+ok   python3-yaml 6.0.1-2build2
+--- ros2 package index ---
+ok   demo_nodes_cpp -> /opt/ros/jazzy
+ok   nav2_bringup -> /opt/ros/jazzy
+ok   pointcloud_to_laserscan -> /opt/ros/jazzy
+ok   rmw_fastrtps_cpp -> /opt/ros/jazzy
+ok   rviz2 -> /opt/ros/jazzy
+ok   nav2_msgs -> /opt/ros/jazzy
+ok   xacro -> /opt/ros/jazzy
+--- rosdep ---
+ok   rosdep initialized
+ok   rosdep cache present
+--- rmw ---
+RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 ROS_DISTRO=jazzy
+ok   librmw_fastrtps_cpp.so present
+=== result: PASS ===

@@ -1,0 +1,11 @@
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=base-only overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+dds_env.sh: FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml
+SIGINT -> ros2 launch pid 83374 (session 83371) at 2026-09-30T01:23:21-07:00
+stopped in 7s via SIGINT(launch); launch exit code: 1
+no leftover processes in session 83371
+no Nav2 nodes discovered (fresh discovery, no daemon)
+process exits reported by launch:
+[INFO] [pointcloud_to_laserscan_node-3]: process has finished cleanly [pid 83402]
+[INFO] [rviz2-1]: process has finished cleanly [pid 83398]
+[component_container_isolated-2] Magick: abort due to signal 11 (SIGSEGV) "Segmentation Fault"...
+[ERROR] [component_container_isolated-2]: process has died [pid 83401, exit code -6, cmd '/opt/ros/jazzy/lib/rclcpp_components/component_container_isolated --ros-args --log-level info --ros-args -r __node:=nav2_container --params-file /tmp/launch_params_1nnw6h60 --params-file /tmp/launch_params_u95heuj0 -r /tf:=tf -r /tf_static:=tf_static'].

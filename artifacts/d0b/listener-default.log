@@ -1,0 +1,12 @@
+[INFO] [1790735343.467538086] [listener]: I heard: [Hello World: 3]
+[INFO] [1790735344.467474119] [listener]: I heard: [Hello World: 4]
+[INFO] [1790735345.467210024] [listener]: I heard: [Hello World: 5]
+[INFO] [1790735346.467226777] [listener]: I heard: [Hello World: 6]
+[INFO] [1790735347.467544246] [listener]: I heard: [Hello World: 7]
+[INFO] [1790735348.467362340] [listener]: I heard: [Hello World: 8]
+[INFO] [1790735349.467625761] [listener]: I heard: [Hello World: 9]
+[INFO] [1790735350.467823950] [listener]: I heard: [Hello World: 10]
+[INFO] [1790735351.467138500] [listener]: I heard: [Hello World: 11]
+[INFO] [1790735352.467761222] [listener]: I heard: [Hello World: 12]
+[INFO] [1790735353.467236320] [listener]: I heard: [Hello World: 13]
+[INFO] [1790735354.317692279] [rclcpp]: signal_handler(SIGINT/SIGTERM)

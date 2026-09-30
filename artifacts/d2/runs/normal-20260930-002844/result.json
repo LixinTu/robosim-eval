@@ -1,0 +1,56 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "inconclusive",
+  "execution_status_analyzer": null,
+  "execution_status": "error",
+  "runner": {
+    "run_id": "normal-20260930-002844",
+    "scenario": "normal",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 100596.654574408,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 100607.383398848,
+        "t_sim": 0.066666666,
+        "reason": "failure: doctor exit 12 (see doctor.txt)"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 100607.383990101,
+        "t_sim": 0.066666666,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [
+      "doctor exit 12 (see doctor.txt)"
+    ],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 12
+    },
+    "obstacles": [],
+    "ground_truth": {
+      "after_reset": {
+        "entity": "/World/Nova_Carter_ROS/chassis_link",
+        "frame": "nova_carter",
+        "x": -6.000069618225098,
+        "y": -1.0,
+        "z": 8.195638656616211e-07,
+        "yaw": 3.1415818296540095,
+        "linear_speed": 0.00045721673452715945,
+        "angular_speed": 0.0008622691384516656,
+        "received_wall": 1790753331.3719492
+      }
+    }
+  }
+}

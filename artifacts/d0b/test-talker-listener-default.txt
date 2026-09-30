@@ -1,0 +1,7 @@
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=--base-only overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+=== test_talker_listener.sh 2026-09-29T19:29:00-07:00 profile=default RMW=rmw_fastrtps_cpp DOMAIN=0 FASTRTPS_DEFAULT_PROFILES_FILE=unset ===
+talker started pid=52408 (timeout 20 s) -> /mnt/d/RoboSim-Eval/artifacts/d0b/talker-default.log
+listener finished exit=124 (124 = ran the full 12 s window) -> /mnt/d/RoboSim-Eval/artifacts/d0b/listener-default.log
+talker finished exit=0 (124 = full window, 130 = stopped by this script)
+talker published lines: 13 ; listener 'I heard' lines: 11
+=== result: PASS (WSL-internal only) ===

@@ -1,0 +1,12 @@
+{"t_mono": 100341.915721, "wall": "2026-09-30T00:24:12.665-07:00", "t_sim": null, "event": "state", "state": "PREPARE", "reason": "run started", "fsm_t_mono": 100341.915702469, "fsm_t_sim": null}
+{"t_mono": 100346.772735, "wall": "2026-09-30T00:24:17.522-07:00", "t_sim": null, "event": "doctor", "exit_code": 0}
+{"t_mono": 100346.773135, "wall": "2026-09-30T00:24:17.523-07:00", "t_sim": null, "event": "state", "state": "WAIT_READY", "reason": "prepared", "fsm_t_mono": 100346.773108713, "fsm_t_sim": null}
+{"t_mono": 100346.773948, "wall": "2026-09-30T00:24:17.523-07:00", "t_sim": 2.577306071, "event": "state", "state": "SEND_GOAL", "reason": "nav2 ready after 0.0 s", "fsm_t_mono": 100346.773938557, "fsm_t_sim": 2.577306071}
+{"t_mono": 100346.777686, "wall": "2026-09-30T00:24:17.527-07:00", "t_sim": 2.577306071, "event": "goal_sent", "x": 1.0, "y": 0.0, "yaw": 0.0, "frame": "map"}
+{"t_mono": 100346.779498, "wall": "2026-09-30T00:24:17.529-07:00", "t_sim": 2.6253487570000003, "event": "state", "state": "EXECUTING", "reason": "goal accepted 9f4347c8ba284b08b3ecede02fa8eeb1", "fsm_t_mono": 100346.779486874, "fsm_t_sim": 2.6253487570000003}
+{"t_mono": 100354.781954, "wall": "2026-09-30T00:24:27.454-07:00", "t_sim": 5.856242624, "event": "timeout", "name": "nav_wall_timeout"}
+{"t_mono": 100354.782329, "wall": "2026-09-30T00:24:27.455-07:00", "t_sim": 5.856242624, "event": "state", "state": "CANCELING", "reason": "nav_wall_timeout", "fsm_t_mono": 100354.782290509, "fsm_t_sim": 5.856242624}
+{"t_mono": 100354.782978, "wall": "2026-09-30T00:24:27.455-07:00", "t_sim": 5.856242624, "event": "cancel_requested"}
+{"t_mono": 100354.812615, "wall": "2026-09-30T00:24:27.485-07:00", "t_sim": 5.856242624, "event": "state", "state": "STOP_CONFIRM", "reason": "terminal status CANCELED", "fsm_t_mono": 100354.812598573, "fsm_t_sim": 5.856242624}
+{"t_mono": 100354.81309, "wall": "2026-09-30T00:24:27.485-07:00", "t_sim": 5.856242624, "event": "state", "state": "TEARDOWN", "reason": "robot at rest (stop-still confirmed at sim 3.586)", "fsm_t_mono": 100354.813078143, "fsm_t_sim": 5.856242624}
+{"t_mono": 100354.815842, "wall": "2026-09-30T00:24:27.488-07:00", "t_sim": 5.856242624, "event": "state", "state": "DONE", "reason": "teardown finished", "fsm_t_mono": 100354.815831355, "fsm_t_sim": 5.856242624}

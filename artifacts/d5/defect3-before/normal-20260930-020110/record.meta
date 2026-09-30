@@ -1,0 +1,8 @@
+record start 2026-09-30T02:01:53-07:00 attempt=/mnt/d/RoboSim-Eval/artifacts/d5/defect3-before/normal-20260930-020110 max=480s bag=/home/administrator/robosim_bags/normal-20260930-020110-20260930-020153
+record stop 2026-09-30T02:03:02-07:00
+  bag            session 94474   exit=0
+  odom           session 94483   exit=2
+  amcl_pose      session 94493   exit=2
+  cmd_vel        session 94519   exit=2
+  action_status  session 94538   exit=2
+  tf_map_base    session 94548   exit=0

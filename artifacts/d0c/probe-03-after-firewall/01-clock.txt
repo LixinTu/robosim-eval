@@ -1,0 +1,8 @@
+
+===== /clock hz (10 s) =====
+CMD: timeout 10 ros2 topic hz /clock --window 50
+EXIT: 124
+
+===== /clock sample =====
+CMD: timeout 10 ros2 topic echo --once /clock
+EXIT: 124

@@ -1,0 +1,278 @@
+﻿=== USD wiring inspection (read-only) 2026-09-29 22:04:00 ===
+tool: scripts\windows\inspect_usd.py (extended: node inputs, connections, relationship targets, chassis_link override) via Isaac python.bat + omni.usd.libs pxr (child process only)
+files: temp\usd\ (git-ignored), same downloads and sha256 as usd-inspection.txt
+
+######## carter_warehouse_navigation.usd sha256 2a699e593474b6967c39f31df0b74bcec4190a8b28a0e3e47b380beb0026eaa2
+exit: 0
+layer opened: True D:\RoboSim-Eval\temp\usd\carter_warehouse_navigation.usd
+defaultPrim: World
+children of /World: ['warehouse_with_forklifts', 'PhysicsScene', 'warehouse_extras', 'ROS_Clock', 'Nova_Carter_ROS']
+/World/Nova_Carter_ROS type: '' references: [] payloads: ['../Robots/Nova_Carter_ROS.usd']
+   xformOp:orient = Gf.Quatd(6.123233995736766e-17, Gf.Vec3d(0.0, 0.0, 1.0))
+   xformOp:translate = Gf.Vec3d(-6.0, -1.0, 0.0)
+  child specs: ['differential_drive', 'chassis_link', 'front_hawk']
+  override spec /World/Nova_Carter_ROS/chassis_link (specifier Sdf.SpecifierOver):
+     child specs: []
+omnigraph node specs in this layer: 4
+   /World/ROS_Clock/on_playback_tick -> omni.graph.action.OnPlaybackTick
+   /World/ROS_Clock/ros2_publish_clock -> isaacsim.ros2.bridge.ROS2PublishClock
+   /World/ROS_Clock/ros2_context -> isaacsim.ros2.bridge.ROS2Context
+   /World/ROS_Clock/isaac_read_simulation_time -> isaacsim.core.nodes.IsaacReadSimulationTime
+
+== /World/ROS_Clock/ros2_publish_clock (isaacsim.ros2.bridge.ROS2PublishClock)
+   inputs:context = 0  <- connected from ['/World/ROS_Clock/ros2_context.outputs:context']
+   inputs:execIn = None  <- connected from ['/World/ROS_Clock/on_playback_tick.outputs:tick']
+   inputs:nodeNamespace = ''
+   inputs:queueSize = 10
+   inputs:timeStamp = 0.0  <- connected from ['/World/ROS_Clock/isaac_read_simulation_time_01.outputs:simulationTime', '/World/ROS_Clock/isaac_read_simulation_time.outputs:simulationTime']
+   inputs:topicName = 'clock'
+   node:type = 'isaacsim.ros2.bridge.ROS2PublishClock'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+   ui:nodegraph:node:pos = Gf.Vec2f(216.8227996826172, 350.6473388671875)
+
+== /World/ROS_Clock/ros2_context (isaacsim.ros2.bridge.ROS2Context)
+   inputs:domain_id = 0
+   inputs:useDomainIDEnvVar = True
+   node:type = 'isaacsim.ros2.bridge.ROS2Context'
+   node:typeVersion = 2
+   outputs:context = 0
+   ui:nodegraph:node:expansionState = 'open'
+   ui:nodegraph:node:pos = Gf.Vec2f(-66.67938232421875, 391.3713073730469)
+
+== /World/ROS_Clock/isaac_read_simulation_time (isaacsim.core.nodes.IsaacReadSimulationTime)
+   inputs:resetOnStop = True
+   node:type = 'isaacsim.core.nodes.IsaacReadSimulationTime'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+   ui:nodegraph:node:pos = Gf.Vec2f(-61.25108337402344, 520.76318359375)
+
+######## Nova_Carter_ROS.usd sha256 be15663c914b455f8ff520d1afc2b495ec872c52d19705b6cf0ab08e01f34d7d
+exit: 0
+layer opened: True D:\RoboSim-Eval\temp\usd\Nova_Carter_ROS.usd
+defaultPrim: nova_carter_ros2_sensors
+children of /World: ['PhysicsScene', 'GroundPlane']
+omnigraph node specs in this layer: 36
+   /ros_clock/on_playback_tick -> omni.graph.action.OnPlaybackTick
+   /ros_clock/ros2_publish_clock -> isaacsim.ros2.bridge.ROS2PublishClock
+   /ros_clock/ros2_context -> isaacsim.ros2.bridge.ROS2Context
+   /ros_clock/isaac_read_simulation_time -> isaacsim.core.nodes.IsaacReadSimulationTime
+   /nova_carter_ros2_sensors/transform_tree_odometry/on_playback_tick -> omni.graph.action.OnPlaybackTick
+   /nova_carter_ros2_sensors/transform_tree_odometry/isaac_compute_odometry_node -> isaacsim.core.nodes.IsaacComputeOdometry
+   /nova_carter_ros2_sensors/transform_tree_odometry/ros2_publish_raw_transform_tree -> isaacsim.ros2.bridge.ROS2PublishRawTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/ros2_publish_odometry -> isaacsim.ros2.bridge.ROS2PublishOdometry
+   /nova_carter_ros2_sensors/transform_tree_odometry/tf_tree_base_link_to_chassis -> isaacsim.ros2.bridge.ROS2PublishTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/tf_tree_base_link_to_sensors -> isaacsim.ros2.bridge.ROS2PublishTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/ros2_context -> isaacsim.ros2.bridge.ROS2Context
+   /nova_carter_ros2_sensors/transform_tree_odometry/node_namespace -> omni.graph.nodes.ConstantString
+   /nova_carter_ros2_sensors/transform_tree_odometry/tf_tree_base_link_to_wheel_base -> isaacsim.ros2.bridge.ROS2PublishTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/ros2_qos_profile -> isaacsim.ros2.bridge.ROS2QoSProfile
+   /nova_carter_ros2_sensors/transform_tree_odometry/isaac_read_simulation_time -> isaacsim.core.nodes.IsaacReadSimulationTime
+   /nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_wheel_base -> isaacsim.core.nodes.IsaacComputeTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_sensors -> isaacsim.core.nodes.IsaacComputeTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_chassis -> isaacsim.core.nodes.IsaacComputeTransformTree
+   /nova_carter_ros2_sensors/differential_drive/on_playback_tick -> omni.graph.action.OnPlaybackTick
+   /nova_carter_ros2_sensors/differential_drive/ros2_context -> isaacsim.ros2.bridge.ROS2Context
+   /nova_carter_ros2_sensors/differential_drive/node_namespace -> omni.graph.nodes.ConstantString
+   /nova_carter_ros2_sensors/differential_drive/ros2_subscribe_twist -> isaacsim.ros2.bridge.ROS2SubscribeTwist
+   /nova_carter_ros2_sensors/differential_drive/break_3_vector -> omni.graph.nodes.BreakVector3
+   /nova_carter_ros2_sensors/differential_drive/break_3_vector_01 -> omni.graph.nodes.BreakVector3
+   /nova_carter_ros2_sensors/differential_drive/joint_wheel_left_name -> omni.graph.nodes.ConstantToken
+   /nova_carter_ros2_sensors/differential_drive/joint_wheel_right_name -> omni.graph.nodes.ConstantToken
+   /nova_carter_ros2_sensors/differential_drive/joint_name_array -> omni.graph.nodes.ConstructArray
+   /nova_carter_ros2_sensors/differential_drive/differential_controller_01 -> isaacsim.robot.wheeled_robots.DifferentialController
+   /nova_carter_ros2_sensors/differential_drive/articulation_controller_01 -> isaacsim.core.nodes.IsaacArticulationController
+   /nova_carter_ros2_sensors/chassis_imu/on_playback_tick -> omni.graph.action.OnPlaybackTick
+   /nova_carter_ros2_sensors/chassis_imu/ros2_publish_imu -> isaacsim.ros2.bridge.ROS2PublishImu
+   /nova_carter_ros2_sensors/chassis_imu/isaac_read_imu_node -> isaacsim.sensors.physics.IsaacReadIMU
+   /nova_carter_ros2_sensors/chassis_imu/ros2_context -> isaacsim.ros2.bridge.ROS2Context
+   /nova_carter_ros2_sensors/chassis_imu/ros2_qos_profile -> isaacsim.ros2.bridge.ROS2QoSProfile
+   /nova_carter_ros2_sensors/chassis_imu/node_namespace -> omni.graph.nodes.ConstantString
+   /nova_carter_ros2_sensors/chassis_imu/isaac_read_simulation_time -> isaacsim.core.nodes.IsaacReadSimulationTime
+
+== /ros_clock/ros2_publish_clock (isaacsim.ros2.bridge.ROS2PublishClock)
+   inputs:context = None  <- connected from ['/ros_clock/ros2_context.outputs:context']
+   inputs:execIn = None  <- connected from ['/ros_clock/on_playback_tick.outputs:tick']
+   inputs:timeStamp = None  <- connected from ['/ros_clock/isaac_read_simulation_time.outputs:simulationTime']
+   node:type = 'isaacsim.ros2.bridge.ROS2PublishClock'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+
+== /ros_clock/ros2_context (isaacsim.ros2.bridge.ROS2Context)
+   node:type = 'isaacsim.ros2.bridge.ROS2Context'
+   node:typeVersion = 2
+   ui:nodegraph:node:expansionState = 'open'
+   ui:nodegraph:node:pos = Gf.Vec2f(-519.353759765625, 370.41107177734375)
+
+== /ros_clock/isaac_read_simulation_time (isaacsim.core.nodes.IsaacReadSimulationTime)
+   inputs:resetOnStop = True
+   node:type = 'isaacsim.core.nodes.IsaacReadSimulationTime'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+   ui:nodegraph:node:pos = Gf.Vec2f(-527.4502563476562, 172.6854705810547)
+
+== /nova_carter_ros2_sensors/transform_tree_odometry/isaac_compute_odometry_node (isaacsim.core.nodes.IsaacComputeOdometry)
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/on_playback_tick.outputs:tick']
+   node:type = 'isaacsim.core.nodes.IsaacComputeOdometry'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+   inputs:chassisPrim (relationship) -> ['/nova_carter_ros2_sensors/chassis_link']
+
+== /nova_carter_ros2_sensors/transform_tree_odometry/ros2_publish_raw_transform_tree (isaacsim.ros2.bridge.ROS2PublishRawTransformTree)
+   inputs:childFrameId = 'base_link'
+   inputs:context = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ros2_context.outputs:context']
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/on_playback_tick.outputs:tick']
+   inputs:nodeNamespace = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/node_namespace.inputs:value']
+   inputs:parentFrameId = 'odom'
+   inputs:qosProfile = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ros2_qos_profile.outputs:qosProfile']
+   inputs:rotation = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/isaac_compute_odometry_node.outputs:orientation']
+   inputs:timeStamp = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/isaac_read_simulation_time.outputs:simulationTime']
+   inputs:translation = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/isaac_compute_odometry_node.outputs:position']
+   node:type = 'isaacsim.ros2.bridge.ROS2PublishRawTransformTree'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+
+== /nova_carter_ros2_sensors/transform_tree_odometry/ros2_publish_odometry (isaacsim.ros2.bridge.ROS2PublishOdometry)
+   inputs:angularVelocity = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/isaac_compute_odometry_node.outputs:angularVelocity']
+   inputs:context = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ros2_context.outputs:context']
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/on_playback_tick.outputs:tick']
+   inputs:linearVelocity = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/isaac_compute_odometry_node.outputs:linearVelocity']
+   inputs:nodeNamespace = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/node_namespace.inputs:value']
+   inputs:orientation = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/isaac_compute_odometry_node.outputs:orientation']
+   inputs:position = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/isaac_compute_odometry_node.outputs:position']
+   inputs:qosProfile = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ros2_qos_profile.outputs:qosProfile']
+   inputs:timeStamp = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/isaac_read_simulation_time.outputs:simulationTime']
+   inputs:topicName = 'chassis/odom'
+   node:type = 'isaacsim.ros2.bridge.ROS2PublishOdometry'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+
+== /nova_carter_ros2_sensors/transform_tree_odometry/tf_tree_base_link_to_chassis (isaacsim.ros2.bridge.ROS2PublishTransformTree)
+   inputs:childFrames = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_chassis.outputs:childFrames']
+   inputs:context = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ros2_context.outputs:context']
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_chassis.outputs:execOut']
+   inputs:nodeNamespace = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/node_namespace.inputs:value']
+   inputs:orientations = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_chassis.outputs:orientations']
+   inputs:parentFrames = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_chassis.outputs:parentFrames']
+   inputs:qosProfile = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ros2_qos_profile.outputs:qosProfile']
+   inputs:timeStamp = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/isaac_read_simulation_time.outputs:simulationTime']
+   inputs:translations = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_chassis.outputs:translations']
+   node:type = 'isaacsim.ros2.bridge.ROS2PublishTransformTree'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+   inputs:parentPrim (relationship) -> []
+   inputs:targetPrims (relationship) -> []
+
+== /nova_carter_ros2_sensors/transform_tree_odometry/tf_tree_base_link_to_sensors (isaacsim.ros2.bridge.ROS2PublishTransformTree)
+   inputs:childFrames = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_sensors.outputs:childFrames']
+   inputs:context = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ros2_context.outputs:context']
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_sensors.outputs:execOut']
+   inputs:nodeNamespace = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/node_namespace.inputs:value']
+   inputs:orientations = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_sensors.outputs:orientations']
+   inputs:parentFrames = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_sensors.outputs:parentFrames']
+   inputs:qosProfile = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ros2_qos_profile.outputs:qosProfile']
+   inputs:timeStamp = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/isaac_read_simulation_time.outputs:simulationTime']
+   inputs:translations = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_sensors.outputs:translations']
+   node:type = 'isaacsim.ros2.bridge.ROS2PublishTransformTree'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+   inputs:parentPrim (relationship) -> []
+   inputs:targetPrims (relationship) -> []
+
+== /nova_carter_ros2_sensors/transform_tree_odometry/ros2_context (isaacsim.ros2.bridge.ROS2Context)
+   node:type = 'isaacsim.ros2.bridge.ROS2Context'
+   node:typeVersion = 2
+   ui:nodegraph:node:expansionState = 'open'
+
+== /nova_carter_ros2_sensors/transform_tree_odometry/tf_tree_base_link_to_wheel_base (isaacsim.ros2.bridge.ROS2PublishTransformTree)
+   inputs:childFrames = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_wheel_base.outputs:childFrames']
+   inputs:context = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ros2_context.outputs:context']
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_wheel_base.outputs:execOut']
+   inputs:nodeNamespace = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/node_namespace.inputs:value']
+   inputs:orientations = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_wheel_base.outputs:orientations']
+   inputs:parentFrames = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_wheel_base.outputs:parentFrames']
+   inputs:qosProfile = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ros2_qos_profile.outputs:qosProfile']
+   inputs:timeStamp = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/isaac_read_simulation_time.outputs:simulationTime']
+   inputs:translations = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_wheel_base.outputs:translations']
+   node:type = 'isaacsim.ros2.bridge.ROS2PublishTransformTree'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+   inputs:parentPrim (relationship) -> []
+   inputs:targetPrims (relationship) -> []
+
+== /nova_carter_ros2_sensors/transform_tree_odometry/isaac_read_simulation_time (isaacsim.core.nodes.IsaacReadSimulationTime)
+   inputs:resetOnStop = True
+   node:type = 'isaacsim.core.nodes.IsaacReadSimulationTime'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+
+== /nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_wheel_base (isaacsim.core.nodes.IsaacComputeTransformTree)
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/on_playback_tick.outputs:tick']
+   node:type = 'isaacsim.core.nodes.IsaacComputeTransformTree'
+   node:typeVersion = 1
+   inputs:parentPrim (relationship) -> ['/nova_carter_ros2_sensors/chassis_link']
+   inputs:targetPrims (relationship) -> ['/nova_carter_ros2_sensors/caster_wheel_left', '/nova_carter_ros2_sensors/caster_wheel_right', '/nova_carter_ros2_sensors/caster_swivel_right', '/nova_carter_ros2_sensors/caster_swivel_left', '/nova_carter_ros2_sensors/wheel_left', '/nova_carter_ros2_sensors/wheel_right', '/nova_carter_ros2_sensors/caster_frame_base']
+
+== /nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_sensors (isaacsim.core.nodes.IsaacComputeTransformTree)
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/on_playback_tick.outputs:tick']
+   node:type = 'isaacsim.core.nodes.IsaacComputeTransformTree'
+   node:typeVersion = 1
+   inputs:parentPrim (relationship) -> ['/nova_carter_ros2_sensors/chassis_link/base_link']
+   inputs:targetPrims (relationship) -> ['/nova_carter_ros2_sensors/chassis_link/sensors/front_hawk', '/nova_carter_ros2_sensors/chassis_link/sensors/left_hawk', '/nova_carter_ros2_sensors/chassis_link/sensors/right_hawk', '/nova_carter_ros2_sensors/chassis_link/sensors/back_hawk', '/nova_carter_ros2_sensors/chassis_link/sensors/front_owl', '/nova_carter_ros2_sensors/chassis_link/sensors/left_owl', '/nova_carter_ros2_sensors/chassis_link/sensors/right_owl', '/nova_carter_ros2_sensors/chassis_link/sensors/back_owl', '/nova_carter_ros2_sensors/chassis_link/sensors/chassis_imu/Imu_Sensor', '/nova_carter_ros2_sensors/chassis_link/sensors/front_RPLidar', '/nova_carter_ros2_sensors/chassis_link/sensors/rear_RPLidar', '/nova_carter_ros2_sensors/chassis_link/sensors/XT_32']
+
+== /nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_chassis (isaacsim.core.nodes.IsaacComputeTransformTree)
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/transform_tree_odometry/on_playback_tick.outputs:tick']
+   node:type = 'isaacsim.core.nodes.IsaacComputeTransformTree'
+   node:typeVersion = 1
+   inputs:parentPrim (relationship) -> ['/nova_carter_ros2_sensors/chassis_link/base_link']
+   inputs:targetPrims (relationship) -> ['/nova_carter_ros2_sensors/chassis_link']
+
+== /nova_carter_ros2_sensors/differential_drive/ros2_context (isaacsim.ros2.bridge.ROS2Context)
+   node:type = 'isaacsim.ros2.bridge.ROS2Context'
+   node:typeVersion = 2
+   ui:nodegraph:node:expansionState = 'open'
+
+== /nova_carter_ros2_sensors/differential_drive/ros2_subscribe_twist (isaacsim.ros2.bridge.ROS2SubscribeTwist)
+   inputs:context = None  <- connected from ['/nova_carter_ros2_sensors/differential_drive/ros2_context.outputs:context']
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/differential_drive/on_playback_tick.outputs:tick']
+   inputs:nodeNamespace = None  <- connected from ['/nova_carter_ros2_sensors/differential_drive/node_namespace.inputs:value']
+   node:type = 'isaacsim.ros2.bridge.ROS2SubscribeTwist'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+
+== /nova_carter_ros2_sensors/differential_drive/differential_controller_01 (isaacsim.robot.wheeled_robots.DifferentialController)
+   inputs:angularVelocity = None  <- connected from ['/nova_carter_ros2_sensors/differential_drive/break_3_vector.outputs:z']
+   inputs:dt = None  <- connected from ['/nova_carter_ros2_sensors/differential_drive/on_playback_tick.outputs:deltaSeconds']
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/differential_drive/on_playback_tick.outputs:tick']
+   inputs:linearVelocity = None  <- connected from ['/nova_carter_ros2_sensors/differential_drive/break_3_vector_01.outputs:x']
+   inputs:maxAcceleration = 2.0
+   inputs:maxAngularAcceleration = 2.68
+   inputs:maxAngularSpeed = 1.2
+   inputs:maxDeceleration = 2.0
+   inputs:maxLinearSpeed = 1.0
+   inputs:wheelDistance = 0.413
+   inputs:wheelRadius = 0.14
+   node:type = 'isaacsim.robot.wheeled_robots.DifferentialController'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+
+== /nova_carter_ros2_sensors/differential_drive/articulation_controller_01 (isaacsim.core.nodes.IsaacArticulationController)
+   inputs:execIn = None  <- connected from ['/nova_carter_ros2_sensors/differential_drive/on_playback_tick.outputs:tick']
+   inputs:jointNames = None  <- connected from ['/nova_carter_ros2_sensors/differential_drive/joint_name_array.outputs:array']
+   inputs:velocityCommand = None  <- connected from ['/nova_carter_ros2_sensors/differential_drive/differential_controller_01.outputs:velocityCommand']
+   node:type = 'isaacsim.core.nodes.IsaacArticulationController'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+   inputs:targetPrim (relationship) -> ['/nova_carter_ros2_sensors/chassis_link']
+
+== /nova_carter_ros2_sensors/chassis_imu/ros2_context (isaacsim.ros2.bridge.ROS2Context)
+   node:type = 'isaacsim.ros2.bridge.ROS2Context'
+   node:typeVersion = 2
+   ui:nodegraph:node:expansionState = 'open'
+
+== /nova_carter_ros2_sensors/chassis_imu/isaac_read_simulation_time (isaacsim.core.nodes.IsaacReadSimulationTime)
+   inputs:resetOnStop = True
+   node:type = 'isaacsim.core.nodes.IsaacReadSimulationTime'
+   node:typeVersion = 1
+   ui:nodegraph:node:expansionState = 'open'
+   ui:nodegraph:node:pos = Gf.Vec2f(-534.3319702148438, -186.00445556640625)

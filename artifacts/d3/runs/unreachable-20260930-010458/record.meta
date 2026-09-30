@@ -1,0 +1,8 @@
+record start 2026-09-30T01:05:31-07:00 attempt=/mnt/d/RoboSim-Eval/artifacts/d3/runs/unreachable-20260930-010458 max=480s bag=/home/administrator/robosim_bags/unreachable-20260930-010458-20260930-010531
+record stop 2026-09-30T01:06:26-07:00
+  bag            session 78722   exit=0
+  odom           session 78731   exit=2
+  amcl_pose      session 78741   exit=2
+  cmd_vel        session 78764   exit=2
+  action_status  session 78774   exit=2
+  tf_map_base    session 78791   exit=2

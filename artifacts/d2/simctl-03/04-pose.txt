@@ -1,0 +1,1 @@
+{"command": "pose", "entity": "/World/Nova_Carter_ROS/chassis_link", "frame": "nova_carter", "x": -6.001190185546875, "y": -1.0000001192092896, "z": 8.791685104370117e-07, "yaw": 3.1415774690615166, "linear_speed": 0.0007419799512357224, "angular_speed": 0.0012857872061431408, "received_wall": 1790752473.0224643}

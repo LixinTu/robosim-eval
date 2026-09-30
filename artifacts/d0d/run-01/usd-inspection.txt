@@ -1,0 +1,70 @@
+﻿=== USD inspection (read-only) 2026-09-29 20:43:22 ===
+tool: scripts\windows\inspect_usd.py via Isaac python.bat with PYTHONPATH/PATH = D:\isaac-sim-standalone-6.1.0-windows-x86_64\extscache\omni.usd.libs-1.0.3+00c488ae.wx64.r.cp312 (child process only)
+
+--- carter_warehouse_navigation.usd ---
+url: https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.1/Isaac/Samples/ROS2/Scenario/carter_warehouse_navigation.usd
+sha256: 2a699e593474b6967c39f31df0b74bcec4190a8b28a0e3e47b380beb0026eaa2  size: 2865077 bytes (downloaded with curl to temp/usd/, git-ignored)
+exit: 0
+layer opened: True D:\RoboSim-Eval\temp\usd\carter_warehouse_navigation.usd
+children of /World: ['warehouse_with_forklifts', 'PhysicsScene', 'warehouse_extras', 'ROS_Clock', 'Nova_Carter_ROS']
+/World/Nova_Carter_ROS type: 
+  references: []
+  payloads: ['../Robots/Nova_Carter_ROS.usd']
+   xformOp:translate = (-6, -1, 0)
+   xformOp:orient = (6.123233995736766e-17, 0, 0, 1)
+  child specs: ['differential_drive', 'chassis_link', 'front_hawk']
+omnigraph node specs in this layer: 4
+   /World/ROS_Clock/on_playback_tick -> omni.graph.action.OnPlaybackTick
+   /World/ROS_Clock/ros2_publish_clock -> isaacsim.ros2.bridge.ROS2PublishClock
+   /World/ROS_Clock/ros2_context -> isaacsim.ros2.bridge.ROS2Context
+   /World/ROS_Clock/isaac_read_simulation_time -> isaacsim.core.nodes.IsaacReadSimulationTime
+
+--- Nova_Carter_ROS.usd ---
+url: https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.1/Isaac/Samples/ROS2/Robots/Nova_Carter_ROS.usd
+sha256: be15663c914b455f8ff520d1afc2b495ec872c52d19705b6cf0ab08e01f34d7d  size: 20191 bytes (downloaded with curl to temp/usd/, git-ignored)
+exit: 0
+layer opened: True D:\RoboSim-Eval\temp\usd\Nova_Carter_ROS.usd
+children of /World: ['PhysicsScene', 'GroundPlane']
+omnigraph node specs in this layer: 36
+   /ros_clock/on_playback_tick -> omni.graph.action.OnPlaybackTick
+   /ros_clock/ros2_publish_clock -> isaacsim.ros2.bridge.ROS2PublishClock
+   /ros_clock/ros2_context -> isaacsim.ros2.bridge.ROS2Context
+   /ros_clock/isaac_read_simulation_time -> isaacsim.core.nodes.IsaacReadSimulationTime
+   /nova_carter_ros2_sensors/transform_tree_odometry/on_playback_tick -> omni.graph.action.OnPlaybackTick
+   /nova_carter_ros2_sensors/transform_tree_odometry/isaac_compute_odometry_node -> isaacsim.core.nodes.IsaacComputeOdometry
+   /nova_carter_ros2_sensors/transform_tree_odometry/ros2_publish_raw_transform_tree -> isaacsim.ros2.bridge.ROS2PublishRawTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/ros2_publish_odometry -> isaacsim.ros2.bridge.ROS2PublishOdometry
+   /nova_carter_ros2_sensors/transform_tree_odometry/tf_tree_base_link_to_chassis -> isaacsim.ros2.bridge.ROS2PublishTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/tf_tree_base_link_to_sensors -> isaacsim.ros2.bridge.ROS2PublishTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/ros2_context -> isaacsim.ros2.bridge.ROS2Context
+   /nova_carter_ros2_sensors/transform_tree_odometry/node_namespace -> omni.graph.nodes.ConstantString
+   /nova_carter_ros2_sensors/transform_tree_odometry/tf_tree_base_link_to_wheel_base -> isaacsim.ros2.bridge.ROS2PublishTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/ros2_qos_profile -> isaacsim.ros2.bridge.ROS2QoSProfile
+   /nova_carter_ros2_sensors/transform_tree_odometry/isaac_read_simulation_time -> isaacsim.core.nodes.IsaacReadSimulationTime
+   /nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_wheel_base -> isaacsim.core.nodes.IsaacComputeTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_sensors -> isaacsim.core.nodes.IsaacComputeTransformTree
+   /nova_carter_ros2_sensors/transform_tree_odometry/ComputeTF_tf_tree_base_link_to_chassis -> isaacsim.core.nodes.IsaacComputeTransformTree
+   /nova_carter_ros2_sensors/differential_drive/on_playback_tick -> omni.graph.action.OnPlaybackTick
+   /nova_carter_ros2_sensors/differential_drive/ros2_context -> isaacsim.ros2.bridge.ROS2Context
+   /nova_carter_ros2_sensors/differential_drive/node_namespace -> omni.graph.nodes.ConstantString
+   /nova_carter_ros2_sensors/differential_drive/ros2_subscribe_twist -> isaacsim.ros2.bridge.ROS2SubscribeTwist
+   /nova_carter_ros2_sensors/differential_drive/break_3_vector -> omni.graph.nodes.BreakVector3
+   /nova_carter_ros2_sensors/differential_drive/break_3_vector_01 -> omni.graph.nodes.BreakVector3
+   /nova_carter_ros2_sensors/differential_drive/joint_wheel_left_name -> omni.graph.nodes.ConstantToken
+   /nova_carter_ros2_sensors/differential_drive/joint_wheel_right_name -> omni.graph.nodes.ConstantToken
+   /nova_carter_ros2_sensors/differential_drive/joint_name_array -> omni.graph.nodes.ConstructArray
+   /nova_carter_ros2_sensors/differential_drive/differential_controller_01 -> isaacsim.robot.wheeled_robots.DifferentialController
+   /nova_carter_ros2_sensors/differential_drive/articulation_controller_01 -> isaacsim.core.nodes.IsaacArticulationController
+   /nova_carter_ros2_sensors/chassis_imu/on_playback_tick -> omni.graph.action.OnPlaybackTick
+   /nova_carter_ros2_sensors/chassis_imu/ros2_publish_imu -> isaacsim.ros2.bridge.ROS2PublishImu
+   /nova_carter_ros2_sensors/chassis_imu/isaac_read_imu_node -> isaacsim.sensors.physics.IsaacReadIMU
+   /nova_carter_ros2_sensors/chassis_imu/ros2_context -> isaacsim.ros2.bridge.ROS2Context
+   /nova_carter_ros2_sensors/chassis_imu/ros2_qos_profile -> isaacsim.ros2.bridge.ROS2QoSProfile
+   /nova_carter_ros2_sensors/chassis_imu/node_namespace -> omni.graph.nodes.ConstantString
+   /nova_carter_ros2_sensors/chassis_imu/isaac_read_simulation_time -> isaacsim.core.nodes.IsaacReadSimulationTime
+
+--- IsaacComputeOdometry doc (exts\isaacsim.core.nodes\ogn\docs\OgnIsaacComputeOdometry.rst) ---
+Holds values related to odometry, this node is not a replcement for the IMU sensor and the associated Read IMU node
+"Chassis Prim (*inputs:chassisPrim*)", "``target``", "Usd prim reference to the articulation root or rigid body prim", "None"
+"Orientation (*outputs:orientation*)", "``quatd[4]``", "Rotation as a quaternion (IJKR)", "[0.0, 0.0, 0.0, 1.0]"
+"Position (*outputs:position*)", "``vectord[3]``", "Position vector in meters", "[0.0, 0.0, 0.0]"

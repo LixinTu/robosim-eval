@@ -1,0 +1,332 @@
+[INFO] [1790737353.804566636] [tf2_echo]: Waiting for transform odom ->  base_link: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1790737358.422889338] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+Could not determine the type for the passed topic
+7:00 out=/mnt/d/RoboSim-Eval/artifacts/d0c/probe-04-playing RMW=rmw_fastrtps_cpp DOMAIN=0 profile=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml ===
+
+===== ros2 daemon (fresh discovery) =====
+CMD: ros2 daemon stop
+The daemon has been stopped
+EXIT: 0
+
+===== node list =====
+CMD: timeout 15 ros2 node list
+EXIT: 0
+
+===== topic list -t =====
+CMD: timeout 15 ros2 topic list -t
+/back_stereo_camera/imu [sensor_msgs/msg/Imu]
+/chassis/imu [sensor_msgs/msg/Imu]
+/chassis/odom [nav_msgs/msg/Odometry]
+/clock [rosgraph_msgs/msg/Clock]
+/cmd_vel [geometry_msgs/msg/Twist]
+/front_3d_lidar/lidar_points [sensor_msgs/msg/PointCloud2]
+/front_stereo_camera/imu [sensor_msgs/msg/Imu]
+/front_stereo_camera/left/camera_info [sensor_msgs/msg/CameraInfo]
+/front_stereo_camera/left/image_raw [sensor_msgs/msg/Image]
+/front_stereo_camera/right/camera_info [sensor_msgs/msg/CameraInfo]
+/front_stereo_camera/right/image_raw [sensor_msgs/msg/Image]
+/left_stereo_camera/imu [sensor_msgs/msg/Imu]
+/parameter_events [rcl_interfaces/msg/ParameterEvent]
+/right_stereo_camera/imu [sensor_msgs/msg/Imu]
+/rosout [rcl_interfaces/msg/Log]
+/tf [tf2_msgs/msg/TFMessage]
+EXIT: 0
+
+===== /clock hz (10 s) =====
+CMD: timeout 10 ros2 topic hz /clock --window 50
+average rate: 25.193
+	min: 0.022s max: 0.063s std dev: 0.01504s window: 26
+average rate: 25.315
+	min: 0.022s max: 0.063s std dev: 0.01504s window: 50
+average rate: 25.345
+	min: 0.022s max: 0.061s std dev: 0.01453s window: 50
+average rate: 25.524
+	min: 0.023s max: 0.063s std dev: 0.01439s window: 50
+average rate: 26.049
+	min: 0.004s max: 0.063s std dev: 0.01551s window: 50
+average rate: 26.570
+	min: 0.004s max: 0.060s std dev: 0.01509s window: 50
+average rate: 25.961
+	min: 0.021s max: 0.060s std dev: 0.01439s window: 50
+average rate: 26.091
+	min: 0.020s max: 0.060s std dev: 0.01482s window: 50
+EXIT: 124
+
+===== /clock sample =====
+CMD: timeout 10 ros2 topic echo --once /clock
+clock:
+  sec: 19
+  nanosec: 50000000
+---
+EXIT: 0
+
+===== info -v /tf =====
+CMD: timeout 15 ros2 topic info -v /tf
+Type: tf2_msgs/msg/TFMessage
+
+Publisher count: 1
+
+Node name: _World_Nova_Carter_ROS_chassis_link_sensors_back_hawk_ROS_TF_PublisherTF
+Node namespace: /
+Topic type: tf2_msgs/msg/TFMessage
+Topic type hash: RIHS01_e369d0f05a23ae52508854b66f6aa0437f3449d652e8cbf22d5abe85d020f087
+Endpoint type: PUBLISHER
+GID: 01.0f.54.eb.50.81.de.ca.00.00.00.00.00.00.03.03
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Subscription count: 0
+
+EXIT: 0
+
+===== hz /tf (8 s) =====
+CMD: timeout 8 ros2 topic hz /tf --window 20
+average rate: 25.058
+	min: 0.023s max: 0.068s std dev: 0.01598s window: 20
+average rate: 25.535
+	min: 0.022s max: 0.062s std dev: 0.01509s window: 20
+average rate: 25.788
+	min: 0.023s max: 0.059s std dev: 0.01438s window: 20
+average rate: 26.223
+	min: 0.022s max: 0.060s std dev: 0.01487s window: 20
+average rate: 26.070
+	min: 0.022s max: 0.054s std dev: 0.01350s window: 20
+average rate: 26.149
+	min: 0.023s max: 0.055s std dev: 0.01319s window: 20
+EXIT: 124
+
+===== sample /tf =====
+CMD: timeout 10 ros2 topic echo --once --no-arr /tf
+transforms: '<sequence type: geometry_msgs/msg/TransformStamped, length: 48>'
+---
+EXIT: 0
+skip /tf_static (not present)
+skip /odom (not present)
+
+===== info -v /chassis/odom =====
+CMD: timeout 15 ros2 topic info -v /chassis/odom
+Type: nav_msgs/msg/Odometry
+
+Publisher count: 1
+
+Node name: _World_Nova_Carter_ROS_transform_tree_odometry_ros2_publish_odometry
+Node namespace: /
+Topic type: nav_msgs/msg/Odometry
+Topic type hash: RIHS01_3cc97dc7fb7502f8714462c526d369e35b603cfc34d946e3f2eda2766dfec6e0
+Endpoint type: PUBLISHER
+GID: 01.0f.54.eb.50.81.de.ca.09.00.00.00.00.00.03.03
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Subscription count: 0
+
+EXIT: 0
+
+===== hz /chassis/odom (8 s) =====
+CMD: timeout 8 ros2 topic hz /chassis/odom --window 20
+average rate: 25.880
+	min: 0.022s max: 0.055s std dev: 0.01391s window: 20
+average rate: 13.944
+	min: 0.024s max: 0.695s std dev: 0.14353s window: 20
+average rate: 25.922
+	min: 0.022s max: 0.058s std dev: 0.01487s window: 20
+average rate: 25.844
+	min: 0.023s max: 0.059s std dev: 0.01456s window: 20
+average rate: 25.748
+	min: 0.023s max: 0.061s std dev: 0.01380s window: 20
+average rate: 25.797
+	min: 0.020s max: 0.058s std dev: 0.01438s window: 20
+average rate: 25.870
+	min: 0.022s max: 0.056s std dev: 0.01417s window: 20
+EXIT: 124
+
+===== sample /chassis/odom =====
+CMD: timeout 10 ros2 topic echo --once --no-arr /chassis/odom
+header:
+  stamp:
+    sec: 27
+    nanosec: 483333333
+  frame_id: odom
+child_frame_id: base_link
+pose:
+  pose:
+    position:
+      x: 0.03041502007639744
+      y: -2.060862166060654e-06
+      z: -4.813413264751001e-05
+    orientation:
+      x: -4.876942869974023e-07
+      y: 3.4213741281696735e-07
+      z: -4.894629002048591e-05
+      w: 0.9999999988019529
+  covariance: '<array type: double[36]>'
+twist:
+  twist:
+    linear:
+      x: 0.0006806194109892813
+      y: -0.00013804628302193606
+      z: -4.008095009484856e-05
+    angular:
+      x: 0.0003107104275841266
+      y: 2.5965173335862346e-05
+      z: 0.0016751937801018357
+  covariance: '<array type: double[36]>'
+---
+EXIT: 0
+
+===== info -v /front_3d_lidar/lidar_points =====
+CMD: timeout 15 ros2 topic info -v /front_3d_lidar/lidar_points
+Type: sensor_msgs/msg/PointCloud2
+
+Publisher count: 1
+
+Node name: _Render_PostProcess_SDGPipeline_Replicator_02_NodeWriterWriter
+Node namespace: /front_3d_lidar
+Topic type: sensor_msgs/msg/PointCloud2
+Topic type hash: RIHS01_9198cabf7da3796ae6fe19c4cb3bdd3525492988c70522628af5daa124bae2b5
+Endpoint type: PUBLISHER
+GID: 01.0f.54.eb.50.81.de.ca.11.00.00.00.00.00.03.03
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Subscription count: 0
+
+EXIT: 0
+
+===== hz /front_3d_lidar/lidar_points (8 s) =====
+CMD: timeout 8 ros2 topic hz /front_3d_lidar/lidar_points --window 20
+average rate: 2.844
+	min: 0.233s max: 0.698s std dev: 0.19974s window: 4
+average rate: 2.427
+	min: 0.233s max: 0.766s std dev: 0.21908s window: 7
+average rate: 2.662
+	min: 0.228s max: 0.766s std dev: 0.20933s window: 12
+average rate: 2.544
+	min: 0.228s max: 0.766s std dev: 0.20894s window: 15
+EXIT: 124
+
+===== sample /front_3d_lidar/lidar_points =====
+CMD: timeout 10 ros2 topic echo --once --no-arr /front_3d_lidar/lidar_points
+header:
+  stamp:
+    sec: 31
+    nanosec: 600000000
+  frame_id: front_3d_lidar
+height: 1
+width: 45049
+fields: '<sequence type: sensor_msgs/msg/PointField, length: 3>'
+is_bigendian: false
+point_step: 12
+row_step: 540588
+data: '<sequence type: uint8, length: 540588>'
+is_dense: true
+---
+EXIT: 0
+skip /point_cloud (not present)
+skip /front_2d_lidar/scan (not present)
+skip /back_2d_lidar/scan (not present)
+skip /scan (not present)
+
+===== info -v /cmd_vel =====
+CMD: timeout 15 ros2 topic info -v /cmd_vel
+Type: geometry_msgs/msg/Twist
+
+Publisher count: 0
+
+Subscription count: 1
+
+Node name: _World_Nova_Carter_ROS_differential_drive_ros2_subscribe_twist
+Node namespace: /
+Topic type: geometry_msgs/msg/Twist
+Topic type hash: RIHS01_9c45bf16fe0983d80e3cfe750d6835843d265a9a6c46bd2e609fcddde6fb8d2a
+Endpoint type: SUBSCRIPTION
+GID: 01.0f.54.eb.50.81.de.ca.0e.00.00.00.00.00.03.04
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+EXIT: 0
+
+===== hz /cmd_vel (8 s) =====
+CMD: timeout 8 ros2 topic hz /cmd_vel --window 20
+EXIT: 124
+
+===== sample /cmd_vel =====
+CMD: timeout 10 ros2 topic echo --once --no-arr /cmd_vel
+EXIT: 124
+skip /joint_states (not present)
+skip /map (not present)
+
+===== tf2_echo odom -> base_link (5 s) =====
+CMD: timeout 5 ros2 run tf2_ros tf2_echo odom base_link
+At time 40.283333333
+- Translation: [0.045, -0.000, -0.000]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, -0.000]
+- Rotation: in RPY (degree) [-0.000, 0.000, -0.008]
+- Matrix:
+  1.000  0.000  0.000  0.045
+ -0.000  1.000  0.000 -0.000
+ -0.000 -0.000  1.000 -0.000
+  0.000  0.000  0.000  1.000
+At time 40.716666666
+- Translation: [0.045, -0.000, -0.000]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, -0.000]
+- Rotation: in RPY (degree) [-0.000, 0.000, -0.008]
+- Matrix:
+  1.000  0.000  0.000  0.045
+ -0.000  1.000  0.000 -0.000
+ -0.000 -0.000  1.000 -0.000
+  0.000  0.000  0.000  1.000
+At time 41.133333333
+- Translation: [0.046, -0.000, -0.000]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, -0.000]
+- Rotation: in RPY (degree) [-0.000, 0.000, -0.008]
+- Matrix:
+  1.000  0.000  0.000  0.046
+ -0.000  1.000  0.000 -0.000
+ -0.000 -0.000  1.000 -0.000
+  0.000  0.000  0.000  1.000
+At time 41.566666666
+- Translation: [0.046, -0.000, -0.000]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, -0.000]
+- Rotation: in RPY (degree) [-0.000, 0.000, -0.008]
+- Matrix:
+  1.000  0.000  0.000  0.046
+ -0.000  1.000  0.000 -0.000
+ -0.000 -0.000  1.000 -0.000
+  0.000  0.000  0.000  1.000
+EXIT: 124
+
+===== tf frames yaml =====
+CMD: bash -c timeout 12 ros2 run tf2_ros tf2_echo --help >/dev/null 2>&1; timeout 15 ros2 topic echo --once --no-arr /tf_static
+WARNING: topic [/tf_static] does not appear to be published yet
+EXIT: 1
+
+=== summary: clock_advancing=1 files in /mnt/d/RoboSim-Eval/artifacts/d0c/probe-04-playing: 00-discovery.txt 01-clock.txt 02-tf.txt topic_chassis_odom.txt topic_cmd_vel.txt topic_front_3d_lidar_lidar_points.txt topic_tf.txt  ===

@@ -1,0 +1,2637 @@
+diff --git a/.gitignore b/.gitignore
+index ea76241..fa3b523 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -26,3 +26,8 @@ configs/network/*.peers.xml
+ # ---- OS / IDE noise ----
+ .DS_Store
+ Thumbs.db
++
++# ---- Runtime pid files written by the recorder/launch scripts (transient; PIDs are recorded in commands.md) ----
++artifacts/**/*.pid
++artifacts/**/pid-*
++# (*.err recorder stderr files are kept: small, and they are failure evidence; see review finding R4)
+diff --git a/AGENTS.md b/AGENTS.md
+new file mode 100644
+index 0000000..49bb798
+--- /dev/null
++++ b/AGENTS.md
+@@ -0,0 +1,85 @@
++# AGENTS.md — RoboSim Eval 的地图
++
++> 这是目录,不是百科全书。每轮都进上下文,只放 agent 猜不到又必须知道的东西;细节下沉到 docs/。
++> Claude Code 与 Codex 共用这一份;CLAUDE.md 只转发到这里。
++
++## 这是什么
++
++用现成机器人(Nova Carter)与导航系统(ROS 2 Jazzy + Nav2)做机器人仿真评测工具:运行任务、记录数据、检查异常、解释结果、复跑。仿真在 Windows 上的 Isaac Sim 6.1.0,ROS 在 WSL2 的 Ubuntu 24.04。
++
++当前阶段:D0(一次真实 A→B 导航跑通并留证据)。D1–D5 未开始。
++
++## 先读什么
++
++| 问题 | 去哪 |
++| --- | --- |
++| 现在做到哪、下一步、阻塞、决定记录 | [docs/plan.md](docs/plan.md)(唯一活计划) |
++| 需求、验收、状态合同(冻结参考) | [RoboSim-Eval-Plan-and-Setup-ZH(1).md](RoboSim-Eval-Plan-and-Setup-ZH(1).md) 的 §0.2、A4、A5、B |
++| 开发流程与审查约定(冻结参考) | [Claude-Code-Harness-Pack-ZH(1).md](Claude-Code-Harness-Pack-ZH(1).md)、[Codex-Harness-Pack-ZH(1).md](Codex-Harness-Pack-ZH(1).md) |
++| 本机环境证据 | [docs/environment.md](docs/environment.md)(阶段 1 生成) |
++| 已验证的启动/关闭顺序 | [docs/setup.md](docs/setup.md)(验证通过后才存在) |
++| 资料台账(读过什么、采用什么) | [docs/harness-sources.md](docs/harness-sources.md) |
++| 运行证据与记录格式 | [artifacts/README.md](artifacts/README.md) |
++| 审查材料与报告 | docs/review/ |
++
++优先级:根目录三份 ZH 文档是 2026-09-29 冻结的需求参考,它们里面的"当前状态"列已作废;状态只看 docs/plan.md。文件名保留下载时的 "(1)" 后缀,引用时写真实路径。
++
++## 跑起来(2026-09-29 本机实测;完整顺序与期望值见 docs/setup.md)
++
++```powershell
++# Windows 普通 PowerShell:启动 Isaac Sim + ROS 2 bridge(然后在 GUI 加载 Nova Carter 示例并 Play)
++powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\start_isaac_ros2.ps1
++powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\check_isaac_bridge.ps1   # bridge 是否加载、显存
++# WSL(从 Windows 调用;脚本内部自动 source ros_env.sh + dds_env.sh)
++wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_ros_install.sh                    # 安装自检,PASS/FAIL
++wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/probe_topics.sh <out_dir>                # Isaac 数据是否到达(/clock 等)
++wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/start_nav2.sh <run_dir>                  # Nav2 + RViz,独立进程组
++wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_nav2_ready.sh <run_dir>            # 就绪判定:0 READY / 1 NOT READY
++wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/record_d0.sh <attempt_dir> 330           # bag + 文本流
++wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/send_goal.sh <attempt_dir> X Y YAW       # 地图空闲核对 + 发一个目标;0 = SUCCEEDED
++wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_record.sh <attempt_dir>             # 0 = 已停、bag 完整、必需话题有数据
++wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/analyze_attempt.sh <attempt_dir> --goal X Y YAW --spawn -6.0 -1.0 3.141592653589793   # 0 pass / 10 fail / 11 inconclusive
++wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh <run_dir>                   # 先核对归属;0 = 无残留
++wsl -d Ubuntu -- python3 -m pytest -q -p no:cacheprovider /mnt/d/RoboSim-Eval/tests              # 分析脚本固定输入测试(不需要仿真)
++```
++
++每次导航尝试前先在 Isaac 按 ⏹ 再按 ▶ 重置场景,然后尽快启动 Nav2(原因见 docs/setup.md)。
++
++一次性安装(需 sudo 密码,用户在 Ubuntu 终端运行):`bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh`,然后 `setup_workspace.sh`;防火墙规则(管理员):`scripts\windows\allow_wsl_to_isaac_firewall.ps1`。
++
++## 硬规则(来自计划文档 §0.2 与两份 harness pack)
++
++1. 只做当前计划中最靠前的小交付;不先搭框架、网页、persona、world model。
++2. 复用现有安装:Isaac Sim 6.1.0 在 `D:\isaac-sim-standalone-6.1.0-windows-x86_64`;WSL 发行版名为 `Ubuntu`。不重装、不换驱动、不迁移。
++3. 本机是 6.1 官方不支持的配置(Windows 10 + 8 GB 显存);用户已决定先做完项目再升级。所有记录标注 unsupported configuration,不承诺可用,不再提议升级。
++4. 不新增付费服务,不 push,不部署,不删除或覆盖用户文件,不停止 Docker Desktop,不杀用户自己开的 Isaac GUI,不 `wsl --shutdown`(会影响 docker-desktop 并改变 WSL IP;确需时先说明并征得同意)。
++5. 证据即事实:每条验证记录 命令 | shell | cwd | 退出码 | 日志;常驻进程记 启动、观察时段、停止方式、退出码、退出原因。不用 `|| true`、不吞异常、不削弱断言、不把"已启动"写成"通过";用 tee 必须配 pipefail。`timeout` 的退出码 124 记为"观察满时长"。
++6. 固定输入测试、ROS 假节点测试、真实 Isaac 集成分开记录;没开仿真时集成验证必须显示未执行或失败。产品证据(artifacts/)与过程证据(docs/review/)分开存放,互不推导。
++7. 需要 GUI 操作时只给用户当前必需的步骤并说明完成后检查什么;不假装已点过。Windows 侧每次改动都意味着用户要重启 Isaac,所以先做完无 GUI 的验证再请用户重启。
++8. 第三方工作区(WSL 的 `~/robotics/vendor/isaac-ros-6.1`)不改原文件;改参数复制到 configs/ 并通过 launch 参数引用。
++9. Nav2 的 rejected/aborted 记 unknown 而非 unreachable,保留原始状态码与 error_code;位置来源必须标注(里程计 / 定位估计 / 仿真真值)。
++10. 消息类型、topic、action 映射由实际查询确定(`ros2 topic list -t`、`ros2 topic info -v`、`ros2 action list -t`),不硬编码。
++
++## 审查门
++
++默认:Claude Code 主实现 → Codex 新会话只读审查 → Claude Code 逐条核实、只修有效项、重跑受影响检查 → Codex 复核修复后的范围。最多两轮。"无发现"不等于验收通过;Codex 不可用时标"待独立审查",不伪造跨模型审查。审查前先提交并冻结,审查期间不改动源码。
++
++只读审查的实际运行方式(codex-cli 0.157.0;内部执行 `codex exec --sandbox read-only -C D:\RoboSim-Eval -o <报告>`,短提示词让 Codex 去读 UTF-8 提示词文件,避免 PowerShell 5.1 管道改写中文;记录真实退出码与是否撞到用量上限):
++
++```powershell
++powershell -NoProfile -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\run_codex_review.ps1 -Round <轮次>   # 读 docs/review/2026-09-29-d0/codex-prompt-<轮次>.md
++```
++
++审查材料与报告放在 docs/review/;提示词模板是 Codex-Harness-Pack-ZH(1).md 的"默认:Codex 独立审查提示词"。
++
++## 什么要问人
++
++- 影响费用、数据、不可逆操作的事:重启 WSL、防火墙规则、需要密码的 sudo 安装块、删除或搬迁文件。
++- 官方路线与计划文档冲突需要取舍时(例如 `netsh portproxy`)。
++- 换系统、换安装路线、放弃 WSL 路线。
++
++## 其他
++
++- 本仓库纯本地、无 remote;不要建议或执行 `git push`。
++- Conventional Commits;小步提交,每步可独立验证与回退。`master` = 基线,`feature/*` = 当前交付。
++- 回复用户用中文;技术名词保留英文;项目文档用中文。
+diff --git a/CLAUDE.md b/CLAUDE.md
+new file mode 100644
+index 0000000..f2047b2
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1 @@
++请先读 [AGENTS.md](AGENTS.md) —— Claude Code 和 Codex 共用那一份地图;当前任务、状态与阻塞只看 [docs/plan.md](docs/plan.md)。
+diff --git a/configs/network/fastdds.xml b/configs/network/fastdds.xml
+new file mode 100644
+index 0000000..4e7a1e3
+--- /dev/null
++++ b/configs/network/fastdds.xml
+@@ -0,0 +1,43 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<!--
++  RoboSim Eval: Fast DDS profile shared by Isaac Sim 6.1 (Windows) and ROS 2 Jazzy (WSL2 Ubuntu).
++
++  Derived from IsaacSim-ros_workspaces tag IsaacSim-6.1.0, file jazzy_ws/fastdds.xml, which matches the
++  fastdds.xml shown in the Isaac Sim 6.1 "ROS 2 installation" WSL2 section. One change: the upstream file has a
++  separate <license> element before <profiles>, i.e. two root elements, which is not well-formed XML. The license
++  text is kept below as a comment so this document has a single root and passes an XML parser on both sides.
++
++  Effect: UDPv4 transport only, built-in transports (including shared memory) disabled, so the Windows host and
++  WSL2 can discover each other over the vEthernet (WSL) link.
++
++  Windows: set FASTRTPS_DEFAULT_PROFILES_FILE=D:\RoboSim-Eval\configs\network\fastdds.xml (done by
++  scripts\windows\start_isaac_ros2.ps1). WSL: source scripts/wsl/dds_env.sh, which points at
++  /mnt/d/RoboSim-Eval/configs/network/fastdds.xml.
++
++  Upstream license:
++  SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION &amp; AFFILIATES. All rights reserved.
++  SPDX-License-Identifier: Apache-2.0
++  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
++  compliance with the License. You may obtain a copy of the License at
++  http://www.apache.org/licenses/LICENSE-2.0
++  Unless required by applicable law or agreed to in writing, software distributed under the License is
++  distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++  See the License for the specific language governing permissions and limitations under the License.
++-->
++<profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles" >
++    <transport_descriptors>
++        <transport_descriptor>
++            <transport_id>UdpTransport</transport_id>
++            <type>UDPv4</type>
++        </transport_descriptor>
++    </transport_descriptors>
++
++    <participant profile_name="udp_transport_profile" is_default_profile="true">
++        <rtps>
++            <userTransports>
++                <transport_id>UdpTransport</transport_id>
++            </userTransports>
++            <useBuiltinTransports>false</useBuiltinTransports>
++        </rtps>
++    </participant>
++</profiles>
+diff --git a/docs/environment.md b/docs/environment.md
+new file mode 100644
+index 0000000..cac1c78
+--- /dev/null
++++ b/docs/environment.md
+@@ -0,0 +1,78 @@
++# 本机环境证据(D0a)
++
++探测日期:2026-09-29 19:02–19:04(America/Los_Angeles)。全部为只读探测,未安装、未修改任何东西。原始输出:`artifacts/d0a/windows-probe.txt`、`artifacts/d0a/wsl-probe-login.txt`、`artifacts/d0a/wsl-probe-clean.txt`;命令与退出码见 `artifacts/d0a/commands.md`。
++
++**结论:本机是 Isaac Sim 6.1 官方不支持的配置(Windows 10、8 GB 显存、驱动低于测试版本)。用户已决定在此配置上做完项目再升级;所有后续记录标注 unsupported configuration。**
++
++## Windows 侧
++
++| 项目 | 实测 | 对 D0 的影响 |
++| --- | --- | --- |
++| 操作系统 | Microsoft Windows 10 专业版 10.0.19045(build 19045.6466),64 位 | 6.1 要求页明确不支持 Windows 10;WSL mirrored networking 不可用,保持默认 NAT |
++| 内存 | 总计 63.7 GB,空闲 31.2 GB(Isaac 空场景运行中) | 充足 |
++| GPU | NVIDIA GeForce RTX 4070 Laptop GPU,驱动 591.44,CUDA 13.1,显存 8188 MiB,当前已用 1313 MiB(空场景 GUI),利用率 22% | 低于官方最低 16 GB;驱动低于官方测试版 595.97;阶段 3 实测场景显存 |
++| 磁盘 | C: 空闲 1421 GB;D: 空闲 1524 GB | 充足 |
++| PowerShell | 5.1.19041.6456;执行策略 CurrentUser=RemoteSigned(本地 .ps1 可直接运行) | 启动脚本无需 Bypass,但给用户的命令仍写 `-ExecutionPolicy Bypass` 以防其他作用域 |
++| 提权 | 当前 Claude 的 shell 未提权(IsInRole Administrator = False),账户为 administrator | 防火墙规则等管理员操作需用户在管理员窗口执行 |
++| WSL | 2.6.3.0,内核 6.6.87.2-1,WSLg 1.0.71;发行版 `Ubuntu`(Running,v2)、`docker-desktop`(Running,v2);无 `.wslconfig`(默认 NAT) | `wsl -d Ubuntu -- bash -c` 从 PowerShell 可用,WSL 用户为 administrator |
++| 网络 | WLAN 192.168.1.115/24(Public);vEthernet (WSL) 172.28.208.1/20(无连接配置文件条目);防火墙三个配置文件均启用,入站默认 NotConfigured;没有任何 kit/isaac 相关防火墙规则 | 首次让 kit.exe 监听时可能弹出防火墙对话框;若被忽略会静默阻断,阶段 3 需提醒用户"允许" |
++| Isaac Sim | `D:\isaac-sim-standalone-6.1.0-windows-x86_64`,VERSION `6.1.0-rc.26+release.49347.2d230af4.gl`;isaac-sim.bat、python.bat、post_install.bat、setup_ros_env.bat 均存在;`exts\isaacsim.ros2.core\jazzy\lib` 与 `humble\lib` 存在;`exts\isaacsim.ros2.bridge` 存在 | 复用,不重装 |
++| post_install 链接 | `extension_examples` 已是 SymbolicLink → `exts\isaacsim.examples.interactive\isaacsim\examples\interactive` | 旧的 "Symlink extension_examples not created" 报错已不成立,无需修复 |
++| 运行中的 Isaac | `kit` PID 29036(16:22 启动,工作集 801 MB)、`omni.telemetry.transmitter` PID 19988 | 未带 ROS 环境变量启动;阶段 3 需用户正常关闭后重启 |
++| kit 日志 | `C:\Users\Administrator\.nvidia-omniverse\logs\Kit\Isaac-Sim Full\6.1\kit_20260929_162201.log`(5.2 MB);ROS 2 扩展(isaacsim.ros2.bridge 5.1.4、isaacsim.ros2.core 1.11.0 等)仅 "registered",未见启用;4 条 Error 均为无法在 `C:\Users\Administrator\Documents\...` 下创建目录 | 阶段 3 用同目录最新日志核对 bridge 加载;Documents 目录问题暂不影响 D0 |
++| setup_ros_env.bat | 默认 ROS_DISTRO=jazzy、默认 RMW_IMPLEMENTATION=**rmw_zenoh_cpp**;仅当 ROS_DISTRO 未设时把 `exts\isaacsim.ros2.core\jazzy\lib` 前置到 PATH 并设 AMENT_PREFIX_PATH;仅当 RMW_IMPLEMENTATION 未设时才设为 zenoh | 启动前显式设 RMW_IMPLEMENTATION=rmw_fastrtps_cpp 会被尊重;isaac-sim.bat 是否自动调用此文件见阶段 3 记录 |
++| ROS/DDS 残留 | 进程、用户、系统环境变量均无 ROS_* / RMW_* / FASTRTPS_* / CYCLONE* / DDS;`%USERPROFILE%\.ros\fastdds.xml`、`C:\.ros\fastdds.xml`、`D:\robosim-assets\network\fastdds.xml` 均不存在 | 无冲突配置 |
++| Codex CLI | codex-cli 0.157.0(`C:\Users\Administrator\AppData\Roaming\npm\codex.ps1`),`codex login status` → "Logged in using ChatGPT";`codex exec` 支持 `--sandbox read-only`、`-C <dir>`、`exec review` 子命令 | 阶段 5 审查用 `codex exec --sandbox read-only -C D:\RoboSim-Eval ...` |
++
++## WSL(Ubuntu)侧
++
++| 项目 | 实测 | 对 D0 的影响 |
++| --- | --- | --- |
++| 发行版 | Ubuntu 24.04.4 LTS(noble),内核 6.6.87.2-microsoft-standard-WSL2 | 与 ROS 2 Jazzy 匹配 |
++| 用户 | uid 1000 administrator,组含 sudo、docker;HOME=/home/administrator | — |
++| sudo | `sudo -n true` → "sudo: a password is required"(退出码 1) | 安装必须由用户在 Ubuntu 终端执行;Claude 只准备命令块 |
++| Python / Git | Python 3.12.3;git 2.43.0 | 满足 |
++| ROS 2 | 无 `/opt/ros`;`ros-jazzy-*` 已装包 0 个;无 ROS apt 源(仅 ubuntu.sources);无 colcon、无 rosdep、无 rviz2 | 阶段 2 需完整安装 Jazzy 及导航相关包 |
++| WSLg | DISPLAY=:0,WAYLAND_DISPLAY=wayland-0,XDG_RUNTIME_DIR=/run/user/1000/,在非交互 `bash -lc` 与 `bash --noprofile --norc` 下均已设置;/mnt/wslg 存在 | RViz 有显示通道;能否真正渲染在阶段 2 用 `timeout 20 rviz2` 实测 |
++| 网络 | eth0 172.28.211.14/20,MTU 1428,默认网关 172.28.208.1(= Windows 的 vEthernet (WSL));github.com 与 packages.ros.org 可解析 | NAT 模式;WSL IP 每次重启可能变化,阶段 3 的 peers 配置不能写死 |
++| 内存 / 磁盘 | 31 GiB(WSL 默认上限)+ 8 GiB swap;`/` 空闲 948 GB;`/mnt/d` 空闲 1.5 TB | 工作区放 `~/robotics/vendor`(ext4) |
++| 已有工作区 | `~/robotics` 不存在;`~` 与 `/mnt/d`(深度 2)内无 IsaacSim-ros_workspaces / jazzy_ws | 阶段 2 需克隆 |
++| ROS 残留 | env、~/.bashrc、~/.profile、/etc/environment、/etc/profile.d 均无 ROS/RMW/FASTRTPS 行;`~/.ros/*.xml` 不存在 | 无冲突配置 |
++| 登录 vs 干净 shell | 两次探测除内存数字外逐行一致 | 非交互 `bash -lc` 的结论可信 |
++
++## ROS 2 与第三方工作区(D0b 之后,2026-09-29 19:30)
++
++| 项目 | 实测 |
++| --- | --- |
++| ROS 2 | Jazzy,`ros-jazzy-desktop 0.11.0`、`ros-jazzy-navigation2 1.3.13`、`ros-jazzy-nav2-bringup 1.3.13`、`ros-jazzy-pointcloud-to-laserscan 2.0.2`、`ros-jazzy-rmw-fastrtps-cpp 8.4.4`、`ros-dev-tools 1.0.3`;rosdep 已初始化并更新 |
++| 环境脚本 | `scripts/wsl/ros_env.sh`(`--base-only` 与 overlay 模式均实跑退出 0)、`scripts/wsl/dds_env.sh`(退出 0);RMW_IMPLEMENTATION=rmw_fastrtps_cpp,ROS_DOMAIN_ID=0 |
++| WSL 内通信 | talker/listener 默认配置与加载 `configs/network/fastdds.xml` 均收到消息(仅证明 WSL 内部) |
++| RViz | rviz2 在 WSLg 下默认 GL 存活 20 s,OpenGL 4.5 |
++| 第三方工作区 | `~/robotics/vendor/isaac-ros-6.1`(WSL ext4),tag IsaacSim-6.1.0,HEAD `a9e8471ee901bc2332c1e4aca94ac580713ca3ab`,树干净;构建闭包 carter_navigation + isaacsim_bringup + isaac_ros_navigation_goal;overlay `jazzy_ws/install/setup.bash` |
++| carter_navigation 关键配置(钉住版本) | launch 参数 map / params_file / use_sim_time(默认 True);地图 `carter_warehouse_navigation.yaml`(分辨率 0.05,原点 [-11.975, -17.975, 0]);amcl `set_initial_pose: true`,initial_pose x=-6.0 y=-1.0 yaw=3.14159;bt_navigator odom_topic `/chassis/odom`;局部代价地图用 `/front_2d_lidar/scan` 与 `/back_2d_lidar/scan`,全局代价地图与碰撞监视用 `/scan`(由 pointcloud_to_laserscan 从 `/front_3d_lidar/lidar_points` 转换,target_frame front_3d_lidar);collision_monitor 输出 `cmd_vel`(输入 `cmd_vel_smoothed`);params 未设置 enable_stamped_cmd_vel(Jazzy 默认为 geometry_msgs/Twist,须在 D0c 用 `ros2 topic info -v` 与 Isaac 订阅方核对) |
++
++## 运行时实测(D0c/D0d,2026-09-29 19:35–20:30)
++
++| 项目 | 实测 |
++| --- | --- |
++| Isaac + Nova Carter 示例场景 | 显存只有几次点采样,未连续测量:空场景 3124–3128 MiB,Play 后 5 s 3754 MiB / 8188(均为会话输出,未存文件),Nav2 运行时 Isaac 界面显示 3.9 GiB(截图 artifacts/d0d/run-01/rviz-before-goal-2018.png);GPU 利用率 80%;视口 20 FPS;kit 工作集 14.7 GB;仿真实时因子空场景约 0.4、导航时约 0.32 |
++| Windows↔WSL 通信 | Fast DDS,domain 0,UDPv4-only profile;需要防火墙规则 "RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)"(入站/UDP/kit.exe/vEthernet (WSL));Isaac 的 SPDP 多播本来就能到 WSL,缺的是 WSL→Windows 入站 |
++| Isaac 发布的 topic | (空场景)/clock 25–26 Hz、/chassis/odom 约 25.8 Hz(一个窗口 13.9 Hz,最长间隔 0.695 s;导航时约 19 Hz)、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、前双目 image_raw/camera_info、5 路 IMU;订阅 /cmd_vel(geometry_msgs/Twist);无 2D LaserScan、无 /tf_static |
++| Nav2(钉住默认参数) | 10 个生命周期节点 active;/scan 3.5 Hz;/map 480×776;amcl 自动初始位姿;RViz 经 WSLg 显示(OpenGL 4.5) |
++| 首次导航 | 目标 (-4.0,-1.0) SUCCEEDED,8.47 s 仿真时间,停稳确认;停稳确认时刻的终点误差:AMCL 独立来源(理想里程计 + USD 出生位姿)0.091 m,AMCL 估计 0.231 m;validation=pass(artifacts/d0d/run-01/attempt-01/result.json) |
++| 位置来源 | 场景 USD `/World/Nova_Carter_ROS` 出生位姿 translate (-6, -1, 0)、yaw π(= amcl initial_pose);/chassis/odom 由 `isaacsim.core.nodes.IsaacComputeOdometry` 从底盘仿真状态计算,相对 Play 起点(理想里程计);机器人零指令下缓爬约 1 mm/仿真秒,Nav2 启动时 AMCL 初始位姿因此偏 0.324 m(证据:artifacts/d0d/run-01/usd-inspection.txt、attempt-01/result.json) |
++| Nav2 停止 | SIGINT 只发给 ros2 launch 时 10–13 s 全部退出(run-04、run-05);组件容器清理阶段 SIGSEGV,rviz2 以 -9 或 -11 退出,launch 退出码 1(上游已知问题,无残留) |
++| 版本证据 | Isaac VERSION `6.1.0-rc.26+release.49347.2d230af4.gl` 与 ROS 2 扩展版本见 artifacts/d0a/isaac-version.txt(bridge 5.1.4、core 1.11.0 的启动行另见 artifacts/d0c/bridge-check-01-after-launch.txt);Codex 登录状态见 artifacts/d0a/codex-login-status.txt |
++
++## 门槛 1→2 判定
++
++- 两侧探测均有完整输出、退出码 0;Isaac 两个关键路径存在 → 通过。
++- 阶段 2 前置条件缺口:ROS 2 Jazzy 全套未安装,且 sudo 需要密码 → 阶段 2 以"等待用户执行安装块"开始。
++
++## 未确认项(留给后续阶段)
++
++- ~~isaac-sim.bat 是否自动调用 setup_ros_env.bat~~ 已确认:`isaac-sim.bat` 与 `python.bat` 都会自动 `call setup_ros_env.bat`,除非传 `--no-ros-env`。
++- ~~Isaac 自带 `python.bat` 能否 `import rclpy`~~ 已测(2026-09-29 19:1x,两次):加 `PYTHONPATH=exts\isaacsim.ros2.core\jazzy\rclpy` 后能定位 rclpy,但 `import numpy`(自带 site 的 numpy 2.5.1)报 "DLL load failed while importing _multiarray_umath",无论 jazzy lib 前置还是追加到 PATH 末尾都一样;退出码 1。结论:无 GUI 的 Windows 侧 rclpy 发现预测试**不可行**,阶段 3 直接走 GUI 重启路线;不再花时间修 python.bat 环境。
++- 8 GB 显存能否承载 Nova Carter 示例场景(阶段 3 实测)。
++- WSLg 下 rviz2 能否渲染(阶段 2 实测)。
++- Windows Defender 对 kit.exe 的首次监听是否弹窗(阶段 3 观察)。
+diff --git a/docs/harness-sources.md b/docs/harness-sources.md
+new file mode 100644
+index 0000000..659d9fb
+--- /dev/null
++++ b/docs/harness-sources.md
+@@ -0,0 +1,64 @@
++# 资料台账(harness pack 第 B 步)
++
++阅读状态取值:`全文(主会话)` = 主会话读了原文全文;`摘录(WebFetch,主会话)` = 主会话通过 WebFetch 拿到模型摘录,不等于读了全文;`摘录(子agent)` = 子 agent 返回的摘录;`仅入口页`;`未读`;`不可访问(原因)`。只有主会话写这个文件。
++
++## 项目文档
++
++| 来源 | 实际读到的页面/章节 | 阅读状态 | 用途 | 日期 |
++| --- | --- | --- | --- | --- |
++| RoboSim-Eval-Plan-and-Setup-ZH(1).md | 全部 499 行 | 全文(主会话) | 需求、验收、状态合同、D0 步骤 | 2026-09-29 |
++| Claude-Code-Harness-Pack-ZH(1).md | 全部 | 全文(主会话) | 开发流程、审查分工、交付七项 | 2026-09-29 |
++| Codex-Harness-Pack-ZH(1).md | 全部 447 行 | 全文(主会话) | Codex 审查提示词、C01–C15、审查约定 | 2026-09-29 |
++| Apu 项目 AGENTS.md / CLAUDE.md / docs/references/harness-engineering.md / docs/evidence 目录 | 全部 | 全文(主会话) | 借用地图式 AGENTS.md、证据目录、codex exec 审查门 | 2026-09-29 |
++
++## S 系列(Isaac Sim 6.1 / ROS 官方,直接决定 D0)
++
++| 编号 | 来源 | 实际读到的内容 | 阅读状态 | 能解决的项目问题 | 采用 / 暂缓 / 不适用 | 依据与未读部分 | 日期 |
++| --- | --- | --- | --- | --- | --- | --- | --- |
++| S1 | 6.1 requirements | 支持的 OS(仅 Windows 11,"Windows 10 is not supported")、显存最低 16 GB、RAM 32 GB、驱动 595.97 | 摘录(WebFetch,主会话) | 本机是否受支持 | 采用:记录为 unsupported configuration | 未读页面其余部分 | 2026-09-29 |
++| S2 | 6.1 install_ros(Windows / WSL2 / Pixi) | WSL2 路线 deprecated、要求 Windows 11;env vars(ROS_DISTRO、RMW_IMPLEMENTATION=rmw_fastrtps_cpp、PATH 加 jazzy lib);启动参数 `--/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge`;fastdds.xml(UDPv4-only)与 FASTRTPS_DEFAULT_PROFILES_FILE;`netsh interface portproxy` 7400/7410/9387;Pixi + Zenoh 为推荐原生路线 | 摘录(WebFetch,主会话,两次) | 桥接配置与启动方式 | 采用 env vars、XML、启动参数;portproxy 仅作升级链最后一步;Pixi 暂缓(用户选 WSL 路线) | 阶段 3 前主会话读全文 | 2026-09-29 |
++| S3 | 6.1 Nova Carter 导航教程 | 菜单路径 Window > Examples > Robotics Examples > ROS2 > Navigation > Nova Carter > Load Sample Scene;topic /tf /odom /map /point_cloud /scan;`ros2 launch carter_navigation carter_navigation.launch.xml`;RViz 2D Pose Estimate / Navigation2 Goal;初始位姿由 params 定义;WSL 部分支持、RViz2 可能打不开 | 摘录(WebFetch,主会话) | 场景加载与导航步骤 | 采用 | 阶段 3 前主会话读全文;topic 名以实际查询为准 | 2026-09-29 |
++| S4 | IsaacSim-ros_workspaces @ IsaacSim-6.1.0 | 目录 dockerfiles / humble_ws / jazzy_ws;raw 文件 jazzy_ws/fastdds.xml(UDPv4-only,Apache-2.0)与 jazzy_ws/src/navigation/carter_navigation/launch/carter_navigation.launch.xml(参数 map、params_file、use_sim_time;RViz、nav2 bringup、pointcloud_to_laserscan → /scan) | 摘录(WebFetch,主会话) | 工作区版本与 launch 参数 | 采用钉住标签;commit 在克隆时用 `git rev-parse` 核对 | 标签 commit 页面上不可见 | 2026-09-29 |
++| S5 | 6.1 workstation 安装 | — | 未读 | post_install 链接修复时参考 | 按需 | — | — |
++| S6 | ROS 2 Jazzy Ubuntu Deb 安装 | docs.ros.org 主站返回 Anubis "Access Denied" 反爬页;改读官方托管镜像 repo.test.ros2.org 同页:locale、universe、ros2-apt-source .deb(GitHub API 取最新 tag)、`apt install ros-dev-tools` / `ros-jazzy-desktop`、`source /opt/ros/jazzy/setup.bash`、talker/listener 示例;"Deb packages for ROS 2 Jazzy Jalisco are currently available for Ubuntu Noble (24.04)";建议安装前 `apt upgrade` | 主站:不可访问(反爬);镜像:摘录(WebFetch,主会话) | WSL 内安装 Jazzy(D0a 证实未安装) | 采用:scripts/wsl/install_ros2_jazzy.sh 逐条照抄;省略整体 upgrade(见 plan.md 偏差记录) | 镜像仅作文档入口,不改软件源 | 2026-09-29 |
++| S7 | Heightmap 导航场景教程 | — | 未读 | 8 GB 显存跑不动示例场景时的回退 | 仅回退时读 | — | — |
++
++## R 系列(通用 harness 资料)
++
++| 编号 | 来源 | 阅读状态 | 采用 / 暂缓 / 不适用 | 依据 |
++| --- | --- | --- | --- | --- |
++| R01 OpenAI Harness engineering | 未读(Apu 项目已有存档摘要 docs/references/harness-engineering.md,主会话读过该存档) | 已采用其"AGENTS.md 是地图"原则 | 存档非原文 |
++| R02 Anthropic long-running agents | 未读 | 暂缓 | 阶段 5 前读入口页 |
++| R03 Claude Code Best Practices | 未读 | 暂缓 | 阶段 5 前读入口页 |
++| R04 Codex AGENTS.md | 未读 | 暂缓 | 与 C02 相同页面 |
++| R05 Claude Code Common Workflows | 未读 | 暂缓 | 阶段 5 前读入口页 |
++| R06 Claude Code Hooks | 未读 | 暂缓(同一检查漏两次再上) | — |
++| R07 Anthropic harness design | 未读 | 暂缓 | — |
++| R08 Codex Code Review | 未读 | 阶段 5 前读全文(与 C05 相同) | 决定审查范围 |
++| R09 Codex plugin for Claude Code | 未读 | 暂缓(文件交接 + codex exec 够用) | 两次交接丢材料再考虑 |
++| R10 插件 review 命令定义 | 未读 | 暂缓 | 同上 |
++| R11 ClauDex | 未读 | 不适用 | 社区方案,未审计 |
++| R12 Spec Kit / R13 OpenSpec | 未读 | 不适用 | 计划文档已是规格 |
++| R14 Superpowers | 已在本机安装并使用(执行计划、写计划技能) | 采用中 | 与项目规则冲突处以项目规则为准 |
++| R15 GSD / R16 Ralph / R18 Symphony | 未读 | 暂缓 | D1–D5 出现可并行任务再考虑 |
++| R17 BMAD | 未读 | 不适用 | 单人工具 |
++| R19 Google / R20 LangChain | 未读 | 暂缓 | harness 调整时再读 |
++| R21 课程 / R22 Quickstart | 未读 | 暂缓 | — |
++| R23 / R24 / R25 评测与论文 | 未读 | 不适用于本轮 | 只影响分工,分工已定 |
++
++## C 系列(Codex 官方)
++
++| 编号 | 来源 | 阅读状态 | 采用 / 暂缓 | 依据 |
++| --- | --- | --- | --- | --- |
++| C01 Best practices / C03 Customization | 未读 | 暂缓(供 Codex 会话自己读) | — |
++| C02 AGENTS.md | 摘录(WebFetch,主会话,2026-09-29 21:0x):全局 `~/.codex` 先查 AGENTS.override.md 再 AGENTS.md;项目从 Git 根向下到当前目录逐级查找并按顺序拼接,越近越靠后;合计超过 `project_doc_max_bytes`(默认 32 KiB)后不再加入;可配置回退文件名;可让 Codex 自述已加载的说明来核实 | 采用:项目只放一份 AGENTS.md(远小于 32 KiB),CLAUDE.md 仅转发;Codex 审查提示词第 0 步要求它自述加载了哪些说明 | 摘录非全文;第 1 轮 Codex 中止前未输出第 0 步结论,入口发现仍待核实 |
++| C04 Build skills | 未读 | 不适用 | 无重复流程需求 |
++| C05 Code review | 摘录(WebFetch,主会话,2026-09-29 21:0x):`/review` 可选基线分支、未提交改动、单个提交或自定义说明;默认只读,只报告不改工作区;项目必须在 Git 仓库内 | 采用:审查用固定提交范围 + 只读;本机另有 `codex exec review --base/--commit/--uncommitted`(见本机 `--help`),本轮用 `codex exec --sandbox read-only` 配 harness pack 的完整提示词 | 摘录非全文 |
++| C06 Long horizon tasks | 未读 | 暂缓 | — |
++| C07 Hooks | 未读 | 暂缓 | — |
++| C08 Non-interactive mode | 摘录(WebFetch,主会话,2026-09-29 21:0x):`codex exec` 默认只读沙箱;`-C`、`-o/--output-last-message`、`--json`、`--output-schema`、`--ephemeral`;`--full-auto` 已弃用;提示词可作参数或经 stdin `-` 传入;需在 Git 仓库内运行 | 采用:`codex exec --sandbox read-only -C D:\RoboSim-Eval -o <报告>`(参数与本机 codex-cli 0.157.0 `--help` 一致),见 scripts/windows/run_codex_review.ps1 | 摘录非全文;退出码语义页面未说明,以实测为准(第 1 轮用量上限时退出 1) |
++| C09 Evals | 未读 | 暂缓 | — |
++| C10 Subagents / C11 Docs MCP | 未读 | 不适用 | 无需求 |
++| C12 Developer commands | 未读 | 以本机 `codex --help`、`codex exec --help`、`codex exec review --help` 代替(2026-09-29 实际运行并保存于会话) | 本机帮助对安装版本最权威 |
++| C13 Windows sandbox / C14 WSL | 未读 | 阶段 5 前读入口页 | Codex 在本机运行环境 |
++| C15 GPT-6 Astra | 未读 | 不适用 | 不假定模型 |
+diff --git a/docs/plan.md b/docs/plan.md
+new file mode 100644
+index 0000000..44f807d
+--- /dev/null
++++ b/docs/plan.md
+@@ -0,0 +1,160 @@
++# RoboSim Eval — 执行计划与状态(唯一活计划)
++
++> 这是项目唯一维护状态的计划。需求、验收方法、状态合同的原文在根目录 `RoboSim-Eval-Plan-and-Setup-ZH(1).md`(2026-09-29 冻结参考),其中的"当前状态"列已作废,状态只看本文件。开发流程约定见两份 harness pack(同样冻结参考)。
++
++## 1. 状态总览
++
++| 交付 | 状态 | 证据 | 阻塞 / 备注 |
++| --- | --- | --- | --- |
++| 阶段 0 · 唯一计划与入口 | 完成(2026-09-29) | 基线 commit `dbf67ce`(master);分支 `feature/d0-environment`;AGENTS.md / CLAUDE.md / docs/plan.md / docs/harness-sources.md / artifacts/README.md | — |
++| D0a · 环境证据 | 完成(2026-09-29 19:02–19:04) | docs/environment.md;artifacts/d0a/(两侧探测原始输出 + commands.md) | 门槛 1→2 通过;发现:WSL 内无 ROS 2,sudo 需密码 |
++| D0b · ROS 2 Jazzy + 6.1.0 示例工作区 | 完成(2026-09-29 19:16–19:30) | artifacts/d0b/commands.md(安装日志、check-ros-install、talker/listener ×2、rviz2 测试、setup-workspace.log) | 门槛 2→3 通过。工作区 `~/robotics/vendor/isaac-ros-6.1`,HEAD a9e8471…;安装脚本首跑退出码 1 是校验步骤的 `set -u` 缺陷(已修),安装本身成功 |
++| D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 完成(2026-09-29 19:35–20:12) | artifacts/d0c/commands.md;probe-04-playing/(/clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、tf2_echo odom→base_link);clock-continuity-01;clock-pause-test-02(暂停 29 s 时钟停、恢复后继续);bridge-check-01/02;kit-udp-endpoints-01;diag-01 | 门槛 3→4 通过。排障:Windows 防火墙阻断 WSL→kit.exe 入站(用户以管理员加一条限定规则后解决);首次 Play 后 7 s 时间线被停止(重新 Play 解决)。发现:示例场景不发布 2D 雷达扫描(params 的局部代价地图两路来源无数据,D0d 记偏差);USD 动画时间线每 ~41 s 循环但仿真时钟不受影响;显存为几次点采样(空场景 3124–3128 MiB、Play 后 5 s 3754 MiB、Nav2 运行时 Isaac 界面显示 3.9 GiB),未做连续测量 |
++| D0d · 一次真实 A→B | 完成(2026-09-29 20:13–20:52) | artifacts/d0d/commands.md;run-01/(nav2-launch.log、ready-check-01、map-overview、rviz 截图、usd-inspection);run-01/attempt-01/(goal-202437.txt、result.json、trajectory.csv、bag-info、文本流);run-02/03/04-stoptest(停止路径验证) | 目标 map (-4.0,-1.0,yaw 0) 由 CLI action client 发送:SUCCEEDED、error_code 0、0 次恢复、8.47 s 仿真时间、停稳确认;**AMCL 独立来源**(理想里程计 + USD 出生位姿)在停稳确认时刻误差 0.091 m,AMCL 估计 0.231 m → validation=pass(内部预审后用新分析脚本重算)。发现见 §9 |
++| D0 交付 + 独立审查 | 进行中:**待独立审查** | docs/setup.md;docs/review/2026-09-29-d0-handoff.md;docs/review/2026-09-29-d0/REVIEW.md | Codex 第 1 轮因账户用量上限中止、无意见(额度提示 2026-09-30 00:58 后可重试);Claude 内部预审第 2 次完成(38 条,确认 35 条),有效项已修复并回归,见 REVIEW.md |
++| D1 doctor / D2 单次运行 / D3 判定 / D4 批量复跑 / D5 作品交付 | 未开始 | — | D0 独立审查结束后按序进行;下一项是 D1 的第一个小验收(见 §11) |
++
++**当前任务(D0 交付):** 冻结审查快照 → Codex 独立只读审查(`codex exec --sandbox read-only`)与 Claude 内部预审并行 → 逐条核实、修复有效项、重跑受影响检查 → 必要时第二轮复核 → 最终交付说明与用户三步验收。
++
++**D0b 结果(2026-09-29 19:16–19:30):** ROS 2 Jazzy desktop + Nav2 + 闭包依赖装好(用户执行);WSL 内 talker/listener 默认与加载 fastdds.xml 均通;rviz2 在 WSLg 下存活 20 s(OpenGL 4.5);工作区 `~/robotics/vendor/isaac-ros-6.1` @ a9e8471…,`colcon build --packages-up-to carter_navigation` 成功;launch 参数 map / params_file / use_sim_time 可查询。
++
++**D0a 新增事实(2026-09-29 19:02–19:04,详见 docs/environment.md):** WSL 里完全没有 ROS 2(无 /opt/ros、无 apt 源、无 colcon/rosdep);`sudo -n true` 失败(需密码);WSLg 变量在非交互 shell 也存在;WSL eth0 172.28.211.14/20,网关 172.28.208.1 = Windows vEthernet (WSL);Windows 与 WSL 均无 ROS/DDS 残留配置;`extension_examples` 链接已存在;Claude 的 shell 未提权;Codex 0.157.0 已登录,`codex exec --sandbox read-only` 可用;`isaac-sim.bat` 自动调用 `setup_ros_env.bat`(默认 RMW = rmw_zenoh_cpp,仅当 ROS_DISTRO 未设时才把自带 jazzy 库加入 PATH/AMENT_PREFIX_PATH);自带前缀含 rclpy 7.1.11 与 rmw_fastrtps_cpp.dll / rmw_zenoh_cpp.dll。
++
++**已核实的硬事实(2026-09-29):** Windows 10 Pro 10.0.19045.6466;Isaac Sim 6.1 要求页明确 "Windows 10 is not supported"、显存最低 16 GB、Windows 测试驱动 595.97(本机 591.44);官方 WSL2 路线标 deprecated 且要求 Windows 11;WSL 2.6.3.0 + WSLg 1.0.71,发行版 `Ubuntu` 与 `docker-desktop` 均在运行;`D:\isaac-sim-standalone-6.1.0-windows-x86_64\isaac-sim.bat` 与 `exts\isaacsim.ros2.core\jazzy\lib` 存在;Isaac GUI 进程 `kit`(PID 29036)自 16:22 运行中;Codex CLI 已装(npm);IsaacSim-6.1.0 标签下存在 `jazzy_ws/fastdds.xml` 与 `carter_navigation.launch.xml`(参数 map / params_file / use_sim_time)。
++
++## 2. 决定记录
++
++| 日期 | 决定 | 由谁 | 依据 |
++| --- | --- | --- | --- |
++| 2026-09-29 | 在官方不支持的配置(Windows 10 + 8 GB)上继续做完 D0,升级留到项目之后;所有记录标注 unsupported configuration | 用户 | GUI 已能开;用户明确指示 |
++| 2026-09-29 | `git init` 本地仓库;master = 三份文档基线;D0 在 `feature/d0-environment` 上做 | Claude(默认做法,用户未反对) | harness pack 需要基线与可比对 diff;Codex `/review` 需要 Git |
++| 2026-09-29 | fastdds.xml 放仓库内 `configs/network/`,而非计划文档建议的 `D:\robosim-assets\network` | Claude(默认做法,用户未反对) | 受版本管理、单一副本;计划文档 A2 的路径只是建议 |
++| 2026-09-29 | 独立审查用 `codex exec`(新进程、只读),与 Apu 项目一致 | Claude(默认做法,用户未反对) | harness pack 默认分工 |
++| 2026-09-29 | 三份文档保留带 "(1)" 的原名,不改名 | Claude | 不擅自改用户文件;入口写真实路径 |
++| 2026-09-29 | 本轮不绑定 Obsidian 知识库 | Claude | 避免出现第四份计划;触发条件 = D1 之后需要跨会话知识库 |
++
++## 3. 本轮范围
++
++做:D0 剩余部分(D0a→D0d)+ 记录它所需的最小 harness + D0 交付 + Codex 独立审查交接。
++
++不做:D1–D5 及 doctor/runner/recorder/evaluator/report 模块、sim_adapter、网页、persona/LLM/world model、重装 Isaac 或 Ubuntu、换驱动、Pixi/Zenoh 原生路线、mirrored networking、付费服务、push/deploy、删改用户文件、停 Docker、杀用户的 Isaac GUI、`wsl --shutdown`(改变 WSL IP 并影响 docker-desktop;确需时先征得同意)。
++
++## 4. 执行机制(贯穿各阶段)
++
++- 工具调用最多 10 分钟且无 tty:apt、rosdep、clone、colcon 一律后台作业(`setsid nohup bash -c 'bash -l <脚本>; echo $? > <步骤>.exit' < /dev/null > <日志> 2>&1 &`;注意整条命令都要放进后台,旧写法只把 echo 放进了后台),短查询轮询 `.exit`;证据表从 `.exit` 读退出码。
++- 所有 sudo 一律 `sudo -n`;若 `sudo -n true` 失败,只给用户一个合并命令块(apt 源 + 全部包 + rosdep init),阶段 2 标"等待用户"。
++- WSL 命令从 PowerShell 发出,或以脚本文件方式 `bash -l /mnt/d/RoboSim-Eval/scripts/wsl/<脚本>.sh` 运行,避免 Git Bash 的 MSYS 路径改写;.ps1 用 `powershell -ExecutionPolicy Bypass -File` 运行。
++- 用户回合检查点:需要 GUI 的步骤(关闭/重启 Isaac、Load Sample Scene、Play、Pause/Resume、2D Pose Estimate、Nav2 Goal)给出操作与"完成后报告什么",然后结束回合等待;不假装已点过。Windows 侧改动合并成一次重启,并在请用户重启前做完所有无 GUI 的验证。
++- 常驻进程:`setsid nohup … < /dev/null`,PID 文件,`kill -INT` 停止并有界等待(SIGKILL 会丢 bag 的 metadata.yaml、留下孤儿节点),停止后 `ros2 node list` 确认无残留;限时观察的退出码 124 记为"观察满时长"。
++- 记录格式见 artifacts/README.md;每条命令记 命令 | shell | cwd | 退出码 | 日志。
++
++## 5. 最小组合(harness pack 第 C 步)
++
++1. 已覆盖:计划文档 v2.0 已是规格、验收表和状态合同;Apu 的证据目录与审查门只借方法。
++2. 真实缺口:无 Git 基线、无入口文件、无已验证的启动顺序、无证据格式。
++3. 补的机制与验证方式:AGENTS.md / CLAUDE.md / docs/plan.md(让 Codex 列出它加载的说明来源与当前任务:已并入审查提示词第 0 步,第 1 轮中止前未输出,**尚未验证**);commands.md 格式(原计划故意记录一条失败命令;实际记录了多条真实失败及其非零退出码,如 `sudo -n true` 1、安装脚本 1、probe 1、stop_nav2 5,另有分析脚本的固定输入测试与改坏检查,见 REVIEW.md);审查交接(第 1 轮因额度中止,**待重跑**)。
++4. 暂缓及触发条件:R09 Codex 插件(文件交接 + codex exec 够用;两次交接丢材料再考虑)、R12/R13 规格工具(计划文档已是规格)、R14/R06/C07 Skills/Hooks/CI(同一检查漏两次再上)、R15/R16/R18 多任务调度(D1–D5 出现可并行任务再考虑)、R17 BMAD(单人工具)、C10/C11(无需求)、Obsidian 绑定(见决定记录)。
++
++## 6. 阶段
++
++### 阶段 0 · 唯一计划与入口
++- [x] `git init`;.gitignore / .gitattributes;基线提交(三份文档原样)
++- [x] 分支 `feature/d0-environment`
++- [x] AGENTS.md、CLAUDE.md、docs/plan.md、docs/harness-sources.md、artifacts/README.md、只读探测脚本;提交(c4fa3d8)
++- 资料阅读不阻塞探测:S1/S2/S6 在阶段 2 前、S3/S4/S7 在阶段 3 前、C02/C05/C08/C12 在阶段 5 前由主会话读全文;其余 R/C 只读入口页;台账区分 全文 / 摘录 / 仅入口页 / 不可访问。
++
++### 阶段 1 · D0a 环境证据(只读,不装任何东西,不需要用户)
++- Windows(scripts/windows/probe_env.ps1):OS/build、nvidia-smi、内存、磁盘、wsl 版本与发行版、Isaac 路径、post_install.bat 会建的链接 vs 实际存在(只查;确缺当前需要的链接才按官方说明修一次)、.wslconfig、防火墙配置文件、vEthernet (WSL) 连接配置文件与 IP、已有 kit.exe 规则、用户/系统环境变量中的 ROS/RMW/FASTRTPS/CYCLONE、执行策略、是否提权、codex 版本/登录/exec 参数、kit 日志位置。
++- WSL(scripts/wsl/probe_env.sh,`bash -l` 与 `bash --noprofile --norc` 各跑一次):用户/HOME、os-release、内核、python3/git/colcon、ros2 source 前后、/opt/ros/jazzy、七个目标包逐个状态与 apt 候选、rosdep 状态、`sudo -n true`、DISPLAY/WAYLAND_DISPLAY、eth0 IP、free、磁盘、有无现成工作区、残留 ROS 环境变量与 rc 文件行。
++- 输出 → artifacts/d0a/ + docs/environment.md。门槛 1→2:两个探测都有完整输出;Isaac 两个路径存在。
++
++### 阶段 2 · D0b ROS 2 Jazzy + 官方 6.1.0 示例工作区
++- 缺 /opt/ros/jazzy 才按 S6 配 noble 源;七个包逐个 `apt-cache policy` 后只补缺项;不做无关升级;后台作业 + 轮询。
++- rosdep 未初始化才 init/update。talker/listener 各 `timeout 20`,只标"WSL 内部通信"。
++- RViz 提前测试:`timeout 20 rviz2` 记退出码与 GL/Qt 错误;失败试 `LIBGL_ALWAYS_SOFTWARE=1` / `QT_QPA_PLATFORM=xcb`;仍失败则查 launch.xml 中 RViz 退出是否连带关 Nav2,阶段 4 改 CLI 路线并标"RViz 未验证"。
++- 克隆 IsaacSim-6.1.0 标签到 `~/robotics/vendor/isaac-ros-6.1`(WSL ext4);`git rev-parse HEAD` 对照 `a9e8471ee901bc2332c1e4aca94ac580713ca3ab`,不一致先报告。已有 checkout 则查 branch/commit/dirty/submodule,干净且匹配才复用。
++- jazzy_ws:`colcon list --packages-up-to carter_navigation` → rosdep 只解析这些包(先 `--simulate`)→ `colcon build --packages-up-to carter_navigation`;不改 vendor 文件;rosdep/colcon 失败查源、网络、版本,绝不改 package.xml。
++- `ros2 pkg prefix`、`--show-args`;读 launch.xml 与 params,记录 map yaml/pgm、params 路径与 sha256、前后 2D 扫描 topic、amcl 的 set_initial_pose / initial_pose 设置。
++- scripts/wsl/ros_env.sh 只含基础环境 + overlay(缺路径即报错退出);跑一次记退出码再提交。
++- 门槛 2→3:colcon 退出码 0;`--show-args` 列出 map / params_file / use_sim_time;talker/listener 输出已存;rviz2 测试结果已记。
++
++### 阶段 3 · D0c Windows↔WSL 桥接 + Nova Carter 场景 + 原始数据
++- 无 GUI 先做完:configs/network/fastdds.xml(取自钉住版本的 jazzy_ws/fastdds.xml 与 S2;许可放注释、单根元素;两侧 XML 解析通过)→ scripts/wsl/dds_env.sh(导出 FASTRTPS_DEFAULT_PROFILES_FILE 并 `test -f`)→ scripts/windows/start_isaac_ros2.ps1(= 计划文档 B4 块,`$robosimDds` 指向仓库内文件;PowerShell 解析器语法检查,不启动)→ 无 GUI 发现预测试:若 Isaac 的 `python.bat` 加 jazzy lib 后能 `import rclpy`,在 Windows 侧跑无头 talker,从 WSL 看能否收到;不可行则记录并直接进入重启。
++- 用户回合(一次性重启):保存 → 正常关闭当前 Isaac(不杀 PID 29036)→ 确认 `Get-Process kit` 为空 → 用户在新的普通 PowerShell 以 Bypass 方式跑脚本;若弹出防火墙对话框,对 kit.exe 允许(含公用网络)→ 用户报告"GUI 已起、控制台无红色错误" → 在 kit 日志确认 isaacsim.ros2.bridge 已加载并记第一条相关错误 → 用户:Window → Examples → Robotics Examples → ROS2 → Navigation → Nova Carter → Load Sample Scene → Play → 报告"已 Play"。只用普通 Nova Carter 示例。
++- WSL 侧全部限时:`ros2 topic list -t`;/clock、odom、3D 点云、前后 2D 扫描、/tf 的 hz 与样本;TF 时间戳对 /clock;`ros2 topic info -v` 记 odom 发布者(是否理想里程计)与速度 topic 订阅方类型;2D 扫描 topic 对 Nav2 params;nvidia-smi + 可用内存 + 仿真速度(Δsim/Δwall)+ kit 日志首个加载错误。此时没有 /scan 属正常;不为省显存关雷达。暂停测试(用户回合):Pause → /clock 与一条数据 topic 都停 → Resume → 都恢复。
++- 场景加载失败:先存 kit 日志首个错误与 nvidia-smi。OOM → Heightmap Importer(Tools → Robotics → Heightmap Importer + Nova_Carter_ROS.usd),核对分辨率/原点/尺度/碰撞/出生点//clock,地图与参数副本放 configs/,阶段 4 用 `map:=` 引用并记为偏差。
++- 发现失败升级链(预算 3 次有假设的尝试或 90 分钟;每次编号记录;Windows 侧改动 = 用户重启一次):① 两侧 domain / RMW / 残留变量 / XML 是否被加载;② `ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET` + `ROS_STATIC_PEERS=<对端 IP>`(两侧;需验证 Isaac 自带 rcl 是否遵守);③ 从受版本管理的模板生成不入库的 peers XML(UDP 单播 initialPeersList,IP 取阶段 1 记录;WSL IP 每次重启会变);④ 仅一条限定到 WSL vEthernet 子网的入站 UDP 防火墙规则(确切 `New-NetFirewallRule`,经用户同意,需管理员);⑤ 最后才按 S2 官方步骤试 `netsh portproxy`(只转 TCP;计划文档不当作通用修复;只记为"官方步骤已试")。用尽即存最小复现、与 S2 限制对照、提出可验证备选(Pixi 原生)但不执行。
++- 门槛 3→4:/clock 连续推进 ≥10 s;odom、TF、雷达 hz 已记;显存低于 8 GB 且稳定;bridge 加载证据已存。
++
++### 阶段 4 · D0d Nav2 + 一次真实 A→B
++- 先 `ros2 node list` 确认无已在跑的 lifecycle_manager;默认以 setsid/nohup + PID 文件 + pipefail 日志启动 `ros2 launch carter_navigation carter_navigation.launch.xml use_sim_time:=true`;RViz 起不来则改用户终端或 CLI 路线,谁记录退出码随之明确。
++- 就绪门槛两段:初始定位前(上限 60 s):生命周期 active、/scan 与两路 2D 扫描 hz、/map(transient_local)收到、Isaac 的 odom→基座与静态 TF 新鲜、`ros2 param get` 确认 use_sim_time、地图分辨率/原点对场景、`ros2 action list -t` 取真实 action 名与类型。map→odom→基座只在初始定位后查(params 设了 set_initial_pose 则立即查),有界等待。
++- 初始定位(用户回合):RViz 2D Pose Estimate 点在真实出生位置,报告"激光与地图贴合";检查 map→odom 出现。不用 odom 推 /initialpose;程序化只从 params 的 amcl 初始位姿或场景 prim 世界位姿取,并同样过贴合检查。
++- 发目标前定停机方式:取消 action → 10 s 内 odom twist≈0 → 否则用户在 Isaac 按 Stop;每次尝试只有一个目标发送者(RViz 或 CLI),记录是谁。起点与目标先对照地图空闲区。
++- 记录:scripts/wsl/record_d0.sh <目录>(短脚本:`ros2 bag record --include-hidden-topics` 选定 topic + action status/feedback,`timeout -s INT` 限时,无数据非零退出);也是用户验收第 2 步的入口。至少一次用 CLI action client 发目标拿 result + error_code;RViz 发的只能拿 status。
++- 时限:接受 10 s;导航 120 s 仿真时间或 300 s 现实时间先到为准;取消确认 10 s。
++- 失败分支:不动 → 查目标是否接受、cmd_vel 是否非零、类型是否匹配 Isaac 订阅方、Play 是否在跑,不重发目标掩盖;rejected/aborted → 保留原始状态码与 error_code,记 unknown 而非 unreachable。
++- 证据(artifacts/d0d/<时间>/):目标位姿 + frame;action 接受/反馈/结果原始状态码与 error_code;trajectory.csv(每列标 frame 与来源;odom 单独标注并注明是否理想里程计);到达误差在 map 系用 map→基座 TF 计算,标"定位估计,非独立真值";停稳(线速度 <0.05 m/s、角速度 <0.1 rad/s 持续 1 s 仿真时间);仿真时钟与现实时钟;失败尝试全留;明确"碰撞/安全与独立真值未验证(D3)"。
++
++### 阶段 5 · D0 交付与独立审查
++- 更新本文件、docs/environment.md;新建 docs/setup.md(已验证的启动/关闭顺序、终端类型、必要条件);未验证清单;Conventional Commits 分阶段提交。
++- 审查包 docs/review/<日期>-d0-handoff.md:需求指向、本轮验收清单、基线与被审 commit、完整 `git diff` 存 task.diff + changed-files.json + 未跟踪清单、证据目录、已知限制、AI 参与说明。
++- 审查:确切只读 `codex exec` 命令写进 AGENTS.md;先提交冻结;跑 `codex exec` + Codex pack 审查提示词(含真实文件路径);记 codex 版本/模型/被审 hash;逐条核实、只修有效项、重跑受影响检查、拒绝项留依据;第二轮复核修复后的范围;最多两轮;"无发现"不等于通过;Codex 不可用标"待独立审查"并把提示词给用户。
++- 最终报告按 pack 七项:完成范围与改动文件;启动命令与必要条件;diff、验证结果与证据位置;失败/未验证/剩余问题/审查状态;三步验收;关键文件与函数;审查材料位置与下次会话入口 + 已存入项目的规则。产品证据与过程证据分节。
++
++## 7. 本轮验收清单
++- [x] D0a:环境记录与现有改动清单;GUI 截图只证明打开。→ docs/environment.md、artifacts/d0a/
++- [x] D0b:包可发现、构建成功、launch 参数可查询;命令与退出码。→ artifacts/d0b/commands.md
++- [x] D0c:/clock 持续推进;里程计、TF、激光有样本和频率;暂停可识别。→ artifacts/d0c/probe-04-playing/、clock-pause-test-02.txt
++- [x] D0d:Nav2 接受并完成目标,轨迹显示移动,到达且停稳;原始证据保留。→ artifacts/d0d/run-01/attempt-01/result.json
++- [ ] B7 六项最低交付:环境与依赖版本记录 ✔ / 已验证启动顺序 ✔(docs/setup.md)/ 一次真实 A→B 的记录 ✔ / 最小 diff 说明 ✔(审查包)/ 未验证清单 ✔(§9)/ 独立审查材料 ✔ 但**独立审查尚未完成**(Codex 额度)
++- [ ] 用户三步验收:新终端启动看到地图与实时数据;发目标看到达并打开记录核对;暂停看数据停、恢复看数据回来。(待用户)
++
++## 8. 偏差记录
++- fastdds.xml 路径:仓库内 `configs/network/` 而非 `D:\robosim-assets\network`(见决定记录)。
++- 工作分支:D0 在 `feature/d0-environment`,master 只放基线;审查范围以 docs/review/2026-09-29-d0-handoff.md §1 写明的提交为准。
++- Windows 启动脚本将**不**预设 ROS_DISTRO(计划文档 B4 块预设了它):本机 `isaac-sim.bat` 自动调用 `setup_ros_env.bat`,该脚本只在 ROS_DISTRO 未设时才把自带 jazzy 库加入 PATH 与 AMENT_PREFIX_PATH;预设会跳过这一步。脚本只预设 RMW_IMPLEMENTATION=rmw_fastrtps_cpp、ROS_DOMAIN_ID、FASTRTPS_DEFAULT_PROFILES_FILE,并在启动后用 kit 日志核对实际生效值。
++- 阶段 2 安装省略了 ROS 文档建议的整体 `apt upgrade`(项目规则:不做无关系统升级);若 apt 因依赖被 hold 而失败,再用 `--with-upgrade` 重跑并记录。
++- S6(docs.ros.org)被反爬页拦截,改读计划文档允许的官方托管镜像 repo.test.ros2.org;安装脚本的命令逐条来自该镜像。
++- Nav2 用钉住版本的默认参数运行;示例场景不发布 /front_2d_lidar/scan 与 /back_2d_lidar/scan,局部代价地图这两路观测源无数据。D0 首次导航未因此受阻,所以没有改参数;D2 起若要消除,把 params 复制到 configs/nav2/ 并把局部代价地图观测源改为 /scan,用 `params_file:=` 引用。
++- 到达核对使用"仿真状态里程计 + USD 出生位姿"作为 AMCL 独立来源(计划文档 A5 要求"用独立位置来源核对"),它不是单独的真值 topic,前提写在 result.json 的 notes 里。
++- 首次导航目标由 CLI action client 发送(为拿到原始 result 与 error_code),未用 RViz Nav2 Goal。RViz 路径没有目标转录,分析脚本对它只能给 inconclusive,所以用户验收也用 send_goal.sh。
++- 未执行计划文档 B6 第 3 步的 2D Pose Estimate:用户只做了目视贴合核对,AMCL 用参数里的出生点自动初始化。事后交叉核对显示当时 AMCL 初始位姿偏 0.324 m(机器人已缓爬离开出生点),目视没有发现;选目标时的"机器人位置 (-6.14, -1.00)"也是 AMCL 估计。到达判定不依赖 AMCL,所以结论不受影响;以后每次尝试前先重置场景并尽快启动 Nav2,或在 RViz 按真实位置做 2D Pose Estimate。
++- 到达判定时刻:从"记录结束时"改为"停稳确认时刻"(内部预审 A6),attempt-01 的独立来源误差因此从 0.090 m 变为 0.091 m。
++
++## 9. 发现、已知问题与未验证清单
++**发现(影响后续交付):**
++- Nav2 启动时 AMCL 初始位姿偏差 0.324 m:机器人在零指令下缓慢前爬(Play 后 505 s 仿真时间内 0.56 m),而 amcl `set_initial_pose` 固定用出生点。转身时 AMCL 自行重定位,结束时仍偏 0.160 m。→ D2/D4 每次运行前必须重置场景并尽快启动,或按实际位姿设置初始定位。
++- /chassis/odom 由 `IsaacComputeOdometry` 计算(仿真底盘状态,相对 Play 起点,无轮速/噪声模型)= 理想里程计。它适合做评测侧的位置核对,但不能证明真实定位鲁棒性(计划文档 A5)。
++- 仿真实时因子:空场景约 0.38–0.42,Nav2 运行并导航时约 0.32(attempt-01:8.47 s 仿真 / 25.61 s 现实;bag 中 15.03 s 仿真 / 47.72 s 现实)。按 0.32 计,120 s 仿真时间约需 375 s 现实时间,会先触发 300 s 现实上限;D2 设计超时时要按实测换算。
++- 话题频率随实时因子变化:/chassis/odom 每仿真秒约 60 条,空场景约 26 Hz,导航时约 19 Hz;probe-04 中有一个窗口只有 13.9 Hz、最长间隔 0.695 s;attempt-01 中 /clock 与 odom 最长间隔 0.92 s,AMCL 的 map→odom 最长间隔 1.86 s(接近 2 s 断流门槛)。D1 的断流门槛要按各话题实测周期设。
++- 零指令缓爬:按位置增量约 1.1 mm/仿真秒(0.045 m @ 40.3 s、0.378 m @ 340.3 s、0.561 m @ 505.5 s);odom twist 读数只有约 0.6 mm/s,偏低约 40%。
++- USD 动画时间线每 ~41 s 循环一次(一帧 dt=0 的差速控制器警告),仿真时钟不受影响。
++- 首次 Play 后 7 s 时间线曾被停止(topic 在、无数据),重新 Play 恢复。
++
++**已知问题:**
++- Nav2 停止时组件容器在清理阶段 SIGSEGV("Magick: abort due to signal 11",exit -6):run-01、run-04、run-05 三次都出现。rviz2 每次退出方式不同:run-01 为 -6,run-04 为 -9(launch 在 SIGINT/SIGTERM 超时后 SIGKILL),run-05 为 -11。launch 退出码 1 只在 run-04、run-05 记录到;run-01 用的是旧脚本,没有记录。三次都没有残留进程,不影响导航与记录。
++- attempt-01 是用修复前的记录与停止脚本采集的:没有记录器退出码文件;4 个文本流比 bag 多跑了约 3 分钟,最后手动按会话停止。bag 本身完整,分析只用 bag。
++- RViz 在 WSLg 下启动时报一次 GLSL 链接错误(`indexed_8bit_image`),地图与激光照常显示。
++- 首次导航的反馈转录 goal-202437.txt 为 2.7 MB(CLI 高频反馈);以后可只保存摘要。
++
++**未验证(D1–D4 范围或待用户):**
++- 碰撞/接触(safety_status=unknown)、单独的仿真真值 topic、自动重置、批量运行、取消与超时处理、doctor/runner/evaluator/report 均未实现。
++- RViz Nav2 Goal 发目标路径、`record_d0.sh` 以外的记录方式、Heightmap 回退路线未执行。
++- "重置场景(⏹ 再 ▶)后机器人回到出生点、里程计归零"没有专门验证过;用户验收时首次执行。
++- 修复后的记录、停止、就绪脚本在 run-05-regress 中做了正向与反向回归,但还没有用于一次真实导航尝试;用户验收的那次尝试是修复后脚本的第一次完整使用。
++- Codex 独立审查与入口发现验证尚未完成(额度)。
++- 只做了一次导航尝试;不据此声称任何导航性能。
++
++## 10. 风险
++- 8 GB 显存 + Windows 10:场景可能跑不起来 → Heightmap 缩场景;仍不行则如实记硬件阻塞。
++- NAT 下 DDS 发现:主要排障点;先无 GUI 预测试,配置合并成一次重启;3 次/90 分钟预算与五级升级链。
++- RViz 在 WSLg 下可能起不来 → 阶段 2 提前测,失败走 CLI 路线并如实标注。
++- sudo/管理员、colcon 构建时间、rosdep 网络、10 分钟工具上限(后台作业规避)。
++- 总时长粗估半天到一天,并受用户在 GUI 步骤的可用时间影响。
++
++## 11. 下一项:D1 诊断工具的第一个小验收(D0 审查结束后开始)
++- 用户操作:仿真在 Play 时运行 doctor;然后暂停仿真再运行一次。
++- 门槛要按实测设:各话题周期随实时因子变(见 §9),单一的 "5 个周期" 在导航负载下会误报。
++- 预期:正常时报告 /clock、/chassis/odom、/tf、/front_3d_lidar/lidar_points 的实际频率与新鲜度并退出 0;暂停时在有限时间内(候选:max(5 个正常周期, 2 s))判定时钟停止并非零退出。
++- 验证:固定输入测试(不需要仿真)+ 真实 Isaac 集成各一次,分别记录;复用 probe_topics.sh / watch_clock.sh 的经验,不另起框架。
+diff --git a/docs/setup.md b/docs/setup.md
+new file mode 100644
+index 0000000..c14525e
+--- /dev/null
++++ b/docs/setup.md
+@@ -0,0 +1,64 @@
++# 本机启动、运行与关闭顺序(D0,2026-09-29)
++
++除明确标注"未执行"的步骤外,下列命令都在 2026-09-29 于本机跑通;每条的原始记录与退出码见 `artifacts/d0a..d0d/commands.md`。本机是 Isaac Sim 6.1 官方不支持的配置(Windows 10 + 8 GB 显存),以下只表示"在本机实测可用",不表示普遍可用。
++
++## 一次性前提(已完成,重装时才需要)
++
++| 项目 | 状态 | 怎么做 |
++| --- | --- | --- |
++| Isaac Sim 6.1.0 | 已装在 `D:\isaac-sim-standalone-6.1.0-windows-x86_64` | 不重装 |
++| Windows 防火墙规则 "RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)" | 已建(入站 / UDP / 仅 kit.exe / 仅 vEthernet (WSL)) | 管理员 PowerShell:`powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\allow_wsl_to_isaac_firewall.ps1`(可重复运行;删除见脚本头) |
++| WSL `Ubuntu` 内 ROS 2 Jazzy + Nav2 + 依赖闭包 | 已装 | Ubuntu 终端(需 sudo 密码):`bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh` |
++| 钉住工作区 `~/robotics/vendor/isaac-ros-6.1`(IsaacSim-6.1.0 @ a9e8471)+ `colcon build --packages-up-to carter_navigation` | 已建 | `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/setup_workspace.sh`(可重跑;rosdep 模拟失败时以 7 退出) |
++| 安装自检 | PASS | `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_ros_install.sh` |
++| 分析脚本的固定输入测试(不需要仿真) | 14 passed | `wsl -d Ubuntu -- python3 -m pytest -q -p no:cacheprovider /mnt/d/RoboSim-Eval/tests` |
++
++## 终端约定
++
++| 终端 | 用途 | 环境 |
++| --- | --- | --- |
++| Windows 普通 PowerShell(非管理员) | 启动 Isaac Sim | 由 `start_isaac_ros2.ps1` 设置:RMW_IMPLEMENTATION=rmw_fastrtps_cpp、ROS_DOMAIN_ID=0、FASTRTPS_DEFAULT_PROFILES_FILE=`D:\RoboSim-Eval\configs\network\fastdds.xml`;**不预设 ROS_DISTRO**(让 isaac-sim.bat 自动调用的 setup_ros_env.bat 加载自带 jazzy 库) |
++| WSL Ubuntu(从 PowerShell `wsl -d Ubuntu`,或 Windows 侧直接 `wsl -d Ubuntu -- bash -l <脚本>`) | Nav2、RViz、探测、记录 | 交互终端里先 `source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full`(`--base-only` 只加载 /opt/ros/jazzy)再 `source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh`;各脚本内部已用显式模式自动 source |
++| 管理员 PowerShell | 仅防火墙规则 | — |
++
++注意:从 Git Bash 调 `wsl.exe` 时必须用脚本文件(`bash -l /mnt/d/...`),内联命令会被引号/反斜杠改写;从 PowerShell 内联时 `$?` 等会被 PowerShell 先展开。
++
++## 启动顺序
++
++1. **Isaac Sim(Windows,普通 PowerShell)**
++   `powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\start_isaac_ros2.ps1`
++   脚本检查路径与 XML、拒绝在已有 kit.exe 时再开一份,然后带 `--/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge` 启动;窗口保持打开。
++   GUI:Window → Examples → Robotics Examples → 左树点 **NAVIGATION** → 右侧卡片 **Nova Carter** → **Load Sample Scene**(资产来自 NVIDIA 服务器,首次约 10 s–数分钟)→ 按 ▶ Play。
++   核对(Windows):`powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\check_isaac_bridge.ps1` → 日志应有 "ROS bridge extension isaacsim.ros2.bridge enabled successfully"。
++2. **WSL 侧原始数据核对**
++   `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/probe_topics.sh /mnt/d/RoboSim-Eval/artifacts/d0c/<目录>`
++   期望(空场景):/clock 约 25 Hz 推进、/chassis/odom 约 26 Hz、/tf 约 26 Hz、/front_3d_lidar/lidar_points 约 2.5 Hz、/cmd_vel 有 1 个订阅者(geometry_msgs/Twist)。Nav2 运行时这些频率约降到 19 Hz(仿真变慢,每仿真秒条数不变)。没有 /clock 数据时先看 Isaac 是否在 Play。
++3. **重置并启动 Nav2 + RViz(WSL)**
++   - 先在 Isaac 按 ⏹ 再按 ▶,让机器人回到出生点、里程计从 0 开始,然后**尽快**启动 Nav2:机器人在零指令下会缓慢前爬(约 1.1 mm/仿真秒),而 AMCL 的初始位姿固定为出生点 (-6, -1, π),拖得越久初始定位偏差越大。首次导航时这一偏差为 0.324 m。(⏹→▶ 能让机器人回到出生点这一点尚未专门验证,用户验收时首次执行;若回不到出生点,改在 RViz 用 2D Pose Estimate 按真实位置初始化。)
++   - `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/start_nav2.sh /mnt/d/RoboSim-Eval/artifacts/d0d/<run_dir>`(已有 carter_navigation 或 Nav2 节点、或无法检查时拒绝启动,退出 3)
++   - 约 25 s 后:`wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_nav2_ready.sh /mnt/d/RoboSim-Eval/artifacts/d0d/<run_dir>` → 退出 0 且末行 `verdict: READY`;否则列出未就绪项并退出 1。
++   - RViz 窗口(WSLg)显示地图与激光;日志里一条 `indexed_8bit_image.vert` GLSL 错误无害。
++4. **一次导航尝试**(每次只用一个目标发送者)
++   - 选目标:`wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/map_overview.sh /mnt/d/RoboSim-Eval/artifacts/d0d/<run_dir>/map-overview.txt X,Y`(机器人位置是 AMCL 估计),以及 `send_goal.sh <attempt_dir> X Y YAW --check-only`(静态地图空闲核对 + ASCII 局部图)。
++   - 记录:`wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/record_d0.sh /mnt/d/RoboSim-Eval/artifacts/d0d/<run_dir>/<attempt_dir> 330`
++   - 发目标:`wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/send_goal.sh <attempt_dir> X Y YAW` → 退出 0 = SUCCEEDED;5 = 结束但未成功;6 = 被拒绝;2 = 参数错误;其他 = 动作客户端退出码。结果出来后脚本再等 6 s,让记录覆盖机器人停下的过程。
++   - 停止记录:`stop_record.sh <attempt_dir>` → 0 = 所有记录器已停、退出码齐全、bag 已复制且必需话题有数据;3/4/5/6 见脚本头。
++   - 汇总:`analyze_attempt.sh <attempt_dir> --goal X Y YAW --spawn -6.0 -1.0 3.141592653589793` → `result.json`、`trajectory.csv`;退出 0 = pass、10 = fail、11 = inconclusive、2 = `--goal` 与实际发出的目标不一致(不写结果)。`--spawn` 是场景 USD 里的出生位姿,用于得到不依赖 AMCL 的位置来源,前提见 result.json 的 `preconditions_for_sim_state_source`。
++   - RViz 的 **Nav2 Goal** 也能发目标,但**未执行过**,而且没有目标转录,分析结果最多是 inconclusive;验收请用 send_goal.sh。
++5. **暂停/恢复核对**(可选):`watch_clock.sh 120 <文件>` 运行时在 Isaac 按 ⏸ 再按 ▶;文件中会出现一段没有 /clock 消息的空白,空白前后的仿真时间最多相差一个步长(实测 0.017 s)。
++
++## 关闭顺序
++
++1. `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh /mnt/d/RoboSim-Eval/artifacts/d0d/<run_dir>`:先核对归属(开机 ID、包装进程启动时刻、命令行都要与启动时记录的一致,否则拒绝并以 5 退出),然后 SIGINT 只发给 `ros2 launch`,最多等 45 s,必要时对本会话升级 SIGTERM、SIGKILL;launch 真实退出码写在 `<run_dir>/nav2.exit`;最后用不走 daemon 的 fresh discovery 核对没有残留 Nav2 节点。退出 0 = 无残留;1 = 有残留;3 = 残留检查本身失败。实测 10–13 s 结束;launch 退出码为 1,因为 Nav2 组件容器在清理阶段 SIGSEGV、rviz2 以 -9 或 -11 退出(上游已知问题,见 docs/plan.md §9)。
++2. 若有未停的记录器:`stop_record.sh <attempt_dir>`(按会话号 SIGINT → SIGTERM → SIGKILL;各记录器的退出码写在 `<attempt_dir>/<name>.exit`:bag 为 0 或 2,`ros2 topic echo` 为 2,都表示被 SIGINT 正常停止;124 表示到达时长上限)。
++3. Isaac Sim:用户在 GUI 按 ⏹ 或 File → Exit;不要从 WSL 或脚本杀 kit.exe。
++
++## 本机实测特性(会影响判读)
++
++- 仿真实时因子:空场景约 0.38–0.42;Nav2 运行并导航时约 0.32。按 0.32 计,120 s 仿真时间约需 375 s 现实时间,会先触发 300 s 现实上限。
++- 6.1 的 Nova Carter 示例只发布 3D 点云,不发布 /front_2d_lidar/scan、/back_2d_lidar/scan;钉住 params 的局部代价地图这两路无数据,全局代价地图与 collision_monitor 用的 /scan 由 pointcloud_to_laserscan 转换得到。
++- 机器人在零指令下缓慢前爬:按位置增量约 1.1 mm/仿真秒;odom twist 读数只有约 0.6 mm/s。都远低于停稳阈值 0.05 m/s。
++- 话题偶有停顿:空场景 odom 曾有 0.695 s 的间隔;导航时 /clock、odom 最长间隔 0.92 s,AMCL 的 map→odom 最长间隔 1.86 s。
++- USD 动画时间线每 ~41 s 循环一次,kit 日志出现 "resetting the animation timeline" 与一帧 differential_controller "Invalid deltaTime 0.000000";仿真时钟与物理不受影响(已实测 /clock 单调)。
++- 首次 Play 后若手滑按到 ⏹,topic 仍在但没有数据;重新 Play 即可(这也会把场景重置回初始状态)。
++- WSL 的 eth0 地址每次 WSL 重启可能变化;防火墙规则按接口而非 IP 限定,不受影响。
+diff --git a/scripts/windows/allow_wsl_to_isaac_firewall.ps1 b/scripts/windows/allow_wsl_to_isaac_firewall.ps1
+new file mode 100644
+index 0000000..6d74841
+--- /dev/null
++++ b/scripts/windows/allow_wsl_to_isaac_firewall.ps1
+@@ -0,0 +1,36 @@
++# allow_wsl_to_isaac_firewall.ps1 — RoboSim Eval D0c: one scoped Windows Firewall rule so WSL2 can reach Isaac Sim's
++# ROS 2 / Fast DDS sockets. Requires an ELEVATED (Administrator) PowerShell:
++#   powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\allow_wsl_to_isaac_firewall.ps1
++# To remove later:
++#   Remove-NetFirewallRule -DisplayName 'RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)'
++#
++# Evidence (2026-09-29, artifacts/d0c/diag-01): Isaac's DDS discovery multicast reaches WSL, but WSL's replies never
++# reach kit.exe (no rule, inbound default Block, NotifyOnListen off so no prompt appeared). Scope of the rule:
++# inbound only, UDP only, program kit.exe only, interface 'vEthernet (WSL)' only. Nothing global is changed.
++$ErrorActionPreference = 'Stop'
++$ruleName  = 'RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)'
++$program   = 'D:\isaac-sim-standalone-6.1.0-windows-x86_64\kit\kit.exe'
++$interface = 'vEthernet (WSL)'
++
++$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
++if (-not $isAdmin) { throw 'This script must run in an elevated (Administrator) PowerShell.' }
++if (-not (Test-Path $program)) { throw "kit.exe not found: $program" }
++if (-not (Get-NetAdapter | Where-Object { $_.Name -eq $interface })) { throw "network adapter '$interface' not found (run Get-NetAdapter to see the actual WSL adapter name)" }
++
++$existing = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
++if ($existing) {
++    Write-Output "rule already exists: $ruleName (Enabled=$($existing.Enabled), Action=$($existing.Action))"
++} else {
++    New-NetFirewallRule -DisplayName $ruleName `
++        -Description 'RoboSim Eval D0c (2026-09-29): allow ROS 2 / Fast DDS discovery and data from WSL2 to Isaac Sim. Inbound, UDP, kit.exe, vEthernet (WSL) only.' `
++        -Direction Inbound -Action Allow -Protocol UDP -Program $program -InterfaceAlias $interface -Profile Any -Enabled True | Out-Null
++    Write-Output "rule created: $ruleName"
++}
++
++Write-Output '--- rule as stored ---'
++$r = Get-NetFirewallRule -DisplayName $ruleName
++$r | Select-Object DisplayName, Enabled, Direction, Action, Profile | Format-List | Out-String | Write-Output
++$r | Get-NetFirewallApplicationFilter | Select-Object Program | Format-List | Out-String | Write-Output
++$r | Get-NetFirewallInterfaceFilter | Select-Object InterfaceAlias | Format-List | Out-String | Write-Output
++$r | Get-NetFirewallPortFilter | Select-Object Protocol, LocalPort, RemotePort | Format-List | Out-String | Write-Output
++Write-Output "done $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+diff --git a/scripts/windows/check_isaac_bridge.ps1 b/scripts/windows/check_isaac_bridge.ps1
+new file mode 100644
+index 0000000..e9bda15
+--- /dev/null
++++ b/scripts/windows/check_isaac_bridge.ps1
+@@ -0,0 +1,43 @@
++# check_isaac_bridge.ps1 — RoboSim Eval D0c: read-only check of the running Isaac Sim and its ROS 2 bridge.
++#   powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\check_isaac_bridge.ps1 [-LogPath <kit log>]
++# Reports: kit.exe process(es), GPU memory (nvidia-smi), free RAM, the newest kit log, whether isaacsim.ros2.bridge /
++# isaacsim.ros2.core were started, which RMW / profile file the bridge reports, and the first [Error]/[Fatal] lines.
++param([string]$LogPath = '')
++$ErrorActionPreference = 'Continue'
++Write-Output "=== check_isaac_bridge.ps1 $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') ==="
++
++Write-Output '--- kit processes ---'
++$procs = Get-Process | Where-Object { $_.ProcessName -match '^kit$' }
++if ($procs) { $procs | Select-Object Id, StartTime, @{n='WorkingSetMB';e={[math]::Round($_.WorkingSet64/1MB)}} | Format-Table -AutoSize | Out-String -Width 120 | Write-Output } else { Write-Output 'no kit.exe running' }
++
++Write-Output '--- gpu ---'
++nvidia-smi --query-gpu=name,driver_version,memory.total,memory.used,memory.free,utilization.gpu --format=csv
++Write-Output '--- ram ---'
++Get-CimInstance Win32_OperatingSystem | Select-Object @{n='FreeMemGB';e={[math]::Round($_.FreePhysicalMemory/1MB,1)}}, @{n='TotalMemGB';e={[math]::Round($_.TotalVisibleMemorySize/1MB,1)}} | Format-Table -AutoSize | Out-String | Write-Output
++
++if (-not $LogPath) {
++    $LogPath = Get-ChildItem "$env:USERPROFILE\.nvidia-omniverse\logs\Kit\Isaac-Sim Full\6.1" -Filter 'kit_*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
++}
++Write-Output "--- kit log: $LogPath ---"
++if (-not $LogPath -or -not (Test-Path $LogPath)) { Write-Output 'no kit log found'; exit 2 }
++$item = Get-Item $LogPath
++Write-Output ("lastWrite={0} sizeMB={1}" -f $item.LastWriteTime, [math]::Round($item.Length/1MB,1))
++$lines = Get-Content $LogPath
++
++Write-Output '--- ros2 bridge / core startup lines ---'
++$bridge = $lines | Select-String -Pattern 'isaacsim\.ros2\.(bridge|core)' | Where-Object { $_.Line -match 'startup|enabled|loading|Loading|error|Error|failed|Failed|rmw|RMW|fastrtps|zenoh|profile' } | Select-Object -First 40
++if ($bridge) { $bridge | ForEach-Object { "{0}: {1}" -f $_.LineNumber, $_.Line.Trim() } | Write-Output } else { Write-Output 'no bridge/core startup lines found (bridge not enabled?)' }
++
++Write-Output '--- rmw / dds mentions ---'
++$rmw = $lines | Select-String -Pattern 'RMW_IMPLEMENTATION|rmw_fastrtps|rmw_zenoh|FASTRTPS_DEFAULT_PROFILES_FILE|fastdds|Fast-?DDS|ROS_DOMAIN_ID' | Select-Object -First 20
++if ($rmw) { $rmw | ForEach-Object { "{0}: {1}" -f $_.LineNumber, $_.Line.Trim() } | Write-Output } else { Write-Output 'none' }
++
++Write-Output '--- first errors ---'
++$errs = $lines | Select-String -Pattern '\[Error\]|\[Fatal\]' | Select-Object -First 15
++Write-Output ("error/fatal lines total: {0}" -f ($lines | Select-String -Pattern '\[Error\]|\[Fatal\]').Count)
++if ($errs) { $errs | ForEach-Object { "{0}: {1}" -f $_.LineNumber, $_.Line.Trim() } | Write-Output }
++
++Write-Output '--- ros2-related warnings (first 15) ---'
++$warn = $lines | Select-String -Pattern '\[Warning\].*(ros2|ROS|rmw|dds|DDS)' | Select-Object -First 15
++if ($warn) { $warn | ForEach-Object { "{0}: {1}" -f $_.LineNumber, $_.Line.Trim() } | Write-Output } else { Write-Output 'none' }
++Write-Output '=== end ==='
+diff --git a/scripts/windows/inspect_usd.py b/scripts/windows/inspect_usd.py
+new file mode 100644
+index 0000000..90ee1f5
+--- /dev/null
++++ b/scripts/windows/inspect_usd.py
+@@ -0,0 +1,74 @@
++"""inspect_usd.py — RoboSim Eval: read-only inspection of one USD layer (robot spawn transform, OmniGraph node wiring).
++
++Run with Isaac Sim's bundled Python and its pxr package (set only for the child process), e.g. from PowerShell:
++  $ext = 'D:\\isaac-sim-standalone-6.1.0-windows-x86_64\\extscache\\omni.usd.libs-1.0.3+00c488ae.wx64.r.cp312'
++  cmd /c "set PYTHONPATH=$ext && set PATH=$ext\\bin;%PATH% && D:\\isaac-sim-standalone-6.1.0-windows-x86_64\\python.bat D:\\RoboSim-Eval\\scripts\\windows\\inspect_usd.py <file.usd> [/World/Nova_Carter_ROS]"
++The USD files themselves are downloaded to temp/ (git-ignored) with curl from the NVIDIA asset server.
++Only the given layer is read (Sdf): references/payloads are listed, not resolved, and nothing is composed. For OmniGraph
++node specs whose type concerns odometry, transforms, clock or driving, every authored input value, relationship target
++and attribute connection is printed, so the data path from the chassis prim to the published topic can be traced.
++"""
++import sys
++from pxr import Sdf
++
++path = sys.argv[1]
++robot_path = sys.argv[2] if len(sys.argv) > 2 else "/World/Nova_Carter_ROS"
++layer = Sdf.Layer.FindOrOpen(path)
++print("layer opened:", bool(layer), path)
++if not layer:
++    sys.exit(1)
++print("defaultPrim:", layer.defaultPrim or "(none)")
++root = layer.GetPrimAtPath("/World")
++print("children of /World:", [c.name for c in root.nameChildren] if root else None)
++
++
++def items(listop):
++    out = []
++    for attr in ("explicitItems", "prependedItems", "addedItems", "appendedItems"):
++        out += [str(x) for x in getattr(listop, attr, [])]
++    return out
++
++
++def dump_spec(spec, indent="   "):
++    for name, attr in sorted(spec.attributes.items()):
++        conns = items(attr.connectionPathList)
++        if attr.default is not None or conns:
++            print(f"{indent}{name} = {attr.default!r}" + (f"  <- connected from {conns}" if conns else ""))
++    for name, rel in sorted(spec.relationships.items()):
++        print(f"{indent}{name} (relationship) -> {items(rel.targetPathList)}")
++
++
++robot = layer.GetPrimAtPath(robot_path)
++if robot:
++    refs = items(robot.referenceList)
++    pays = [str(p.assetPath) for p in list(robot.payloadList.prependedItems) + list(robot.payloadList.explicitItems)]
++    print(f"{robot_path} type: {robot.typeName!r} references: {refs} payloads: {pays}")
++    dump_spec(robot)
++    print("  child specs:", [c.name for c in robot.nameChildren][:40])
++    for child in robot.nameChildren:
++        if child.name == "chassis_link":
++            print(f"  override spec {child.path} (specifier {child.specifier}):")
++            dump_spec(child, indent="     ")
++            print("     child specs:", [c.name for c in child.nameChildren][:20])
++
++KEYWORDS = ("odom", "transform", "clock", "twist", "differential", "articulation", "context", "simulationtime")
++nodes = []
++
++
++def visit(p):
++    s = layer.GetPrimAtPath(p)
++    if not s:
++        return
++    a = s.attributes.get("node:type")
++    if a is not None and a.default:
++        nodes.append((s, str(a.default)))
++
++
++layer.Traverse(Sdf.Path.absoluteRootPath, visit)
++print("omnigraph node specs in this layer:", len(nodes))
++for s, t in nodes:
++    print("  ", s.path, "->", t)
++for s, t in nodes:
++    if any(k in t.lower() for k in KEYWORDS):
++        print(f"\n== {s.path} ({t})")
++        dump_spec(s)
+diff --git a/scripts/windows/probe_env.ps1 b/scripts/windows/probe_env.ps1
+new file mode 100644
+index 0000000..14f105f
+--- /dev/null
++++ b/scripts/windows/probe_env.ps1
+@@ -0,0 +1,57 @@
++# probe_env.ps1 — RoboSim Eval D0a: read-only environment probes (Windows side).
++# Makes no changes. Prints one section per check with the command, its output and an EXIT marker.
++# Usage:
++#   powershell -ExecutionPolicy Bypass -File scripts\windows\probe_env.ps1 > artifacts\d0a\windows-probe.txt
++$ErrorActionPreference = 'Continue'
++$env:WSL_UTF8 = '1'   # make wsl.exe print UTF-8 instead of UTF-16 so captured output is readable
++$isaac = 'D:\isaac-sim-standalone-6.1.0-windows-x86_64'
++
++function Section([string]$title, [string]$cmd) {
++    Write-Output ''
++    Write-Output "===== $title ====="
++    Write-Output "CMD: $cmd"
++    $global:LASTEXITCODE = $null
++    try {
++        $out = Invoke-Expression $cmd 2>&1 | Out-String -Width 220
++        Write-Output $out.TrimEnd()
++        if ($null -ne $global:LASTEXITCODE) { Write-Output "EXIT: $global:LASTEXITCODE" } else { Write-Output 'EXIT: 0 (cmdlet)' }
++    } catch {
++        Write-Output "ERROR: $($_.Exception.Message)"
++        Write-Output 'EXIT: 1'
++    }
++}
++
++Write-Output "PROBE START: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')  host=$env:COMPUTERNAME"
++Section 'whoami' 'whoami'
++Section 'is elevated' '([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)'
++Section 'powershell version' '$PSVersionTable.PSVersion.ToString()'
++Section 'execution policy' 'Get-ExecutionPolicy -List | Format-Table -AutoSize'
++Section 'os' 'Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber, OSArchitecture, @{n="TotalMemGB";e={[math]::Round($_.TotalVisibleMemorySize/1MB,1)}}, @{n="FreeMemGB";e={[math]::Round($_.FreePhysicalMemory/1MB,1)}} | Format-List'
++Section 'nvidia-smi summary' 'nvidia-smi --query-gpu=name,driver_version,memory.total,memory.used,memory.free,utilization.gpu --format=csv'
++Section 'nvidia-smi full' 'nvidia-smi'
++Section 'drives' 'Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{n="FreeGB";e={[math]::Round($_.Free/1GB,1)}}, @{n="UsedGB";e={[math]::Round($_.Used/1GB,1)}} | Format-Table -AutoSize'
++Section 'wsl version' 'wsl --version'
++Section 'wsl distros' 'wsl --list --verbose'
++Section 'wsl invoke check' 'wsl -d Ubuntu -- bash -c "echo wsl-ok; id -un"'
++Section 'wslconfig' 'if (Test-Path "$env:USERPROFILE\.wslconfig") { Get-Content "$env:USERPROFILE\.wslconfig" } else { "no .wslconfig" }'
++Section 'isaac paths' "@('$isaac\isaac-sim.bat','$isaac\python.bat','$isaac\post_install.bat','$isaac\exts\isaacsim.ros2.core\jazzy\lib','$isaac\exts\isaacsim.ros2.core\humble\lib','$isaac\exts\isaacsim.ros2.bridge') | ForEach-Object { '{0}  {1}' -f (Test-Path `$_), `$_ }"
++Section 'isaac top-level' "Get-ChildItem '$isaac' -Force | Select-Object Mode, Name | Format-Table -AutoSize"
++Section 'post_install.bat link lines' "Select-String -Path '$isaac\post_install.bat' -Pattern 'mklink|symlink|link|extension_examples|junction' | ForEach-Object { `$_.LineNumber.ToString() + ': ' + `$_.Line }"
++Section 'extension_examples item' "Get-Item '$isaac\extension_examples' -Force -ErrorAction SilentlyContinue | Select-Object Name, LinkType, Target, Mode | Format-List"
++Section 'isaac processes' 'Get-Process | Where-Object { $_.ProcessName -match "^kit$|^omni|isaac" } | Select-Object ProcessName, Id, StartTime, @{n="WorkingSetMB";e={[math]::Round($_.WorkingSet64/1MB)}}, Path | Format-List'
++Section 'kit logs (newest 5)' 'Get-ChildItem "$env:USERPROFILE\.nvidia-omniverse\logs\Kit" -Recurse -Filter *.log -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 5 FullName, LastWriteTime, Length | Format-List'
++Section 'firewall profiles' 'Get-NetFirewallProfile | Select-Object Name, Enabled, DefaultInboundAction, DefaultOutboundAction | Format-Table -AutoSize'
++Section 'connection profiles' 'Get-NetConnectionProfile | Select-Object Name, InterfaceAlias, NetworkCategory, IPv4Connectivity | Format-Table -AutoSize'
++Section 'ipv4 addresses' 'Get-NetIPAddress -AddressFamily IPv4 | Select-Object InterfaceAlias, IPAddress, PrefixLength | Sort-Object InterfaceAlias | Format-Table -AutoSize'
++Section 'firewall rules mentioning kit or isaac' 'Get-NetFirewallApplicationFilter | Where-Object { $_.Program -match "kit|isaac" } | Get-NetFirewallRule | Select-Object DisplayName, Enabled, Direction, Action, Profile | Format-Table -AutoSize'
++Section 'process env ROS/DDS' 'Get-ChildItem Env: | Where-Object { $_.Name -match "ROS|RMW|FASTRTPS|CYCLONE|DDS" } | Format-Table -AutoSize'
++Section 'user env ROS/DDS' '[Environment]::GetEnvironmentVariables("User").GetEnumerator() | Where-Object { $_.Key -match "ROS|RMW|FASTRTPS|CYCLONE|DDS" } | Format-Table -AutoSize'
++Section 'machine env ROS/DDS' '[Environment]::GetEnvironmentVariables("Machine").GetEnumerator() | Where-Object { $_.Key -match "ROS|RMW|FASTRTPS|CYCLONE|DDS" } | Format-Table -AutoSize'
++Section 'existing fastdds xml candidates' '@("$env:USERPROFILE\.ros\fastdds.xml","C:\.ros\fastdds.xml","D:\robosim-assets\network\fastdds.xml") | ForEach-Object { "{0}  {1}" -f (Test-Path $_), $_ }'
++Section 'codex command' 'Get-Command codex | Select-Object Name, Source | Format-List'
++Section 'codex version' 'codex --version'
++Section 'codex login status' 'codex login status'
++Section 'codex exec help (head)' 'codex exec --help | Select-Object -First 80'
++Section 'git' 'git -C D:\RoboSim-Eval log --oneline -3; git -C D:\RoboSim-Eval status --short'
++Write-Output ''
++Write-Output "PROBE END: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz')"
+diff --git a/scripts/windows/run_codex_review.ps1 b/scripts/windows/run_codex_review.ps1
+new file mode 100644
+index 0000000..fffb192
+--- /dev/null
++++ b/scripts/windows/run_codex_review.ps1
+@@ -0,0 +1,29 @@
++# run_codex_review.ps1 — RoboSim Eval: run one read-only Codex review round, detached-friendly, with full logs.
++#   powershell -NoProfile -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\run_codex_review.ps1 -Round round1
++# Inputs:  <Dir>\codex-prompt-<Round>.md (UTF-8 prompt; the short command-line prompt only tells Codex to read it,
++#          which avoids Windows PowerShell 5.1 re-encoding Chinese text on the pipe).
++# Outputs: <Dir>\codex-<Round>-report.md (last agent message, via -o), -stdout.txt, -stderr.txt,
++#          -status.txt (start/end, real exit code, duration, and whether the account usage limit was hit).
++# Read-only by construction: `codex exec --sandbox read-only`; no paid options are used.
++param(
++    [string]$Round = 'round1',
++    [string]$Dir = 'D:\RoboSim-Eval\docs\review\2026-09-29-d0'
++)
++$ErrorActionPreference = 'Stop'
++$promptFile = Join-Path $Dir "codex-prompt-$Round.md"
++if (-not (Test-Path $promptFile)) { throw "prompt file not found: $promptFile" }
++$report = Join-Path $Dir "codex-$Round-report.md"
++$status = Join-Path $Dir "codex-$Round-status.txt"
++$stdout = Join-Path $Dir "codex-$Round-stdout.txt"
++$stderr = Join-Path $Dir "codex-$Round-stderr.txt"
++$prompt = "Read the file $promptFile (UTF-8, Chinese) and carry out exactly the review it describes. Do not modify any file. Write the final report in Chinese."
++
++"start $(Get-Date -Format o) round=$Round prompt_file=$promptFile" | Out-File $status -Encoding utf8
++$t0 = Get-Date
++$p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', "codex exec --sandbox read-only -C D:\RoboSim-Eval -o `"$report`" `"$prompt`"" `
++    -RedirectStandardOutput $stdout -RedirectStandardError $stderr -NoNewWindow -Wait -PassThru
++$limit = [bool](Select-String -Path $stderr -Pattern 'hit your usage limit' -Quiet)
++"end $(Get-Date -Format o) exit=$($p.ExitCode) duration_s=$([int]((Get-Date) - $t0).TotalSeconds) report_written=$(Test-Path $report) usage_limit_hit=$limit" |
++    Out-File $status -Append -Encoding utf8
++Get-Content $status
++exit $p.ExitCode
+diff --git a/scripts/windows/start_isaac_ros2.ps1 b/scripts/windows/start_isaac_ros2.ps1
+new file mode 100644
+index 0000000..bd07b9e
+--- /dev/null
++++ b/scripts/windows/start_isaac_ros2.ps1
+@@ -0,0 +1,34 @@
++# start_isaac_ros2.ps1 — RoboSim Eval: launch Isaac Sim 6.1 with the ROS 2 bridge (Jazzy, Fast DDS) for the WSL2 route.
++# Run from a NEW, normal (non-admin) PowerShell window:
++#   powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\start_isaac_ros2.ps1
++#
++# Based on the plan doc B4 block with one deviation: ROS_DISTRO is NOT preset here, because isaac-sim.bat calls
++# setup_ros_env.bat, which adds the bundled jazzy libraries to PATH and AMENT_PREFIX_PATH only when ROS_DISTRO is
++# unset (verified 2026-09-29, see docs/environment.md). RMW_IMPLEMENTATION is preset so that script's default
++# (rmw_zenoh_cpp) is not applied. Refuses to start when another Isaac (kit.exe) is already running.
++$ErrorActionPreference = 'Stop'
++$robosimIsaac = 'D:\isaac-sim-standalone-6.1.0-windows-x86_64'
++$robosimDds   = 'D:\RoboSim-Eval\configs\network\fastdds.xml'
++
++if (-not (Test-Path "$robosimIsaac\isaac-sim.bat")) { throw "Isaac launcher not found: $robosimIsaac\isaac-sim.bat" }
++if (-not (Test-Path "$robosimIsaac\setup_ros_env.bat")) { throw "setup_ros_env.bat not found in $robosimIsaac" }
++if (-not (Test-Path "$robosimIsaac\exts\isaacsim.ros2.core\jazzy\lib\rmw_fastrtps_cpp.dll")) { throw "Bundled jazzy rmw_fastrtps_cpp.dll not found under $robosimIsaac\exts\isaacsim.ros2.core\jazzy\lib" }
++if (-not (Test-Path $robosimDds)) { throw "Fast DDS profile not found: $robosimDds" }
++try { [xml](Get-Content -Raw $robosimDds) | Out-Null } catch { throw "Fast DDS profile is not well-formed XML: $robosimDds ($($_.Exception.Message))" }
++
++$running = Get-Process -Name kit -ErrorAction SilentlyContinue
++if ($running) { throw "An Isaac Sim instance (kit.exe) is already running: PID $($running.Id -join ', '). Close it normally first; two instances must not run at once." }
++if ($env:ROS_DISTRO) { Write-Warning "ROS_DISTRO is preset to '$env:ROS_DISTRO' in this shell; setup_ros_env.bat will skip the bundled-library setup." }
++
++$env:RMW_IMPLEMENTATION = 'rmw_fastrtps_cpp'
++$env:ROS_DOMAIN_ID = '0'
++$env:FASTRTPS_DEFAULT_PROFILES_FILE = $robosimDds
++if (Test-Path Env:ROS_LOCALHOST_ONLY) { Remove-Item Env:ROS_LOCALHOST_ONLY }
++
++Write-Output "RMW_IMPLEMENTATION=$env:RMW_IMPLEMENTATION ROS_DOMAIN_ID=$env:ROS_DOMAIN_ID"
++Write-Output "FASTRTPS_DEFAULT_PROFILES_FILE=$env:FASTRTPS_DEFAULT_PROFILES_FILE"
++Write-Output "Starting Isaac Sim with the ROS 2 bridge at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') (this window stays open while Isaac runs)"
++& "$robosimIsaac\isaac-sim.bat" --/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge
++$rc = $LASTEXITCODE
++Write-Output "isaac-sim.bat exited with code $rc at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
++exit $rc
+diff --git a/scripts/wsl/analyze_attempt.py b/scripts/wsl/analyze_attempt.py
+new file mode 100644
+index 0000000..32a4b40
+--- /dev/null
++++ b/scripts/wsl/analyze_attempt.py
+@@ -0,0 +1,440 @@
++#!/usr/bin/env python3
++"""analyze_attempt.py — RoboSim Eval D0d: turn one navigation attempt's raw records into result.json + trajectory.csv.
++
++Usage (inside WSL with the ROS environment sourced; see analyze_attempt.sh):
++  python3 analyze_attempt.py <attempt_dir> --goal X Y YAW [--spawn X Y YAW] [--tolerance 0.5] [--stop-lin 0.05]
++                             [--stop-ang 0.1] [--stop-hold 1.0] [--max-stop-gap 0.25] [--dropout 2.0]
++Inputs in <attempt_dir>: rosbag/ (record_d0.sh + stop_record.sh), goal-*.txt (send_goal.sh transcript, optional).
++Exit: 0 validation pass; 10 fail; 11 inconclusive; 2 bad arguments / --goal differs from the goal actually sent;
++      1 the recording could not be read.
++
++Result contract (plan doc A5): execution_status completed|error|interrupted; task_outcome reached|canceled|unknown (this
++tool never emits unreachable or timeout: aborted/rejected goals are "unknown" with the raw Nav2 status kept; timeouts are
++D3 scope); safety_status is always "unknown" in D0 (contact not measured); data_status complete|incomplete;
++validation_status pass|fail|inconclusive for the D0 expectation "reach the goal and come to rest".
++
++Target goal: the goal id printed by the CLI action client (goal-*.txt); without a transcript, the first goal id that
++becomes ACCEPTED/EXECUTING inside the bag. Status and feedback of any other goal id (e.g. a finished goal that is still
++listed in the transient-local status array) are ignored. --goal must equal the pose recorded in the transcript's
++"send_goal start" line; without a transcript the goal is operator-entered and the attempt is at best "inconclusive".
++
++Position sources (every reported pose carries frame, source and sim stamp):
++  nav2_feedback_map          NavigateToPose feedback current_pose of the target goal (map frame; AMCL-based estimate)
++  tf_map_base_link           /tf map->odom (AMCL) (+) odom->base_link (Isaac odometry) (map frame; estimate)
++  sim_state_odom_plus_spawn  (with --spawn) ideal odometry /chassis/odom (+) USD spawn pose; independent of AMCL, valid
++                             only under PRECONDITIONS below
++Arrival is evaluated at a defined event: the stop-confirmation instant, else the terminal status, else the recording end.
++"""
++import argparse, csv, glob, json, math, os, re
++
++STATUS_NAMES = {0: "UNKNOWN", 1: "ACCEPTED", 2: "EXECUTING", 3: "CANCELING", 4: "SUCCEEDED", 5: "CANCELED", 6: "ABORTED"}
++PRECONDITIONS = [
++    "/chassis/odom is ideal odometry: isaacsim.core.nodes.IsaacComputeOdometry computes it from the simulated chassis "
++    "state (its only input is the chassis prim; no wheel or noise model), expressed relative to the pose where it "
++    "started (evidence: artifacts/d0d/run-01/usd-inspection.txt; odom ~0 right after Play).",
++    "The odometry started at the spawn: the simulation was (re)started with Play from the authored stage and was not "
++    "stopped/reset between that Play and the end of this recording.",
++    "The USD-authored root pose of /World/Nova_Carter_ROS equals the chassis (base_link) pose at Play start "
++    "(authored layer values; the composed stage was not inspected).",
++    "The Isaac world frame equals the Nav2 map frame (supported by the map yaml origin and by the amcl initial_pose in "
++    "the pinned params being equal to the USD spawn).",
++]
++
++
++class GoalMismatch(Exception):
++    """--goal differs from the goal recorded in the send_goal transcript."""
++
++
++def yaw_of(q):
++    return math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
++
++
++def wrap(a):
++    return math.atan2(math.sin(a), math.cos(a))
++
++
++def pose_compose(a, b):
++    """(x, y, yaw) a (+) b."""
++    c, s = math.cos(a[2]), math.sin(a[2])
++    return (a[0] + c * b[0] - s * b[1], a[1] + s * b[0] + c * b[1], wrap(a[2] + b[2]))
++
++
++def last_at_or_before(seq, t_ns):
++    """seq sorted by receive time in element 0; the last element with t <= t_ns (None if there is none)."""
++    best = None
++    for e in seq:
++        if e[0] <= t_ns:
++            best = e
++        else:
++            break
++    return best
++
++
++def read_bag(bagdir):
++    """Read the topics the evaluation needs. Tuples (element 0 is always the receive time in ns):
++    clock (t, sim) | odom (t, stamp, frame, child, x, y, yaw, |v|, |w|) | cmd_vel (t, v, w) | status (t, uuid, code) |
++    feedback (t, uuid, stamp, frame, x, y, yaw, dist_remaining, nav_time, recoveries) | tf_* (t, stamp, x, y, yaw)."""
++    from rosbag2_py import SequentialReader, StorageOptions, ConverterOptions  # ROS-only imports stay lazy for tests
++    from rclpy.serialization import deserialize_message
++    from rosidl_runtime_py.utilities import get_message
++    reader = SequentialReader()
++    reader.open(StorageOptions(uri=bagdir, storage_id=""), ConverterOptions("", ""))
++    types = {t.name: t.type for t in reader.get_all_topics_and_types()}
++    out = {"clock": [], "odom": [], "cmd_vel": [], "status": [], "feedback": [], "tf_map_odom": [], "tf_odom_base": []}
++    stamp = lambda h: h.stamp.sec + h.stamp.nanosec / 1e9
++    while reader.has_next():
++        topic, data, t_ns = reader.read_next()
++        msg = deserialize_message(data, get_message(types[topic]))
++        if topic == "/clock":
++            out["clock"].append((t_ns, msg.clock.sec + msg.clock.nanosec / 1e9))
++        elif topic == "/chassis/odom":
++            p, o, tw = msg.pose.pose.position, msg.pose.pose.orientation, msg.twist.twist
++            out["odom"].append((t_ns, stamp(msg.header), msg.header.frame_id, msg.child_frame_id, p.x, p.y, yaw_of(o),
++                                math.hypot(tw.linear.x, tw.linear.y), abs(tw.angular.z)))
++        elif topic == "/cmd_vel":
++            out["cmd_vel"].append((t_ns, msg.linear.x, msg.angular.z))
++        elif topic == "/navigate_to_pose/_action/status":
++            for s in msg.status_list:
++                out["status"].append((t_ns, bytes(s.goal_info.goal_id.uuid).hex(), s.status))
++        elif topic == "/navigate_to_pose/_action/feedback":
++            fb = msg.feedback
++            p, o = fb.current_pose.pose.position, fb.current_pose.pose.orientation
++            out["feedback"].append((t_ns, bytes(msg.goal_id.uuid).hex(), stamp(fb.current_pose.header),
++                                    fb.current_pose.header.frame_id, p.x, p.y, yaw_of(o), fb.distance_remaining,
++                                    fb.navigation_time.sec + fb.navigation_time.nanosec / 1e9, fb.number_of_recoveries))
++        elif topic == "/tf":
++            for tr in msg.transforms:
++                key, tt = (tr.header.frame_id, tr.child_frame_id), tr.transform
++                rec = (t_ns, stamp(tr.header), tt.translation.x, tt.translation.y, yaw_of(tt.rotation))
++                if key == ("map", "odom"):
++                    out["tf_map_odom"].append(rec)
++                elif key == ("odom", "base_link"):
++                    out["tf_odom_base"].append(rec)
++    return out
++
++
++def compose_map_base(map_odom, odom_base):
++    """map->base_link = latest map->odom (+) each odom->base_link sample; returns (t_ns, stamp, x, y, yaw)."""
++    res, j = [], 0
++    if not map_odom:
++        return res
++    for t_ns, st, x, y, yaw in odom_base:
++        while j + 1 < len(map_odom) and map_odom[j + 1][0] <= t_ns:
++            j += 1
++        _, _, mx, my, myaw = map_odom[j]
++        res.append((t_ns, st, *pose_compose((mx, my, myaw), (x, y, yaw))))
++    return res
++
++
++def parse_goal_transcript(att):
++    """Parse the newest goal-*.txt written by send_goal.sh (the sent goal, goal id, result, errors)."""
++    files = sorted(glob.glob(os.path.join(att, "goal-*.txt")))
++    info = {"transcript": None, "transcripts_found": len(files), "sent_goal": None, "goal_id": None, "accepted_wall": None,
++            "result_wall": None, "status_text": None, "rejected": False, "error_code": None, "error_msg": None,
++            "client_exit": None}
++    if not files:
++        return info
++    info["transcript"] = os.path.basename(files[-1])
++    for line in open(files[-1], encoding="utf-8", errors="replace"):
++        line = line.rstrip("\n")
++        m = re.search(r"send_goal start .*?\bx=(\S+) y=(\S+) yaw=(\S+)", line)
++        if m:
++            info["sent_goal"] = [float(m.group(1)), float(m.group(2)), float(m.group(3))]
++            continue
++        m = re.search(r"send_goal end .*?action_client_exit=(\d+)", line)
++        if m:
++            info["client_exit"] = int(m.group(1))
++            continue
++        m = re.match(r"(\S+) (.*)", line)
++        if not m:
++            continue
++        wall, rest = m.groups()
++        body = rest.strip()
++        if "Goal accepted with ID" in rest:
++            info["accepted_wall"] = wall
++            info["goal_id"] = rest.split()[-1].lower().replace("-", "")
++        elif "Goal was rejected" in rest:
++            info["rejected"], info["status_text"], info["result_wall"] = True, "REJECTED", wall
++        elif body.startswith("error_code:"):
++            info["error_code"] = int(body.split(":", 1)[1])
++        elif body.startswith("error_msg:"):
++            info["error_msg"] = body.split(":", 1)[1].strip().strip("'\"")
++        elif "Goal finished with status" in rest:
++            info["result_wall"], info["status_text"] = wall, rest.split(":")[-1].strip()
++    return info
++
++
++def stop_still(odom, t_end_ns, lin, ang, hold, max_gap):
++    """Stop-still on the odom twist after the terminal status: |v| < lin and |w| < ang continuously for `hold` s of sim
++    time; a sample gap larger than max_gap (sim s) or a backwards stamp restarts the window. States: confirmed; not_still
++    (at least 2*hold s of gap-free data and never at rest for hold s); not_observed (too little or gappy data)."""
++    res = {"state": "not_observed", "confirmed_at_sim": None, "confirmed_at_t_ns": None, "observed_after_end_sim_s": 0.0,
++           "max_gap_after_end_sim_s": None, "max_lin_after_end": None, "max_ang_after_end": None, "samples_after_end": 0}
++    if t_end_ns is None:
++        return res
++    after = [o for o in odom if o[0] >= t_end_ns]
++    res["samples_after_end"] = len(after)
++    if not after:
++        return res
++    res["observed_after_end_sim_s"] = after[-1][1] - after[0][1]
++    res["max_lin_after_end"] = max(o[7] for o in after)
++    res["max_ang_after_end"] = max(o[8] for o in after)
++    gaps = [b[1] - a[1] for a, b in zip(after, after[1:])]
++    res["max_gap_after_end_sim_s"] = max(gaps) if gaps else None
++    start, prev = None, None
++    for o in after:
++        if prev is not None and (o[1] - prev[1] > max_gap or o[1] < prev[1]):
++            start = None
++        if o[7] < lin and o[8] < ang:
++            start = start or o
++            if o[1] - start[1] >= hold:
++                res.update(state="confirmed", confirmed_at_sim=o[1], confirmed_at_t_ns=o[0])
++                return res
++        else:
++            start = None
++        prev = o
++    if res["observed_after_end_sim_s"] >= 2 * hold and (not gaps or max(gaps) <= max_gap):
++        res["state"] = "not_still"
++    return res
++
++
++def stream_integrity(seq, lo, hi, stamp_index=1):
++    """Largest receive-time gap (s) inside [lo, hi] including the edges, and the number of backwards stamps."""
++    times = [e[0] for e in seq if lo <= e[0] <= hi]
++    pts = [lo] + times + [hi]
++    max_gap = max((b - a) for a, b in zip(pts, pts[1:])) / 1e9 if hi > lo else 0.0
++    stamps = [e[stamp_index] for e in seq]
++    backwards = sum(1 for a, b in zip(stamps, stamps[1:]) if b < a)
++    return {"count": len(seq), "count_in_window": len(times), "max_wall_gap_s": round(max_gap, 3), "backward_stamps": backwards}
++
++
++def _pose(e, xi, yi, yawi, si, frame, goal=None):
++    if e is None:
++        return None
++    d = {"frame": frame, "x": e[xi], "y": e[yi], "yaw": e[yawi], "sim_stamp_s": e[si], "recv_wall_ns": e[0]}
++    if goal is not None:
++        d["error_to_goal_m"] = math.hypot(e[xi] - goal[0], e[yi] - goal[1])
++    return d
++
++
++def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0.1, stop_hold=1.0, max_stop_gap=0.25,
++             dropout=2.0):
++    """Pure evaluation of one attempt; returns (result dict, trajectory rows). Raises GoalMismatch."""
++    gx, gy, gyaw = goal
++    fail_reasons, inconclusive = [], []
++
++    if tr.get("sent_goal") is not None:
++        sx, sy, syaw = tr["sent_goal"]
++        if abs(sx - gx) > 1e-6 or abs(sy - gy) > 1e-6 or abs(wrap(syaw - gyaw)) > 1e-6:
++            raise GoalMismatch(f"--goal {list(goal)} differs from the goal sent in {tr.get('transcript')}: {tr['sent_goal']}")
++        goal_source, goal_verified = f"goal sent by the CLI action client (transcript {tr.get('transcript')})", True
++    else:
++        goal_source, goal_verified = "operator-entered --goal (no goal transcript; not verified against the goal actually sent)", False
++        inconclusive.append("goal not verified against a send_goal transcript")
++
++    statuses = sorted(bag["status"])
++    target, target_src = tr.get("goal_id"), "transcript"
++    if not target:
++        target_src = "first goal id that became ACCEPTED/EXECUTING in the recording"
++        target = next((u for _, u, s in statuses if s in (1, 2)), None)
++    st = [e for e in statuses if target and e[1] == target]
++    other_ids = sorted({u for _, u, _ in statuses if u != target})
++    fb = [f for f in bag["feedback"] if target and f[1] == target]
++    t_accept = next((t for t, _, s in st if s in (1, 2)), None)
++    term = next(((t, s) for t, _, s in st if s in (4, 5, 6)), None)
++    t_end, raw_status = term if term else (None, None)
++    if t_accept is None and st:
++        t_accept = st[0][0]
++        inconclusive.append("the target goal's ACCEPTED/EXECUTING status was not recorded")
++    rejected = bool(tr.get("rejected"))
++
++    if t_end is not None or rejected:
++        execution_status = "completed"
++    elif t_accept is not None:
++        execution_status = "interrupted"
++        inconclusive.append("goal accepted but no terminal status before the recording ended")
++    else:
++        execution_status = "error"
++        inconclusive.append("target goal not observed in the recording")
++
++    odom = bag["odom"]
++    stop = stop_still(odom, t_end, stop_lin, stop_ang, stop_hold, max_stop_gap)
++    if stop["state"] == "confirmed":
++        t_arr, arr_event = stop["confirmed_at_t_ns"], "stop_confirmed"
++    elif t_end is not None:
++        t_arr, arr_event = t_end, "terminal_status"
++    else:
++        t_arr, arr_event = (odom[-1][0] if odom else None), "recording_end"
++    t_last = max((seq[-1][0] for seq in bag.values() if seq), default=None)
++
++    tf_mb = compose_map_base(bag["tf_map_odom"], bag["tf_odom_base"])
++    sim_traj = [(o[0], o[1], *pose_compose(tuple(spawn), (o[4], o[5], o[6]))) for o in odom] if spawn else []
++    at = lambda seq, t: last_at_or_before(seq, t) if (seq and t is not None) else None
++    positions = {
++        "nav2_feedback_map": {"source": "Nav2 feedback current_pose of the target goal (map frame; AMCL-based estimate)",
++                              "at_arrival": _pose(at(fb, t_arr), 4, 5, 6, 2, "map", goal),
++                              "at_recording_end": _pose(fb[-1] if fb else None, 4, 5, 6, 2, "map", goal)},
++        "tf_map_base_link": {"source": "/tf map->odom (AMCL) (+) odom->base_link (Isaac odometry); map frame; estimate",
++                             "at_arrival": _pose(at(tf_mb, t_arr), 2, 3, 4, 1, "map", goal),
++                             "at_recording_end": _pose(tf_mb[-1] if tf_mb else None, 2, 3, 4, 1, "map", goal)},
++        "odom": {"source": "ideal odometry /chassis/odom (IsaacComputeOdometry; odom frame = pose at Play start)",
++                 "at_arrival": _pose(at(odom, t_arr), 4, 5, 6, 1, "odom"),
++                 "at_recording_end": _pose(odom[-1] if odom else None, 4, 5, 6, 1, "odom")},
++    }
++    if spawn:
++        positions["sim_state_odom_plus_spawn"] = {
++            "source": f"ideal odometry /chassis/odom (+) USD spawn {list(spawn)}; independent of AMCL; see preconditions",
++            "at_arrival": _pose(at(sim_traj, t_arr), 2, 3, 4, 1, "map", goal),
++            "at_recording_end": _pose(sim_traj[-1] if sim_traj else None, 2, 3, 4, 1, "map", goal)}
++        arr_src = "sim_state_odom_plus_spawn"
++    else:
++        arr_src = "nav2_feedback_map"
++        inconclusive.append("no AMCL-independent position source (--spawn not given); the Nav2 estimate is not an independent check")
++    arr = positions[arr_src]["at_arrival"]
++    arr_err = arr["error_to_goal_m"] if arr else None
++
++    lo = t_accept if t_accept is not None else (odom[0][0] if odom else 0)
++    hi = t_arr if t_arr is not None else (t_last or lo)
++    integrity = {name: stream_integrity(bag[name], lo, hi) for name in ("clock", "odom", "tf_odom_base", "tf_map_odom")}
++    integrity["feedback_target_goal"] = {"count": len(fb)}
++    problems = [f"{n}: no messages" for n, v in integrity.items() if v["count"] == 0]
++    problems += [f"{n}: gap of {v['max_wall_gap_s']} s wall > {dropout} s" for n, v in integrity.items()
++                 if "max_wall_gap_s" in v and v["max_wall_gap_s"] > dropout]
++    problems += [f"{n}: {v['backward_stamps']} backwards stamps" for n, v in integrity.items() if v.get("backward_stamps")]
++    data_complete = not problems
++    if not data_complete:
++        inconclusive.append("data incomplete: " + "; ".join(problems))
++    if raw_status == 4 and stop["state"] == "not_observed":
++        inconclusive.append("stop-still could not be observed after the result (recording too short or gappy)")
++
++    if rejected:
++        task_outcome = "unknown"
++        fail_reasons.append("goal rejected by the action server")
++    elif raw_status == 4:
++        task_outcome = "reached" if (stop["state"] == "confirmed" and arr_err is not None and arr_err <= tolerance) else "unknown"
++        if stop["state"] == "not_still":
++            fail_reasons.append("Nav2 reported SUCCEEDED but the robot did not come to rest")
++        if arr_err is not None and arr_err > tolerance:
++            fail_reasons.append(f"position error {arr_err:.3f} m > tolerance {tolerance} m ({arr_src})")
++    elif raw_status == 5:
++        task_outcome = "canceled"
++        fail_reasons.append("goal canceled")
++    else:
++        task_outcome = "unknown"
++        if raw_status == 6:
++            fail_reasons.append("Nav2 terminal status ABORTED (kept as unknown, not interpreted as unreachable)")
++
++    if fail_reasons:
++        validation = "fail"
++    elif task_outcome == "reached" and not inconclusive:
++        validation = "pass"
++    else:
++        validation = "inconclusive"
++
++    clock = bag["clock"]
++    sim_at = lambda t: (last_at_or_before(clock, t) or (None, None))[1] if (clock and t is not None) else None
++    fb_last = fb[-1] if fb else None
++    crosscheck = None
++    if spawn:
++        crosscheck = {}
++        for label, t in (("at_goal_accept", t_accept), ("at_terminal_status", t_end), ("at_arrival_check", t_arr)):
++            s, m = at(sim_traj, t), at(tf_mb, t)
++            if s is None:
++                continue
++            crosscheck[label] = {"sim_state_xy": [round(s[2], 4), round(s[3], 4)],
++                                 "amcl_estimate_xy": [round(m[2], 4), round(m[3], 4)] if m else None,
++                                 "amcl_minus_sim_state_m": round(math.hypot(m[2] - s[2], m[3] - s[3]), 4) if m else None}
++        mo = bag["tf_map_odom"]
++        crosscheck["map_to_odom_first"] = [round(v, 4) for v in mo[0][2:]] if mo else None
++        crosscheck["map_to_odom_last"] = [round(v, 4) for v in mo[-1][2:]] if mo else None
++        crosscheck["map_to_odom_implied_by_spawn"] = [round(v, 4) for v in spawn]
++
++    result = {
++        "schema": "robosim-eval attempt result, D0 (plan doc A5)",
++        "goal": {"frame": "map", "x": gx, "y": gy, "yaw": gyaw, "source": goal_source, "verified_against_transcript": goal_verified,
++                 "position_tolerance_m": tolerance, "orientation_assessed": False},
++        "target_goal": {"id": target, "id_source": target_src, "other_goal_ids_in_recording": other_ids},
++        "execution_status": execution_status,
++        "task_outcome": task_outcome,
++        "safety_status": "unknown",
++        "data_status": "complete" if data_complete else "incomplete",
++        "validation_status": validation,
++        "verdict_reasons": {"fail": fail_reasons, "inconclusive": inconclusive},
++        "arrival_check": {"source": arr_src, "event": arr_event, "sim_time_s": arr["sim_stamp_s"] if arr else None,
++                          "error_to_goal_m": arr_err, "tolerance_m": tolerance},
++        "nav2_raw": {"terminal_status_code": raw_status, "terminal_status_name": STATUS_NAMES.get(raw_status, "none"),
++                     "rejected": rejected, "status_text_from_client": tr.get("status_text"), "error_code": tr.get("error_code"),
++                     "error_msg": tr.get("error_msg"), "client_exit": tr.get("client_exit"), "transcript": tr.get("transcript"),
++                     "recoveries": fb_last[9] if fb_last else None,
++                     "distance_remaining_last_feedback_m": fb_last[7] if fb_last else None},
++        "timing": {"accepted_wall": tr.get("accepted_wall"), "result_wall": tr.get("result_wall"),
++                   "accept_to_result_wall_s": (t_end - t_accept) / 1e9 if (t_accept is not None and t_end is not None) else None,
++                   "sim_time_at_accept_s": sim_at(t_accept), "sim_time_at_result_s": sim_at(t_end),
++                   "accept_to_result_sim_s": (sim_at(t_end) - sim_at(t_accept)) if (sim_at(t_accept) is not None and sim_at(t_end) is not None) else None},
++        "positions": positions,
++        "position_source_crosscheck": crosscheck,
++        "stop_still": {"rule": f"|v|<{stop_lin} m/s and |w|<{stop_ang} rad/s for {stop_hold} s sim time after the terminal "
++                               f"status (/chassis/odom twist; window restarts on gaps > {max_stop_gap} s)", **stop},
++        "data_integrity": {"window": "goal accept .. arrival check (receive time)", "dropout_threshold_wall_s": dropout, **integrity},
++        "message_counts": {k: len(v) for k, v in bag.items()},
++        "preconditions_for_sim_state_source": PRECONDITIONS if spawn else None,
++        "notes": [
++            "safety_status is unknown: contact/collision was not measured in D0 (D3).",
++            "task_outcome never uses 'unreachable' or 'timeout' here; rejected/aborted goals stay 'unknown' with the raw status.",
++            "The sim-state source is derived from Isaac odometry plus the USD spawn; it is not a separate ground-truth topic.",
++        ],
++    }
++
++    rows = [["recv_wall_ns", "sim_stamp_s", "frame_id", "source", "x", "y", "yaw", "lin_speed", "ang_speed"]]
++    for o in odom:
++        rows.append([o[0], f"{o[1]:.3f}", o[2], "ideal odometry /chassis/odom (IsaacComputeOdometry, relative to Play start)",
++                     f"{o[4]:.4f}", f"{o[5]:.4f}", f"{o[6]:.4f}", f"{o[7]:.4f}", f"{o[8]:.4f}"])
++    for s in sim_traj:
++        rows.append([s[0], f"{s[1]:.3f}", "map", "sim_state_odom_plus_spawn (independent of AMCL)", f"{s[2]:.4f}", f"{s[3]:.4f}", f"{s[4]:.4f}", "", ""])
++    for r in tf_mb:
++        rows.append([r[0], f"{r[1]:.3f}", "map", "tf map->odom (AMCL) + odom->base_link (estimate)", f"{r[2]:.4f}", f"{r[3]:.4f}", f"{r[4]:.4f}", "", ""])
++    for f in fb:
++        rows.append([f[0], f"{f[2]:.3f}", f[3], "nav2_feedback of the target goal (map, AMCL-based estimate)", f"{f[4]:.4f}", f"{f[5]:.4f}", f"{f[6]:.4f}", "", ""])
++    return result, rows
++
++
++def main(argv=None):
++    ap = argparse.ArgumentParser()
++    ap.add_argument("attempt_dir")
++    ap.add_argument("--goal", nargs=3, type=float, required=True, metavar=("X", "Y", "YAW"))
++    ap.add_argument("--spawn", nargs=3, type=float, metavar=("X", "Y", "YAW"),
++                    help="USD-authored spawn pose in the map frame; enables the AMCL-independent position source")
++    ap.add_argument("--tolerance", type=float, default=0.5)
++    ap.add_argument("--stop-lin", type=float, default=0.05)
++    ap.add_argument("--stop-ang", type=float, default=0.1)
++    ap.add_argument("--stop-hold", type=float, default=1.0)
++    ap.add_argument("--max-stop-gap", type=float, default=0.25)
++    ap.add_argument("--dropout", type=float, default=2.0)
++    a = ap.parse_args(argv)
++    att = a.attempt_dir
++    try:
++        bag = read_bag(os.path.join(att, "rosbag"))
++    except Exception as e:  # the recording itself is unusable: report, do not guess
++        print(f"ERROR: cannot read {os.path.join(att, 'rosbag')}: {type(e).__name__}: {e}")
++        return 1
++    tr = parse_goal_transcript(att)
++    try:
++        result, rows = evaluate(bag, tr, tuple(a.goal), tuple(a.spawn) if a.spawn else None, a.tolerance, a.stop_lin,
++                                a.stop_ang, a.stop_hold, a.max_stop_gap, a.dropout)
++    except GoalMismatch as e:
++        print(f"ERROR: {e}")
++        return 2
++    result["attempt_dir"] = att
++    with open(os.path.join(att, "result.json"), "w", encoding="utf-8") as f:
++        json.dump(result, f, indent=2, ensure_ascii=False)
++    with open(os.path.join(att, "trajectory.csv"), "w", newline="", encoding="utf-8") as f:
++        csv.writer(f).writerows(rows)
++    keys = ("execution_status", "task_outcome", "safety_status", "data_status", "validation_status", "verdict_reasons",
++            "arrival_check", "nav2_raw", "timing", "stop_still", "position_source_crosscheck")
++    print(json.dumps({k: result[k] for k in keys}, indent=2, ensure_ascii=False))
++    print("written", os.path.join(att, "result.json"), "and trajectory.csv")
++    return {"pass": 0, "fail": 10, "inconclusive": 11}[result["validation_status"]]
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/scripts/wsl/analyze_attempt.sh b/scripts/wsl/analyze_attempt.sh
+new file mode 100644
+index 0000000..a8d322d
+--- /dev/null
++++ b/scripts/wsl/analyze_attempt.sh
+@@ -0,0 +1,9 @@
++#!/usr/bin/env bash
++# analyze_attempt.sh — RoboSim Eval D0d: run analyze_attempt.py inside the ROS environment (rosbag2_py, rclpy).
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/analyze_attempt.sh <attempt_dir> --goal X Y YAW [options]
++set -uo pipefail
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
++set -u
++exec python3 /mnt/d/RoboSim-Eval/scripts/wsl/analyze_attempt.py "$@"
+diff --git a/scripts/wsl/check_nav2_ready.sh b/scripts/wsl/check_nav2_ready.sh
+new file mode 100644
+index 0000000..9906888
+--- /dev/null
++++ b/scripts/wsl/check_nav2_ready.sh
+@@ -0,0 +1,58 @@
++#!/usr/bin/env bash
++# check_nav2_ready.sh — RoboSim Eval D0d: readiness evidence and verdict for the Nav2 stack (plan doc B6 steps 1-2).
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_nav2_ready.sh <run_dir>
++# Everything is time-bounded and read-only. Writes <run_dir>/ready-<timestamp>.txt (the full output) and prints it.
++# Part A (before initial pose): lifecycle states, /scan rate, /map (transient_local), use_sim_time params, action list,
++#   odom->base_link TF, /clock rate. Part B (informational): map->odom->base_link TF and /amcl_pose, only meaningful once
++#   AMCL is localized.
++# Verdict (exit status): 0 ready = every listed lifecycle node reports "active", /navigate_to_pose is offered, /map was
++#   received, /scan and /clock have a measured rate; 1 not ready (the failed items are listed at the end); 2 environment
++#   or output-file problem.
++set -uo pipefail
++RUN_DIR="${1:?run dir required}"
++mkdir -p "$RUN_DIR" || exit 2
++OUT="$RUN_DIR/ready-$(date +%H%M%S).txt"
++: > "$OUT" || { echo "cannot write $OUT"; exit 2; }
++exec > >(tee -a "$OUT") 2>&1
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
++set -u
++NOT_READY=()
++run() { local title="$1"; shift; echo; echo "===== $title ====="; echo "CMD: $*"; LAST=$("$@" 2>&1); LAST_RC=$?; echo "$LAST"; echo "EXIT: $LAST_RC"; }
++
++echo "=== check_nav2_ready.sh $(date -Is) run_dir=$RUN_DIR ==="
++run "node list" timeout 15 ros2 node list
++for n in map_server amcl planner_server controller_server bt_navigator behavior_server smoother_server velocity_smoother collision_monitor waypoint_follower; do
++  run "lifecycle $n" timeout 6 ros2 lifecycle get "/$n"
++  [[ "$LAST" == active* ]] || NOT_READY+=("lifecycle /$n: ${LAST:-no answer}")
++done
++run "/scan hz (8 s)" timeout 8 ros2 topic hz /scan --window 20
++grep -q 'average rate' <<<"$LAST" || NOT_READY+=("/scan: no measured rate")
++run "/scan info" timeout 10 ros2 topic info -v /scan
++run "/front_2d_lidar/scan hz (5 s, expected absent)" timeout 5 ros2 topic hz /front_2d_lidar/scan --window 5
++run "/map once (transient_local)" timeout 15 ros2 topic echo --once --no-arr --qos-durability transient_local --qos-reliability reliable /map
++[[ $LAST_RC -eq 0 ]] || NOT_READY+=("/map: not received (exit $LAST_RC)")
++run "param use_sim_time amcl" timeout 6 ros2 param get /amcl use_sim_time
++run "param use_sim_time controller_server" timeout 6 ros2 param get /controller_server use_sim_time
++run "param amcl set_initial_pose" timeout 6 ros2 param get /amcl set_initial_pose
++run "param amcl initial_pose.x/y/yaw" bash -c 'for k in initial_pose.x initial_pose.y initial_pose.yaw; do timeout 6 ros2 param get /amcl $k; done'
++run "action list -t" timeout 15 ros2 action list -t
++grep -q '^/navigate_to_pose \[nav2_msgs/action/NavigateToPose\]' <<<"$LAST" || NOT_READY+=("/navigate_to_pose [nav2_msgs/action/NavigateToPose] not offered")
++run "/cmd_vel info" timeout 10 ros2 topic info -v /cmd_vel
++run "tf odom -> base_link (4 s)" timeout 4 ros2 run tf2_ros tf2_echo odom base_link
++run "tf map -> odom (6 s)" timeout 6 ros2 run tf2_ros tf2_echo map odom
++run "tf map -> base_link (6 s)" timeout 6 ros2 run tf2_ros tf2_echo map base_link
++run "/amcl_pose once (8 s)" timeout 8 ros2 topic echo --once --no-arr /amcl_pose
++run "/clock hz (5 s)" timeout 5 ros2 topic hz /clock --window 20
++grep -q 'average rate' <<<"$LAST" || NOT_READY+=("/clock: no measured rate (simulation not playing?)")
++echo
++if [[ ${#NOT_READY[@]} -eq 0 ]]; then
++  echo "=== verdict: READY ($(date -Is)) ==="; RC=0
++else
++  echo "=== verdict: NOT READY ($(date -Is)) ==="; printf '  - %s\n' "${NOT_READY[@]}"; RC=1
++fi
++echo "written $OUT"
++exit $RC
+diff --git a/scripts/wsl/check_ros_install.sh b/scripts/wsl/check_ros_install.sh
+new file mode 100644
+index 0000000..a317db0
+--- /dev/null
++++ b/scripts/wsl/check_ros_install.sh
+@@ -0,0 +1,42 @@
++#!/usr/bin/env bash
++# check_ros_install.sh — RoboSim Eval D0b: verify the ROS 2 Jazzy installation in WSL (read-only, no sudo).
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_ros_install.sh
++# Exit code is non-zero when any required executable or package is missing.
++set -uo pipefail
++rc=0
++fail() { echo "FAIL: $*"; rc=1; }
++
++echo "=== check_ros_install.sh $(date -Is) ==="
++set +u
++# shellcheck disable=SC1091
++if ! source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only; then echo "FAIL: ros_env.sh --base-only"; exit 1; fi
++set -u
++
++echo "--- executables ---"
++for exe in ros2 rviz2 colcon rosdep python3; do
++  p=$(command -v "$exe" || true)
++  if [[ -n "$p" ]]; then echo "ok   $exe -> $p"; else fail "$exe not on PATH"; fi
++done
++
++echo "--- packages (dpkg) ---"
++PKGS=(ros-dev-tools ros-jazzy-desktop ros-jazzy-navigation2 ros-jazzy-nav2-bringup ros-jazzy-nav2-simple-commander ros-jazzy-nav2-rviz-plugins ros-jazzy-pointcloud-to-laserscan ros-jazzy-rmw-fastrtps-cpp ros-jazzy-joint-state-publisher ros-jazzy-robot-state-publisher ros-jazzy-xacro ros-jazzy-ament-flake8 ros-jazzy-ament-pep257 ros-jazzy-demo-nodes-cpp python3-numpy python3-pil python3-pytest python3-yaml)
++for p in "${PKGS[@]}"; do
++  st=$(dpkg-query -W -f='${Status}|${Version}' "$p" 2>/dev/null || true)
++  if [[ "$st" == install\ ok\ installed* ]]; then echo "ok   $p ${st#*|}"; else fail "$p: ${st:-not installed}"; fi
++done
++
++echo "--- ros2 package index ---"
++for p in demo_nodes_cpp nav2_bringup pointcloud_to_laserscan rmw_fastrtps_cpp rviz2 nav2_msgs xacro; do
++  if pre=$(ros2 pkg prefix "$p" 2>/dev/null); then echo "ok   $p -> $pre"; else fail "ros2 pkg prefix $p"; fi
++done
++
++echo "--- rosdep ---"
++if [[ -f /etc/ros/rosdep/sources.list.d/20-default.list ]]; then echo "ok   rosdep initialized"; else fail "rosdep not initialized"; fi
++if ls ~/.ros/rosdep/sources.cache/*.pickle >/dev/null 2>&1; then echo "ok   rosdep cache present"; else fail "rosdep cache missing (run: rosdep update)"; fi
++
++echo "--- rmw ---"
++echo "RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION ROS_DOMAIN_ID=$ROS_DOMAIN_ID ROS_DISTRO=$ROS_DISTRO"
++if [[ -f /opt/ros/jazzy/lib/librmw_fastrtps_cpp.so ]]; then echo "ok   librmw_fastrtps_cpp.so present"; else fail "librmw_fastrtps_cpp.so missing"; fi
++
++echo "=== result: $([[ $rc -eq 0 ]] && echo PASS || echo FAIL) ==="
++exit $rc
+diff --git a/scripts/wsl/dds_env.sh b/scripts/wsl/dds_env.sh
+new file mode 100644
+index 0000000..12de265
+--- /dev/null
++++ b/scripts/wsl/dds_env.sh
+@@ -0,0 +1,16 @@
++# dds_env.sh — RoboSim Eval: Fast DDS profile for Windows<->WSL2 communication (plan doc B4).
++# SOURCE after ros_env.sh in every Ubuntu terminal that must talk to Isaac Sim on Windows:
++#   source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh
++# Verifies the profile exists and is well-formed XML before exporting FASTRTPS_DEFAULT_PROFILES_FILE.
++
++_robosim_dds="${ROBOSIM_DDS_PROFILE:-/mnt/d/RoboSim-Eval/configs/network/fastdds.xml}"
++
++if [ ! -f "$_robosim_dds" ]; then
++  echo "dds_env.sh: profile not found: $_robosim_dds" >&2; return 1 2>/dev/null || exit 1
++fi
++if ! python3 -c 'import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])' "$_robosim_dds" 2>/dev/null; then
++  echo "dds_env.sh: profile is not well-formed XML: $_robosim_dds" >&2; return 1 2>/dev/null || exit 1
++fi
++
++export FASTRTPS_DEFAULT_PROFILES_FILE="$_robosim_dds"
++echo "dds_env.sh: FASTRTPS_DEFAULT_PROFILES_FILE=$FASTRTPS_DEFAULT_PROFILES_FILE"
+diff --git a/scripts/wsl/diag_discovery.sh b/scripts/wsl/diag_discovery.sh
+new file mode 100644
+index 0000000..8866ea6
+--- /dev/null
++++ b/scripts/wsl/diag_discovery.sh
+@@ -0,0 +1,64 @@
++#!/usr/bin/env bash
++# diag_discovery.sh — RoboSim Eval D0c: why does WSL not see Isaac Sim's DDS participants? (plan doc C: 两端发现不了节点)
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/diag_discovery.sh [<out_dir>]
++# Read-only diagnostics, nothing is published to ROS topics:
++#   1. WSL network facts (own IP, gateway = Windows host on the vEthernet (WSL) switch, ufw state)
++#   2. Passive multicast capture on the DDS SPDP group 239.255.0.1:7400 for 12 s: which source IPs announce?
++#      (172.28.208.1 = Isaac on the Windows host; our own IP = WSL's own ros2 daemon)
++#   3. Discovery with a longer wait: daemon restart, 10 s, then node/topic list; then a no-daemon list with spin time
++#   4. WSL's own DDS sockets (ss)
++set -uo pipefail
++OUT="${1:-/mnt/d/RoboSim-Eval/artifacts/d0c/diag-$(date +%Y%m%d-%H%M%S)}"
++mkdir -p "$OUT"
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
++set -u
++run() { local title="$1"; shift; echo; echo "===== $title ====="; echo "CMD: $*"; "$@"; echo "EXIT: $?"; }
++
++{
++echo "=== diag_discovery.sh $(date -Is) RMW=$RMW_IMPLEMENTATION DOMAIN=$ROS_DOMAIN_ID profile=$FASTRTPS_DEFAULT_PROFILES_FILE ==="
++MYIP=$(ip -4 addr show eth0 | awk '/inet /{print $2}' | cut -d/ -f1)
++GW=$(ip route | awk '/default/{print $3}')
++echo "WSL eth0 ip=$MYIP gateway(windows host)=$GW"
++run "ufw config" bash -c 'grep -H ENABLED /etc/ufw/ufw.conf 2>/dev/null || echo "ufw not present"'
++run "ping windows host (3 pkts)" timeout 6 ping -c 3 -W 1 "$GW"
++
++echo; echo "===== passive multicast capture 239.255.0.1:7400 for 12 s ====="
++python3 - "$MYIP" <<'PY'
++import socket, struct, sys, time, collections
++myip = sys.argv[1]
++s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
++s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
++try: s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
++except OSError: pass
++s.bind(("0.0.0.0", 7400))
++mreq = struct.pack("4s4s", socket.inet_aton("239.255.0.1"), socket.inet_aton(myip))
++s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
++s.settimeout(0.5)
++counts = collections.Counter(); rtps = collections.Counter()
++t_end = time.time() + 12
++while time.time() < t_end:
++    try:
++        data, (ip, port) = s.recvfrom(65535)
++    except socket.timeout:
++        continue
++    counts[ip] += 1
++    if data[:4] == b"RTPS": rtps[ip] += 1
++print("packets by source ip:", dict(counts) or "NONE")
++print("RTPS-magic packets by source ip:", dict(rtps) or "NONE")
++print("EXIT: 0")
++PY
++
++echo; echo "===== discovery with 10 s wait after daemon restart ====="
++ros2 daemon stop >/dev/null 2>&1; sleep 1; ros2 daemon start >/dev/null 2>&1; sleep 10
++run "node list (daemon)" timeout 15 ros2 node list
++run "topic list (daemon)" timeout 15 ros2 topic list
++run "topic list (no daemon, spin 8 s)" timeout 20 ros2 topic list --no-daemon --spin-time 8
++run "wsl own dds sockets" bash -c 'ss -ulnp 2>/dev/null | grep -E ":74[0-9]{2} |:7[0-9]{3} " || echo "no 7xxx udp sockets listed"'
++} 2>&1 | tee "$OUT/diag.txt"
++TEE_RC=${PIPESTATUS[1]}
++echo "written: $OUT/diag.txt (tee exit $TEE_RC)"
++exit $TEE_RC
+diff --git a/scripts/wsl/install_ros2_jazzy.sh b/scripts/wsl/install_ros2_jazzy.sh
+new file mode 100644
+index 0000000..d0abdf7
+--- /dev/null
++++ b/scripts/wsl/install_ros2_jazzy.sh
+@@ -0,0 +1,98 @@
++#!/usr/bin/env bash
++# install_ros2_jazzy.sh — RoboSim Eval D0b: install ROS 2 Jazzy + Nav2 dependencies in WSL Ubuntu 24.04 (noble).
++#
++# Run by the USER in an Ubuntu terminal (sudo will ask for the password once):
++#   bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh            # default
++#   bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh --with-upgrade   # only if apt install fails on held deps
++#
++# Source of the steps: ROS 2 Jazzy "Ubuntu (deb packages)" instructions, read 2026-09-29 from the official mirror
++# https://repo.test.ros2.org/en/jazzy/Installation/Ubuntu-Install-Debs.html (docs.ros.org showed an anti-bot page).
++# Deviations from the docs: no blanket `apt upgrade` by default (project rule: no unrelated system upgrades);
++# locale steps only run when the current locale is not UTF-8; navigation packages needed by the pinned Isaac
++# workspace are added. Re-running is safe: apt only installs what is missing.
++#
++# Log: /mnt/d/RoboSim-Eval/artifacts/d0b/install-jazzy.log ; exit code: .../install-jazzy.exit
++set -euo pipefail
++
++WITH_UPGRADE=no
++[[ "${1:-}" == "--with-upgrade" ]] && WITH_UPGRADE=yes
++
++LOG_DIR=/mnt/d/RoboSim-Eval/artifacts/d0b
++mkdir -p "$LOG_DIR"
++LOG="$LOG_DIR/install-jazzy.log"
++exec > >(tee -a "$LOG") 2>&1
++trap 'rc=$?; echo; echo "=== install_ros2_jazzy.sh end $(date -Is) exit=$rc ==="; echo "$rc" > "$LOG_DIR/install-jazzy.exit"' EXIT
++
++echo "=== install_ros2_jazzy.sh start $(date -Is) user=$(id -un) with_upgrade=$WITH_UPGRADE ==="
++step() { echo; echo "--- [$(date +%T)] $* ---"; }
++
++step "0. preconditions"
++. /etc/os-release
++CODENAME="${UBUNTU_CODENAME:-${VERSION_CODENAME}}"
++echo "os: $PRETTY_NAME codename=$CODENAME"
++if [[ "$CODENAME" != "noble" ]]; then echo "ERROR: expected Ubuntu noble (24.04), got $CODENAME"; exit 2; fi
++sudo -v
++
++step "1. locale (only if current LANG is not UTF-8)"
++if ! locale 2>/dev/null | grep -q 'LANG=.*UTF-8'; then
++  sudo apt-get update
++  sudo apt-get install -y locales
++  sudo locale-gen en_US en_US.UTF-8
++  sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
++  export LANG=en_US.UTF-8
++fi
++locale
++
++step "2. enable universe repository and curl"
++sudo apt-get install -y software-properties-common
++sudo add-apt-repository -y universe
++sudo apt-get update
++sudo apt-get install -y curl
++
++step "3. ros2-apt-source"
++if dpkg -s ros2-apt-source >/dev/null 2>&1; then
++  echo "ros2-apt-source already installed: $(dpkg-query -W -f='${Version}' ros2-apt-source)"
++else
++  ROS_APT_SOURCE_VERSION=$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest | grep -F "tag_name" | awk -F\" '{print $4}')
++  echo "ros-apt-source latest tag: ${ROS_APT_SOURCE_VERSION:-<empty>}"
++  if [[ -z "$ROS_APT_SOURCE_VERSION" ]]; then echo "ERROR: could not resolve ros-apt-source version from the GitHub API"; exit 3; fi
++  curl -L -o /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.${CODENAME}_all.deb"
++  sudo dpkg -i /tmp/ros2-apt-source.deb
++fi
++sudo apt-get update
++
++if [[ "$WITH_UPGRADE" == "yes" ]]; then
++  step "3b. apt upgrade (explicitly requested with --with-upgrade)"
++  sudo apt-get upgrade -y
++fi
++
++step "4. install ROS 2 Jazzy desktop, dev tools, navigation packages and the carter_navigation dependency closure"
++# Closure computed 2026-09-29 from package.xml of carter_navigation, isaacsim_bringup and isaac_ros_navigation_goal
++# (IsaacSim-ros_workspaces tag IsaacSim-6.1.0, commit a9e8471); rosdep keys mapped to noble/jazzy apt names.
++PKGS=(ros-dev-tools ros-jazzy-desktop
++      ros-jazzy-navigation2 ros-jazzy-nav2-bringup ros-jazzy-nav2-simple-commander ros-jazzy-nav2-rviz-plugins
++      ros-jazzy-pointcloud-to-laserscan ros-jazzy-rmw-fastrtps-cpp
++      ros-jazzy-joint-state-publisher ros-jazzy-robot-state-publisher ros-jazzy-xacro
++      ros-jazzy-ament-flake8 ros-jazzy-ament-pep257
++      python3-numpy python3-pil python3-pytest python3-yaml)
++sudo apt-get install -y "${PKGS[@]}"
++
++step "5. rosdep (init only if missing; update runs as the normal user)"
++if [[ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]]; then sudo rosdep init; else echo "rosdep already initialized"; fi
++rosdep update
++
++step "6. verification (each line must show 'install ok installed')"
++for p in "${PKGS[@]}"; do printf '%-40s %s\n' "$p" "$(dpkg-query -W -f='${Status} ${Version}' "$p")"; done
++# ROS setup scripts are not `set -u` clean (AMENT_TRACE_SETUP_FILES), so relax -u while sourcing.
++set +u
++# shellcheck disable=SC1091
++source /opt/ros/jazzy/setup.bash
++set -u
++echo "ros2 executable: $(command -v ros2)"
++echo "colcon executable: $(command -v colcon)"
++echo "rosdep: $(rosdep --version)"
++echo "demo_nodes_cpp prefix: $(ros2 pkg prefix demo_nodes_cpp)"
++echo "nav2_bringup prefix: $(ros2 pkg prefix nav2_bringup)"
++echo "pointcloud_to_laserscan prefix: $(ros2 pkg prefix pointcloud_to_laserscan)"
++echo "rmw_fastrtps_cpp prefix: $(ros2 pkg prefix rmw_fastrtps_cpp)"
++echo "ALL STEPS COMPLETED"
+diff --git a/scripts/wsl/map_overview.sh b/scripts/wsl/map_overview.sh
+new file mode 100644
+index 0000000..93c4875
+--- /dev/null
++++ b/scripts/wsl/map_overview.sh
+@@ -0,0 +1,61 @@
++#!/usr/bin/env bash
++# map_overview.sh — RoboSim Eval D0d: print a coarse ASCII overview of the static map with the robot's current
++# map-frame position (from TF map->base_link) and optional candidate points, to choose a reachable goal by eye.
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/map_overview.sh [<out_file>] [x,y ...]
++# Legend: '#' occupied, '.' free, '?' unknown, 'R' robot, digits = candidate points in argument order. Read-only.
++# Exit: the rendering step's status (0 = overview written).
++set -uo pipefail
++OUT="${1:-/dev/stdout}"; shift || true
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
++set -u
++SHARE=$(ros2 pkg prefix carter_navigation)/share/carter_navigation
++ROBOT=$(timeout 6 ros2 run tf2_ros tf2_echo map base_link 2>/dev/null | grep -m1 'Translation' | sed -E 's/.*\[([^]]*)\].*/\1/')
++python3 - "$SHARE/maps/carter_warehouse_navigation.yaml" "${ROBOT:-}" "$@" > "$OUT" <<'PY'
++import sys, os, yaml
++from PIL import Image
++mapyaml, robot = sys.argv[1], sys.argv[2]
++cands = [tuple(float(v) for v in a.split(',')) for a in sys.argv[3:]]
++m = yaml.safe_load(open(mapyaml)); res = m['resolution']; ox, oy, _ = m['origin']
++img = Image.open(os.path.join(os.path.dirname(mapyaml), m['image'])).convert('L'); W, H = img.size
++negate = int(m.get('negate', 0)); free_t = m['free_thresh']; occ_t = m['occupied_thresh']
++cell = 0.5  # metres per character
++cw = max(1, int(cell / res)); ch = cw * 2  # rows are twice as tall as wide in a terminal
++def occ(px, py):
++    v = img.getpixel((px, py)) / 255.0
++    return v if negate else 1.0 - v
++def cell_char(c0, r0):
++    occs = []
++    for yy in range(r0, min(H, r0 + ch)):
++        for xx in range(c0, min(W, c0 + cw)):
++            occs.append(occ(xx, yy))
++    if not occs: return ' '
++    if max(occs) > occ_t: return '#'
++    if min(occs) < free_t and sum(1 for o in occs if o < free_t) > len(occs) * 0.5: return '.'
++    return '?'
++def to_cell(x, y):
++    col = int((x - ox) / res); row = H - 1 - int((y - oy) / res)
++    return col // cw, row // ch
++marks = {}
++if robot:
++    rx, ry = [float(v) for v in robot.split(',')[:2]]
++    marks[to_cell(rx, ry)] = 'R'
++    print(f"robot (map) = ({rx:.2f}, {ry:.2f})")
++for i, (x, y) in enumerate(cands, 1):
++    marks[to_cell(x, y)] = str(i % 10); print(f"candidate {i} = ({x}, {y})")
++print(f"map {W}x{H} px @ {res} m/px, origin ({ox}, {oy}); one char = {cell} m wide x {cell*2} m tall; up = +y, right = +x")
++rows = (H + ch - 1) // ch; cols = (W + cw - 1) // cw
++for r in range(rows):
++    y_top = oy + (H - r * ch) * res
++    line = ''.join(marks.get((c, r), cell_char(c * cw, r * ch)) for c in range(cols))
++    print(f"{y_top:7.2f} |{line}|")
++xs = ''.join(('|' if (c % 10 == 0) else ' ') for c in range(cols))
++print(f"{'':7} +{xs}+")
++print(f"{'':7}  x labels every 10 chars (5 m) starting at x={ox:.2f}: " + ' '.join(f"{ox + c*cell:.1f}" for c in range(0, cols, 10)))
++PY
++PYRC=$?
++if [[ "$OUT" != /dev/stdout ]]; then echo "written $OUT ($(wc -l < "$OUT") lines)"; fi
++exit $PYRC
+diff --git a/scripts/wsl/probe_env.sh b/scripts/wsl/probe_env.sh
+new file mode 100644
+index 0000000..118463e
+--- /dev/null
++++ b/scripts/wsl/probe_env.sh
+@@ -0,0 +1,56 @@
++#!/usr/bin/env bash
++# probe_env.sh — RoboSim Eval D0a: read-only environment probes (WSL side). Makes no changes.
++# Usage (from Windows PowerShell), run twice to compare login vs clean environments:
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/probe_env.sh
++#   wsl -d Ubuntu -- bash --noprofile --norc /mnt/d/RoboSim-Eval/scripts/wsl/probe_env.sh
++# Each section prints the command, its output and the command's own exit code (never masked).
++set -u
++
++run() {   # run "<title>" <command...>
++  local title="$1"; shift
++  echo; echo "===== $title ====="; echo "CMD: $*"
++  local out rc
++  out=$("$@" 2>&1); rc=$?
++  printf '%s\n' "$out"; echo "EXIT: $rc"
++}
++runsh() { # runsh "<title>" '<bash snippet>'
++  local title="$1" snippet="$2"
++  echo; echo "===== $title ====="; echo "CMD: $snippet"
++  local out rc
++  out=$(bash -c "$snippet" 2>&1); rc=$?
++  printf '%s\n' "$out"; echo "EXIT: $rc"
++}
++
++login=no; shopt -q login_shell && login=yes
++interactive=no; [[ $- == *i* ]] && interactive=yes
++echo "PROBE START: $(date -Is)  script=$0  login_shell=$login  interactive=$interactive"
++
++run   "identity" id
++runsh "home/shell" 'echo "HOME=$HOME USER=${USER:-?} SHELL=${SHELL:-?} PWD=$PWD"'
++run   "os-release" cat /etc/os-release
++run   "kernel" uname -r
++run   "python3" python3 --version
++run   "git" git --version
++runsh "colcon" 'command -v colcon || echo "colcon not on PATH"'
++runsh "ros2 before source" 'command -v ros2 || echo "ros2 not on PATH (before source)"'
++run   "opt ros" ls -ld /opt/ros /opt/ros/jazzy
++runsh "ros2 after source" 'if [ -f /opt/ros/jazzy/setup.bash ]; then source /opt/ros/jazzy/setup.bash && command -v ros2 && echo "ROS_DISTRO=$ROS_DISTRO RMW=${RMW_IMPLEMENTATION:-unset}"; else echo "no /opt/ros/jazzy/setup.bash"; fi'
++runsh "ros-jazzy package count" 'dpkg-query -W -f="\${Package}\n" "ros-jazzy-*" 2>/dev/null | wc -l'
++for p in ros-jazzy-desktop ros-dev-tools ros-jazzy-navigation2 ros-jazzy-nav2-bringup ros-jazzy-nav2-simple-commander ros-jazzy-pointcloud-to-laserscan ros-jazzy-rmw-fastrtps-cpp ros-jazzy-demo-nodes-cpp ros-jazzy-rviz2 python3-colcon-common-extensions python3-rosdep; do
++  runsh "pkg $p" "dpkg-query -W -f='\${Status} \${Version}\n' $p 2>/dev/null || echo 'not installed'; apt-cache policy $p 2>/dev/null | sed -n '2,3p'"
++done
++runsh "apt sources mentioning ros" 'ls -la /etc/apt/sources.list.d/ 2>/dev/null; grep -rHi ros /etc/apt/sources.list.d/ /etc/apt/sources.list 2>/dev/null || echo "no ros apt source"'
++runsh "rosdep state" 'ls -la /etc/ros/rosdep/sources.list.d/ 2>&1; ls -la ~/.ros/rosdep/ 2>&1'
++run   "sudo -n true" sudo -n true
++runsh "display vars" 'echo "DISPLAY=${DISPLAY:-unset} WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-unset} XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-unset}"; ls -la /mnt/wslg 2>&1 | head -5'
++runsh "ip" 'ip -4 addr show 2>/dev/null | grep -E "inet |^[0-9]+:"; echo "--- route ---"; ip route 2>/dev/null | head -5'
++run   "memory" free -h
++run   "disk" df -h / /mnt/d
++runsh "existing workspaces" 'ls -ld ~/robotics ~/robotics/vendor ~/robotics/vendor/* 2>&1; echo "--- find ---"; find ~ -maxdepth 4 -type d \( -name "IsaacSim-ros_workspaces*" -o -name "isaac-ros-6.1" -o -name jazzy_ws \) 2>/dev/null; find /mnt/d -maxdepth 2 -type d \( -name "IsaacSim-ros_workspaces*" -o -name "isaac-ros-6.1" -o -name jazzy_ws \) 2>/dev/null; true'
++runsh "residual ROS/DDS env" 'env | grep -E "ROS_|RMW_|FASTRTPS|CYCLONE|DDS" || echo "none in env"'
++runsh "residual ROS lines in rc files" 'grep -nE "ros|RMW|ROS_|FASTRTPS" ~/.bashrc ~/.profile /etc/environment /etc/profile.d/* 2>/dev/null || echo "none in rc files"'
++runsh "existing fastdds xml" 'ls -la ~/.ros/*.xml /mnt/d/robosim-assets/network/*.xml 2>&1'
++runsh "rviz2 binary" 'command -v rviz2 || ls -la /opt/ros/jazzy/bin/rviz2 2>&1 || echo "rviz2 not found"'
++runsh "network reachability (github, ros apt)" 'for h in github.com packages.ros.org; do if getent hosts "$h" >/dev/null 2>&1; then echo "$h resolves"; else echo "$h does NOT resolve"; fi; done'
++
++echo; echo "PROBE END: $(date -Is)"
+diff --git a/scripts/wsl/probe_topics.sh b/scripts/wsl/probe_topics.sh
+new file mode 100644
+index 0000000..14386b7
+--- /dev/null
++++ b/scripts/wsl/probe_topics.sh
+@@ -0,0 +1,60 @@
++#!/usr/bin/env bash
++# probe_topics.sh — RoboSim Eval D0c: what does WSL actually receive from Isaac Sim right now? (plan doc B5 table)
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/probe_topics.sh [<out_dir>] [topic ...]
++# Every observation is time-bounded. Records: node list, topic list with types, /clock rate, and for each candidate
++# topic that exists: publisher/subscriber info with QoS (`ros2 topic info -v`), rate (`ros2 topic hz`, 8 s) and one
++# sample (`ros2 topic echo --once --no-arr`). TF is read with tf2_echo (bounded). Nothing is published.
++# Exit 0 when /clock is advancing; 1 otherwise (the raw evidence is written either way).
++set -uo pipefail
++OUT="${1:-/mnt/d/RoboSim-Eval/artifacts/d0c/$(date +%Y%m%d-%H%M%S)}"
++shift || true
++mkdir -p "$OUT"
++CANDIDATES=("$@")
++if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
++  CANDIDATES=(/clock /tf /tf_static /odom /chassis/odom /front_3d_lidar/lidar_points /point_cloud /front_2d_lidar/scan /back_2d_lidar/scan /scan /cmd_vel /joint_states /map)
++fi
++
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
++set -u
++
++run() { local title="$1"; shift; echo; echo "===== $title ====="; echo "CMD: $*"; "$@"; echo "EXIT: $?"; }
++
++{
++echo "=== probe_topics.sh $(date -Is) out=$OUT RMW=$RMW_IMPLEMENTATION DOMAIN=$ROS_DOMAIN_ID profile=${FASTRTPS_DEFAULT_PROFILES_FILE:-unset} ==="
++run "ros2 daemon (fresh discovery)" ros2 daemon stop
++run "node list" timeout 15 ros2 node list
++run "topic list -t" timeout 15 ros2 topic list -t
++} | tee "$OUT/00-discovery.txt"
++
++CLOCK_OK=0
++{
++run "/clock hz (10 s)" timeout 10 ros2 topic hz /clock --window 50
++run "/clock sample" timeout 10 ros2 topic echo --once /clock
++} | tee "$OUT/01-clock.txt"
++if grep -q 'average rate' "$OUT/01-clock.txt"; then CLOCK_OK=1; fi
++
++if EXISTING=$(timeout 15 ros2 topic list 2>&1); then LIST_RC=0; else LIST_RC=$?; fi
++if [[ $LIST_RC -ne 0 ]]; then echo "WARNING: ros2 topic list failed (exit $LIST_RC); per-topic checks below are skipped, not absent:"; echo "$EXISTING"; EXISTING=""; fi
++for t in "${CANDIDATES[@]}"; do
++  [[ "$t" == "/clock" ]] && continue
++  if ! grep -qx "$t" <<<"$EXISTING"; then echo "skip $t ($([[ $LIST_RC -eq 0 ]] && echo not present || echo topic list failed))"; continue; fi
++  f="$OUT/topic$(echo "$t" | tr '/' '_').txt"
++  {
++  run "info -v $t" timeout 15 ros2 topic info -v "$t"
++  run "hz $t (8 s)" timeout 8 ros2 topic hz "$t" --window 20
++  run "sample $t" timeout 10 ros2 topic echo --once --no-arr "$t"
++  } | tee "$f"
++done
++
++{
++run "tf2_echo odom -> base_link (5 s)" timeout 5 ros2 run tf2_ros tf2_echo odom base_link
++run "tf frames yaml" bash -c 'timeout 12 ros2 run tf2_ros tf2_echo --help >/dev/null 2>&1; timeout 15 ros2 topic echo --once --no-arr /tf_static'
++} | tee "$OUT/02-tf.txt"
++
++echo
++echo "=== summary: clock_advancing=$CLOCK_OK files in $OUT: $(ls "$OUT" | tr '\n' ' ') ==="
++[[ $CLOCK_OK -eq 1 ]]
+diff --git a/scripts/wsl/record_d0.sh b/scripts/wsl/record_d0.sh
+new file mode 100644
+index 0000000..1a37f59
+--- /dev/null
++++ b/scripts/wsl/record_d0.sh
+@@ -0,0 +1,75 @@
++#!/usr/bin/env bash
++# record_d0.sh — RoboSim Eval D0d: record one navigation attempt's raw evidence (plan doc B6.5, A6).
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/record_d0.sh <attempt_dir> [<max_seconds>]
++# Starts, detached and duration-capped (default 320 s wall; timeout sends SIGINT so rosbag writes metadata.yaml):
++#   - a rosbag (WSL-local ~/robosim_bags, copied into <attempt_dir>/rosbag afterwards; bags are git-ignored) with
++#     /clock /chassis/odom /tf /tf_static /cmd_vel /scan /amcl_pose /plan /goal_pose /initialpose and the hidden
++#     NavigateToPose action status/feedback topics
++#   - wall-timestamped text streams: odom (csv), amcl_pose (csv), cmd_vel (csv), action status, tf map->base_link
++# Each recorder runs in its own session (setsid) under a wrapper bash that writes the recorder's real exit code to
++# <attempt_dir>/<name>.exit (124 = hit the time cap, by design; `ros2 topic echo` returns 2 = signal.SIGINT when stopped).
++# Session ids are in <attempt_dir>/record.pids; stale pid files are deleted first and each new session id is awaited
++# (up to 5 s) instead of a fixed sleep. The wrapper survives a session-wide SIGINT/SIGTERM (SIGINT is ignored on entry
++# for `&` jobs of a non-interactive shell; TERM is trapped) so it can record the exit code; `timeout` installs its own
++# signal handlers, so the recorders themselves get default dispositions and do stop on SIGINT (verified run-02).
++# Stop with stop_record.sh <attempt_dir>, which also checks that data arrived.
++# Exit: 0 when every recorder is running 2 s after start; 1 otherwise (see <name>.log / <name>.err).
++set -uo pipefail
++ATT="${1:?attempt dir required}"; MAX="${2:-320}"
++mkdir -p "$ATT"
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
++set -u
++BAG="$HOME/robosim_bags/$(basename "$ATT")-$(date +%Y%m%d-%H%M%S)"
++mkdir -p "$(dirname "$BAG")"
++echo "$BAG" > "$ATT/bag-path.txt"
++: > "$ATT/record.pids"
++
++# Line stamper for text streams: ignores SIGINT so it drains the pipe until EOF instead of dying with a traceback.
++export STAMP_PY='import signal, sys, datetime
++signal.signal(signal.SIGINT, signal.SIG_IGN)
++for line in sys.stdin:
++    print(datetime.datetime.now().isoformat(timespec="milliseconds"), line.rstrip(), flush=True)'
++
++register() { # register <name>: wait (up to 5 s) for the wrapper to write its session id, then record it
++  local name="$1" sid=""
++  for _ in $(seq 1 25); do
++    if [[ -s "$ATT/pid-$name" ]]; then sid=$(cat "$ATT/pid-$name"); break; fi
++    sleep 0.2
++  done
++  echo "$name ${sid:-MISSING}" >> "$ATT/record.pids"
++}
++start() { # start <name> <command...>   (detached, INT-capped, exit code -> <name>.exit)
++  local name="$1"; shift
++  rm -f "$ATT/$name.exit" "$ATT/pid-$name"
++  setsid nohup bash -c 'echo $$ > "$0"; trap "true" INT TERM; "${@:2}"; echo $? > "$1"' \
++    "$ATT/pid-$name" "$ATT/$name.exit" timeout -s INT "$MAX" "$@" < /dev/null > "$ATT/$name.log" 2>&1 &
++  register "$name"
++}
++startpipe() { # startpipe <name> <command...>  (stdout wall-timestamped into <name>.txt, exit code of the command)
++  local name="$1"; shift
++  rm -f "$ATT/$name.exit" "$ATT/pid-$name"
++  setsid nohup bash -c 'echo $$ > "$0"; trap "true" INT TERM; "${@:2}" | python3 -u -c "$STAMP_PY"; echo "${PIPESTATUS[0]}" > "$1"' \
++    "$ATT/pid-$name" "$ATT/$name.exit" timeout -s INT "$MAX" "$@" < /dev/null > "$ATT/$name.txt" 2> "$ATT/$name.err" &
++  register "$name"
++}
++
++echo "record start $(date -Is) attempt=$ATT max=${MAX}s bag=$BAG" | tee "$ATT/record.meta"
++start bag ros2 bag record -o "$BAG" --include-hidden-topics \
++  /clock /chassis/odom /tf /tf_static /cmd_vel /scan /amcl_pose /plan /goal_pose /initialpose \
++  /navigate_to_pose/_action/status /navigate_to_pose/_action/feedback
++startpipe odom          ros2 topic echo --csv --field pose.pose /chassis/odom
++startpipe amcl_pose     ros2 topic echo --csv /amcl_pose
++startpipe cmd_vel       ros2 topic echo --csv /cmd_vel
++startpipe action_status ros2 topic echo /navigate_to_pose/_action/status
++startpipe tf_map_base   ros2 run tf2_ros tf2_echo map base_link -r 5
++sleep 2
++echo "sessions:"; cat "$ATT/record.pids"
++rc=0
++while read -r name sid; do
++  if [[ "$sid" =~ ^[0-9]+$ ]] && pgrep -s "$sid" >/dev/null 2>&1; then echo "  running $name (session $sid)"; else echo "  NOT running $name (session $sid; see $name.log/.err)"; rc=1; fi
++done < "$ATT/record.pids"
++exit $rc
+diff --git a/scripts/wsl/ros_env.sh b/scripts/wsl/ros_env.sh
+new file mode 100644
+index 0000000..522b277
+--- /dev/null
++++ b/scripts/wsl/ros_env.sh
+@@ -0,0 +1,41 @@
++# ros_env.sh — RoboSim Eval: ROS 2 Jazzy environment for WSL Ubuntu terminals (plan doc B2 + B3).
++# SOURCE this file; it never edits ~/.bashrc:
++#   source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full        # /opt/ros/jazzy + pinned Isaac workspace overlay
++#   source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only   # /opt/ros/jazzy only (e.g. before the overlay exists)
++#   source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh               # interactive terminals only: same as --full
++# Scripts must pass the mode explicitly: a bare `source` inside a script sees that SCRIPT's positional parameters
++# (e.g. an attempt directory), which is rejected here instead of being silently used as the mode.
++# Returns non-zero and prints the problem when the mode is unknown or a required path is absent.
++# The Windows<->WSL Fast DDS profile is separate: source dds_env.sh after this file (plan doc B4).
++
++_robosim_fail() { echo "ros_env.sh: $1" >&2; }
++
++case "${1:-}" in
++  --base-only) _robosim_mode=base-only ;;
++  --full|"")   _robosim_mode=full ;;
++  *) _robosim_fail "unknown mode '$1' (use --full or --base-only; scripts must pass one explicitly)"; return 2 2>/dev/null || exit 2 ;;
++esac
++
++_robosim_ws="${ROBOSIM_VENDOR_WS:-$HOME/robotics/vendor/isaac-ros-6.1/jazzy_ws}"
++
++if [ ! -f /opt/ros/jazzy/setup.bash ]; then
++  _robosim_fail "/opt/ros/jazzy/setup.bash not found (ROS 2 Jazzy is not installed)"; return 1 2>/dev/null || exit 1
++fi
++# shellcheck disable=SC1091
++source /opt/ros/jazzy/setup.bash
++
++if [ "$_robosim_mode" = full ]; then
++  if [ ! -f "$_robosim_ws/install/setup.bash" ]; then
++    _robosim_fail "overlay $_robosim_ws/install/setup.bash not found (workspace not built; use --base-only until then)"; return 1 2>/dev/null || exit 1
++  fi
++  # shellcheck disable=SC1091
++  source "$_robosim_ws/install/setup.bash"
++fi
++
++export ROS_DISTRO=jazzy
++export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
++export ROS_DOMAIN_ID=0
++unset ROS_LOCALHOST_ONLY
++
++echo "ros_env.sh: ROS_DISTRO=$ROS_DISTRO RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION ROS_DOMAIN_ID=$ROS_DOMAIN_ID mode=$_robosim_mode overlay=$_robosim_ws"
++unset _robosim_mode
+diff --git a/scripts/wsl/send_goal.sh b/scripts/wsl/send_goal.sh
+new file mode 100644
+index 0000000..fc9ec69
+--- /dev/null
++++ b/scripts/wsl/send_goal.sh
+@@ -0,0 +1,87 @@
++#!/usr/bin/env bash
++# send_goal.sh — RoboSim Eval D0d: check a map-frame pose against the static map, then (unless --check-only) send it as
++# ONE NavigateToPose goal through the CLI action client and keep the raw feedback/result (plan doc B6.4-5, A5).
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/send_goal.sh <attempt_dir> <x> <y> <yaw_rad> [--check-only]
++#        [--action /navigate_to_pose] [--settle 6]
++# The map is read from the pinned carter_navigation share (yaml origin/resolution + png); a pose is "free" when the
++# map pixel value is above the free threshold. Also prints a small ASCII crop around the pose (#=occupied .=free ?=unknown).
++# Output: <attempt_dir>/goal-<timestamp>.txt: first line "send_goal start ... x= y= yaw=" (the goal actually sent, read
++# by analyze_attempt.py), then the wall-timestamped client output (feedback + result), last line with the client's real
++# exit code. Only the summary lines are printed to the terminal. After the result the script waits --settle seconds
++# (default 6, wall) so a running recorder also captures the robot coming to rest (stop-still window, plan doc A5).
++# Exit: 0 goal SUCCEEDED; 2 bad arguments; 3 pose not free on the map; 4 action server not found;
++#       5 goal finished but not SUCCEEDED (ABORTED/CANCELED/unknown); 6 goal rejected; other = action client exit code
++#       (e.g. 124 when the 330 s client timeout fired).
++set -uo pipefail
++ATT="${1:?attempt dir}"; X="${2:?x}"; Y="${3:?y}"; YAW="${4:?yaw rad}"; shift 4
++CHECK_ONLY=no; ACTION=/navigate_to_pose; SETTLE=6
++while [[ $# -gt 0 ]]; do case "$1" in --check-only) CHECK_ONLY=yes;; --action) ACTION="$2"; shift;; --settle) SETTLE="$2"; shift;; *) echo "unknown arg $1"; exit 2;; esac; shift; done
++if ! python3 -c 'import sys, math; v = [float(a) for a in sys.argv[1:]]; sys.exit(0 if all(math.isfinite(x) for x in v) else 1)' "$X" "$Y" "$YAW" "$SETTLE"; then
++  echo "ERROR: x, y, yaw (radians) and --settle must be finite numbers (got x=$X y=$Y yaw=$YAW settle=$SETTLE)"; exit 2
++fi
++mkdir -p "$ATT"
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
++set -u
++SHARE=$(ros2 pkg prefix carter_navigation)/share/carter_navigation
++MAPYAML="$SHARE/maps/carter_warehouse_navigation.yaml"
++
++python3 - "$MAPYAML" "$X" "$Y" <<'PY' || { echo "pose check FAILED (see above)"; exit 3; }
++import sys, math, yaml, os
++from PIL import Image
++mapyaml, x, y = sys.argv[1], float(sys.argv[2]), float(sys.argv[3])
++m = yaml.safe_load(open(mapyaml)); res = m['resolution']; ox, oy, _ = m['origin']
++img = Image.open(os.path.join(os.path.dirname(mapyaml), m['image'])).convert('L'); W, H = img.size
++negate = int(m.get('negate', 0)); free_t = m['free_thresh']; occ_t = m['occupied_thresh']
++def occ(px, py):  # occupancy probability of pixel (col, row from top)
++    v = img.getpixel((px, py)) / 255.0
++    return v if negate else 1.0 - v
++col = int((x - ox) / res); row = H - 1 - int((y - oy) / res)
++if not (0 <= col < W and 0 <= row < H):
++    print(f"pose ({x}, {y}) is OUTSIDE the map ({W}x{H} px, res {res}, origin ({ox}, {oy}))"); sys.exit(1)
++p = occ(col, row)
++state = 'FREE' if p < free_t else ('OCCUPIED' if p > occ_t else 'UNKNOWN')
++# clearance: nearest occupied pixel within 1.0 m
++r = int(1.0 / res); nearest = None
++for dy in range(-r, r + 1):
++    for dx in range(-r, r + 1):
++        cx, cy = col + dx, row + dy
++        if 0 <= cx < W and 0 <= cy < H and occ(cx, cy) > occ_t:
++            d = math.hypot(dx, dy) * res
++            if nearest is None or d < nearest: nearest = d
++print(f"map {W}x{H} px, res {res} m/px, origin ({ox}, {oy}); pose ({x}, {y}) -> pixel col {col} row {row}: occupancy {p:.2f} => {state}; nearest obstacle within 1 m: {('%.2f m' % nearest) if nearest is not None else 'none'}")
++crop = 12
++for dy in range(-crop, crop + 1):
++    line = ''
++    for dx in range(-crop, crop + 1):
++        cx, cy = col + dx, row + dy
++        if dx == 0 and dy == 0: line += 'X'; continue
++        if not (0 <= cx < W and 0 <= cy < H): line += ' '; continue
++        q = occ(cx, cy); line += '#' if q > occ_t else ('.' if q < free_t else '?')
++    print(line)
++print(f"(crop is {2*crop+1} px = {(2*crop+1)*res:.2f} m wide; X marks the pose; up = +y)")
++sys.exit(0 if state == 'FREE' else 1)
++PY
++if [[ $CHECK_ONLY == yes ]]; then echo "check-only: not sending"; exit 0; fi
++
++if ! timeout 15 ros2 action list 2>/dev/null | grep -qx "$ACTION"; then echo "ERROR: action $ACTION not found in ros2 action list"; exit 4; fi
++QZ=$(python3 -c 'import sys, math; print(math.sin(float(sys.argv[1]) / 2))' "$YAW")
++QW=$(python3 -c 'import sys, math; print(math.cos(float(sys.argv[1]) / 2))' "$YAW")
++GOAL="{pose: {header: {frame_id: map}, pose: {position: {x: $X, y: $Y, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: $QZ, w: $QW}}}}"
++OUT="$ATT/goal-$(date +%H%M%S).txt"
++echo "send_goal start $(date -Is) action=$ACTION frame=map x=$X y=$Y yaw=$YAW qz=$QZ qw=$QW sim_time_before=$(timeout 3 ros2 topic echo --once --field clock.sec /clock 2>/dev/null | tr -d '\n-')" > "$OUT"
++timeout -s INT 330 ros2 action send_goal "$ACTION" nav2_msgs/action/NavigateToPose "$GOAL" --feedback 2>&1 \
++  | python3 -u -c 'import sys, datetime
++for line in sys.stdin: print(datetime.datetime.now().isoformat(timespec="milliseconds"), line.rstrip())' >> "$OUT"
++CLIENT_RC=${PIPESTATUS[0]}
++if [[ "$SETTLE" != 0 ]]; then sleep "$SETTLE"; fi
++echo "send_goal end $(date -Is) action_client_exit=$CLIENT_RC settle_s=$SETTLE sim_time_after=$(timeout 3 ros2 topic echo --once --field clock.sec /clock 2>/dev/null | tr -d '\n-')" >> "$OUT"
++grep -E 'send_goal (start|end)|Goal accepted|Goal was rejected|Goal finished with status|error_code:|error_msg:' "$OUT"
++echo "transcript: $OUT ($(wc -l < "$OUT") lines)"
++if [[ $CLIENT_RC -ne 0 ]]; then echo "action client exited $CLIENT_RC"; exit "$CLIENT_RC"; fi
++if grep -q 'Goal finished with status: SUCCEEDED' "$OUT"; then exit 0; fi
++if grep -q 'Goal was rejected' "$OUT"; then exit 6; fi
++exit 5
+diff --git a/scripts/wsl/setup_workspace.sh b/scripts/wsl/setup_workspace.sh
+new file mode 100644
+index 0000000..65525bf
+--- /dev/null
++++ b/scripts/wsl/setup_workspace.sh
+@@ -0,0 +1,82 @@
++#!/usr/bin/env bash
++# setup_workspace.sh — RoboSim Eval D0b: clone the pinned IsaacSim-ros_workspaces tag and build carter_navigation.
++# Needs ROS 2 Jazzy installed (install_ros2_jazzy.sh) and no sudo (rosdep is run with --simulate first; if it would
++# need to install something, the script stops and prints the list instead of calling sudo).
++#   bash /mnt/d/RoboSim-Eval/scripts/wsl/setup_workspace.sh
++# Idempotent: an existing checkout is verified (tag commit, clean tree, submodules) and reused, never force-reset.
++# Log: /mnt/d/RoboSim-Eval/artifacts/d0b/setup-workspace.log ; exit code: .../setup-workspace.exit
++set -euo pipefail
++
++EXPECTED_COMMIT=a9e8471ee901bc2332c1e4aca94ac580713ca3ab
++TAG=IsaacSim-6.1.0
++WS_ROOT="${ROBOSIM_VENDOR_ROOT:-$HOME/robotics/vendor/isaac-ros-6.1}"
++LOG_DIR=/mnt/d/RoboSim-Eval/artifacts/d0b
++mkdir -p "$LOG_DIR"
++LOG="${ROBOSIM_SETUP_LOG:-$LOG_DIR/setup-workspace.log}"            # override to re-run without touching D0b evidence
++EXIT_FILE="${LOG%.log}.exit"
++mkdir -p "$(dirname "$LOG")"
++exec > >(tee -a "$LOG") 2>&1
++trap 'rc=$?; echo; echo "=== setup_workspace.sh end $(date -Is) exit=$rc ==="; echo "$rc" > "$EXIT_FILE"' EXIT
++
++echo "=== setup_workspace.sh start $(date -Is) user=$(id -un) ws=$WS_ROOT ==="
++step() { echo; echo "--- [$(date +%T)] $* ---"; }
++
++step "0. base ROS environment"
++# ROS setup scripts are not `set -u` clean (AMENT_TRACE_SETUP_FILES), so relax -u while sourcing.
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only
++set -u
++
++step "1. checkout $TAG"
++if [[ -d "$WS_ROOT/.git" ]]; then
++  echo "existing checkout found, verifying (no force checkout, no clean)"
++else
++  mkdir -p "$(dirname "$WS_ROOT")"
++  git clone --branch "$TAG" --depth 1 --recurse-submodules https://github.com/isaac-sim/IsaacSim-ros_workspaces.git "$WS_ROOT"
++fi
++cd "$WS_ROOT"
++HEAD_COMMIT=$(git rev-parse HEAD)
++echo "HEAD=$HEAD_COMMIT  expected=$EXPECTED_COMMIT"
++echo "describe: $(git describe --tags --always)"
++echo "status:"; git status --short
++echo "submodules:"; git submodule status || echo "(no submodules)"
++if [[ "$HEAD_COMMIT" != "$EXPECTED_COMMIT" ]]; then echo "ERROR: HEAD does not match the pinned commit; stopping for review"; exit 4; fi
++if [[ -n "$(git status --porcelain)" ]]; then echo "ERROR: checkout is dirty; stopping for review (not cleaning user changes)"; exit 5; fi
++
++step "2. package closure"
++cd "$WS_ROOT/jazzy_ws"
++colcon list --packages-up-to carter_navigation
++PKG_PATHS=$(colcon list --packages-up-to carter_navigation --paths-only)
++echo "paths: $PKG_PATHS"
++
++step "3. rosdep (simulate; stop if anything would be installed)"
++# shellcheck disable=SC2086
++if SIM_OUT=$(rosdep install --from-paths $PKG_PATHS --ignore-src -r --simulate 2>&1); then SIM_RC=0; else SIM_RC=$?; fi
++echo "$SIM_OUT"
++if [[ $SIM_RC -ne 0 ]]; then
++  echo "ERROR: rosdep --simulate failed (exit $SIM_RC); dependencies cannot be confirmed (see output above)"; exit 7
++fi
++if grep -qE '^\s*(sudo|apt)' <<<"$SIM_OUT"; then
++  echo "ERROR: rosdep would install packages (needs sudo). Add them to install_ros2_jazzy.sh and re-run it:"
++  grep -E '^\s*(sudo|apt)' <<<"$SIM_OUT"; exit 6
++fi
++echo "rosdep: simulate exit 0, nothing to install"
++
++step "4. colcon build --packages-up-to carter_navigation"
++colcon build --packages-up-to carter_navigation --event-handlers console_direct+ --cmake-args -DCMAKE_BUILD_TYPE=Release
++echo "build finished; packages in install/: $(ls install | tr '\n' ' ')"
++
++step "5. overlay checks"
++set +u
++# shellcheck disable=SC1091
++source install/setup.bash
++set -u
++echo "carter_navigation prefix: $(ros2 pkg prefix carter_navigation)"
++ros2 launch carter_navigation carter_navigation.launch.xml --show-args
++SHARE=$(ros2 pkg prefix carter_navigation)/share/carter_navigation
++echo "map yaml sha256:   $(sha256sum "$SHARE/maps/carter_warehouse_navigation.yaml")"
++echo "map image sha256:  $(sha256sum "$SHARE/maps/carter_warehouse_navigation.png")"
++echo "params sha256:     $(sha256sum "$SHARE/params/carter_navigation_params.yaml")"
++echo "launch sha256:     $(sha256sum "$SHARE/launch/carter_navigation.launch.xml")"
++echo "ALL STEPS COMPLETED"
+diff --git a/scripts/wsl/start_nav2.sh b/scripts/wsl/start_nav2.sh
+new file mode 100644
+index 0000000..4a1dd7b
+--- /dev/null
++++ b/scripts/wsl/start_nav2.sh
+@@ -0,0 +1,66 @@
++#!/usr/bin/env bash
++# start_nav2.sh — RoboSim Eval D0d: launch carter_navigation (RViz + Nav2 bringup + pointcloud_to_laserscan) detached,
++# with PID file, exit-code file and log, so the process outlives the calling wsl.exe invocation (plan doc B0/A7).
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/start_nav2.sh [<run_dir>] [extra launch args...]
++# Refuses to start when a carter_navigation launch or Nav2 nodes are already running, or when that cannot be checked
++# (never two Nav2 instances, plan doc B6).
++# Layout: a wrapper bash (new session via setsid; its PID = session id in nav2.pid) runs `ros2 launch` in the foreground
++# and writes the launch's real exit code to nav2.exit when it ends. The wrapper traps INT/TERM (runs `true`), so a signal
++# to the session never kills it before it has recorded the exit code; the trap is reset for the launch itself.
++# Ownership record for stop_nav2.sh: boot_id, the wrapper's start time (/proc/<pid>/stat field 22) and its command line
++# (which contains this run dir's nav2.exit path) are written to nav2-launch.meta.
++# Exit: 0 started; 2 environment; 3 refused (already running or cannot check); 4 launch did not start.
++set -uo pipefail
++RUN_DIR="${1:-/mnt/d/RoboSim-Eval/artifacts/d0d/$(date +%Y%m%d-%H%M%S)}"
++shift || true
++mkdir -p "$RUN_DIR"
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2   # /opt/ros/jazzy + pinned overlay
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
++set -u
++
++starttime_of() { sed -E 's/^.*\) //' "/proc/$1/stat" 2>/dev/null | awk '{print $20}'; }
++
++if [[ -f "$RUN_DIR/nav2.pid" ]] && pgrep -s "$(cat "$RUN_DIR/nav2.pid")" >/dev/null 2>&1; then
++  echo "ERROR: session $(cat "$RUN_DIR/nav2.pid") from this run dir still has processes; stop it first"; exit 3
++fi
++if pgrep -f "ros2 launch carter_navigation" >/dev/null 2>&1; then
++  echo "ERROR: a carter_navigation launch process is already running:"; pgrep -af "ros2 launch carter_navigation"; exit 3
++fi
++NODES=$(timeout 20 ros2 node list --no-daemon --spin-time 3 2>&1); NRC=$?
++if [[ $NRC -ne 0 ]]; then
++  echo "ERROR: cannot check for running Nav2 nodes (ros2 node list exit $NRC); refusing to start. Output:"; echo "$NODES"; exit 3
++fi
++if grep -qE '^/(lifecycle_manager_navigation|bt_navigator|controller_server|planner_server|amcl|map_server)$' <<<"$NODES"; then
++  echo "ERROR: Nav2 nodes are already visible on this domain; refusing to start a second instance"; exit 3
++fi
++
++LOG="$RUN_DIR/nav2-launch.log"
++rm -f "$RUN_DIR/nav2.exit" "$RUN_DIR/nav2.pid"
++{
++  echo "start_wall=$(date -Is)"
++  echo "cmd=ros2 launch carter_navigation carter_navigation.launch.xml use_sim_time:=true $*"
++  echo "env RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION ROS_DOMAIN_ID=$ROS_DOMAIN_ID FASTRTPS_DEFAULT_PROFILES_FILE=$FASTRTPS_DEFAULT_PROFILES_FILE DISPLAY=${DISPLAY:-unset}"
++  echo "overlay=$(ros2 pkg prefix carter_navigation)"
++} > "$RUN_DIR/nav2-launch.meta"
++
++# `env --default-signal=INT,TERM`: a non-interactive shell starts `&` jobs with SIGINT ignored, and that inherited
++# SIG_IGN made `ros2 launch` ignore SIGINT entirely (2026-09-29 run-03). Restore the defaults before the wrapper starts.
++setsid nohup env --default-signal=INT,TERM bash -c 'echo $$ > "$0"; trap "true" INT TERM; ros2 launch carter_navigation carter_navigation.launch.xml use_sim_time:=true "${@:2}"; echo $? > "$1"' \
++  "$RUN_DIR/nav2.pid" "$RUN_DIR/nav2.exit" "$@" < /dev/null > "$LOG" 2>&1 &
++
++WRAP=""; LAUNCH=""
++for _ in $(seq 1 20); do                      # up to 10 s for the pid file and the launch child to appear
++  sleep 0.5
++  [[ -s "$RUN_DIR/nav2.pid" ]] || continue
++  WRAP=$(cat "$RUN_DIR/nav2.pid")
++  LAUNCH=$(pgrep -P "$WRAP" -f "ros2 launch" 2>/dev/null | head -1)
++  [[ -n "$LAUNCH" ]] && break
++done
++if [[ -z "$WRAP" || -z "$LAUNCH" ]]; then
++  echo "ERROR: launch did not start (wrapper=${WRAP:-none} launch=${LAUNCH:-none}); see $LOG"; tail -20 "$LOG"; exit 4
++fi
++echo "session=$WRAP launch_pid=$LAUNCH boot_id=$(cat /proc/sys/kernel/random/boot_id) wrapper_starttime=$(starttime_of "$WRAP")" >> "$RUN_DIR/nav2-launch.meta"
++echo "nav2 launch started: wrapper/session=$WRAP launch_pid=$LAUNCH run_dir=$RUN_DIR log=$LOG"
+diff --git a/scripts/wsl/stop_nav2.sh b/scripts/wsl/stop_nav2.sh
+new file mode 100644
+index 0000000..3e58c2f
+--- /dev/null
++++ b/scripts/wsl/stop_nav2.sh
+@@ -0,0 +1,87 @@
++#!/usr/bin/env bash
++# stop_nav2.sh — RoboSim Eval D0d: stop the launch started by start_nav2.sh and record how it ended (plan doc A7).
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh <run_dir>
++# 0. Ownership (plan doc B0: stop only what you have confirmed you own): the session in nav2.pid is signalled only if
++#    the boot_id, the wrapper's start time and its command line (containing <run_dir>/nav2.exit) match what start_nav2.sh
++#    recorded in nav2-launch.meta. Run dirs are kept, and PIDs are reused after a WSL restart.
++# 1. SIGINT to the `ros2 launch` process only; launch forwards it to its children. (Signalling the whole process group
++#    delivers SIGINT twice to every child, which interrupted Nav2's own shutdown on 2026-09-29.)
++# 2. Wait up to 45 s for the whole session to exit; escalate to SIGTERM, then SIGKILL for this session only.
++# 3. Read the launch's real exit code from nav2.exit (written by the wrapper), check leftover processes in the session
++#    and leftover Nav2 nodes with a fresh discovery (--no-daemon; the ros2 daemon cache lists dead nodes for a while).
++# Exit: 0 nothing left behind; 1 leftover processes or Nav2 nodes; 3 leftover-node check could not run (unknown);
++#       5 refused: the session cannot be confirmed as this run's launch.
++set -uo pipefail
++RUN_DIR="${1:?run dir required}"
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
++set -u
++META="$RUN_DIR/nav2-launch.meta"
++[[ -f "$RUN_DIR/nav2.pid" ]] || { echo "no nav2.pid in $RUN_DIR"; exit 1; }
++WRAP=$(cat "$RUN_DIR/nav2.pid")
++alive() { pgrep -s "$WRAP" >/dev/null 2>&1; }
++starttime_of() { sed -E 's/^.*\) //' "/proc/$1/stat" 2>/dev/null | awk '{print $20}'; }
++meta_value() { sed -n "s/.*$1=\\([^ ]*\\).*/\\1/p" "$META" | tail -1; }
++
++if ! alive; then
++  echo "session $WRAP has no processes (already exited); exit code file: $(cat "$RUN_DIR/nav2.exit" 2>/dev/null || echo missing)"
++  echo "stop_wall=$(date -Is) method=already-exited launch_exit=$(cat "$RUN_DIR/nav2.exit" 2>/dev/null || echo unknown)" >> "$META"
++  exit 0
++fi
++
++WHY=""
++[[ "$(cat /proc/sys/kernel/random/boot_id)" == "$(meta_value boot_id)" ]] || WHY="boot_id differs from the one recorded at start (WSL restarted?)"
++[[ -z "$WHY" && "$(starttime_of "$WRAP")" != "$(meta_value wrapper_starttime)" ]] && WHY="start time of process $WRAP differs from the recorded wrapper start time"
++[[ -z "$WHY" ]] && ! tr '\0' ' ' < "/proc/$WRAP/cmdline" 2>/dev/null | grep -qF "$RUN_DIR/nav2.exit" && WHY="process $WRAP is not this run dir's wrapper (command line does not reference $RUN_DIR/nav2.exit)"
++if [[ -n "$WHY" ]]; then
++  echo "REFUSING to signal session $WRAP: $WHY"
++  echo "stop_wall=$(date -Is) method=refused reason=\"$WHY\"" >> "$META"
++  exit 5
++fi
++
++# The launch is the wrapper's direct child. (Matching `-s <session> -f "ros2 launch ..."` also matches the wrapper bash,
++# whose own command line contains that string; the wrapper traps INT, so the launch would never be told to stop.)
++LAUNCH=$(pgrep -P "$WRAP" -f "ros2 launch" | head -1)
++if [[ -z "$LAUNCH" ]]; then
++  CAND=$(meta_value launch_pid)
++  if [[ -n "$CAND" && "$(ps -o sid= -p "$CAND" 2>/dev/null | tr -d ' ')" == "$WRAP" ]]; then LAUNCH=$CAND; fi
++fi
++T0=$(date +%s)
++if [[ -n "$LAUNCH" ]]; then
++  echo "SIGINT -> ros2 launch pid $LAUNCH (session $WRAP) at $(date -Is)"; kill -INT "$LAUNCH"; METHOD="SIGINT(launch)"
++else
++  echo "no ros2 launch process found in session $WRAP; SIGINT -> whole session"; pkill -INT -s "$WRAP"; METHOD="SIGINT(session)"
++fi
++for _ in $(seq 1 45); do alive || break; sleep 1; done
++if alive; then echo "still running after 45 s: SIGTERM -> session"; pkill -TERM -s "$WRAP"; METHOD="$METHOD+SIGTERM"; for _ in $(seq 1 10); do alive || break; sleep 1; done; fi
++if alive; then echo "still running: SIGKILL -> session"; pkill -KILL -s "$WRAP"; METHOD="$METHOD+SIGKILL"; sleep 2; fi
++ELAPSED=$(( $(date +%s) - T0 ))
++LEFT_PROCS=$(pgrep -a -s "$WRAP")
++NODES=$(timeout 20 ros2 node list --no-daemon --spin-time 3 2>&1); NRC=$?
++if [[ $NRC -ne 0 ]]; then
++  NODE_STATE=unknown; LEFT_NODES=""
++else
++  LEFT_NODES=$(grep -E '^/(lifecycle_manager|bt_navigator|controller_server|planner_server|amcl|map_server|rviz|collision_monitor|velocity_smoother|behavior_server|smoother_server|waypoint_follower|docking_server|route_server|pointcloud_to_laserscan)' <<<"$NODES")
++  if [[ -n "$LEFT_NODES" ]]; then NODE_STATE=yes; else NODE_STATE=no; fi
++fi
++RC=$(cat "$RUN_DIR/nav2.exit" 2>/dev/null || echo unknown)
++echo "stopped in ${ELAPSED}s via $METHOD; launch exit code: $RC"
++if [[ -n "$LEFT_PROCS" ]]; then echo "WARNING: leftover processes in session $WRAP:"; echo "$LEFT_PROCS"; else echo "no leftover processes in session $WRAP"; fi
++case "$NODE_STATE" in
++  yes) echo "WARNING: Nav2 nodes still discovered (fresh discovery):"; echo "$LEFT_NODES" ;;
++  no) echo "no Nav2 nodes discovered (fresh discovery, no daemon)" ;;
++  unknown) echo "WARNING: leftover-node check failed (ros2 node list exit $NRC); leftover nodes unknown"; echo "$NODES" | tail -5 ;;
++esac
++echo "stop_wall=$(date -Is) method=$METHOD elapsed_s=$ELAPSED launch_exit=$RC leftover_procs=$([[ -n "$LEFT_PROCS" ]] && echo yes || echo no) leftover_nodes=$NODE_STATE" >> "$META"
++EXITS_RE='process has finished|process has died|exited with|SIGSEGV|Segmentation'
++if grep -qE "$EXITS_RE" "$RUN_DIR/nav2-launch.log"; then
++  echo "process exits reported by launch:"; grep -E "$EXITS_RE" "$RUN_DIR/nav2-launch.log" | tail -n 12
++else
++  echo "launch log reports no child process exits (e.g. killed before it could log them)"
++fi
++if [[ -n "$LEFT_PROCS" || "$NODE_STATE" == yes ]]; then exit 1; fi
++if [[ "$NODE_STATE" == unknown ]]; then exit 3; fi
++exit 0
+diff --git a/scripts/wsl/stop_record.sh b/scripts/wsl/stop_record.sh
+new file mode 100644
+index 0000000..a462967
+--- /dev/null
++++ b/scripts/wsl/stop_record.sh
+@@ -0,0 +1,67 @@
++#!/usr/bin/env bash
++# stop_record.sh — RoboSim Eval D0d: stop the recorders started by record_d0.sh, then check what was captured.
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_record.sh <attempt_dir>
++# Each recorder was started with setsid, so its recorded id is a session id; `timeout` creates its own process group
++# inside that session, therefore the whole SESSION is signalled (pkill -s), not just one process group.
++# Escalation: SIGINT (wait up to 20 s) -> SIGTERM (10 s) -> SIGKILL. The bag is copied into <attempt_dir>/rosbag
++# (git-ignored) only after every recorder session is gone, so a bag is never copied while it is still being written.
++# Required topics (plan doc A7: no data must not look like success): /clock, /chassis/odom, /tf; when a goal transcript
++# (goal-*.txt) exists in the attempt dir, also the NavigateToPose status and feedback topics.
++# Exit: 0 ok; 3 a recorder session survived SIGKILL; 4 a recorder exit-code file is missing; 5 bag missing,
++#       `ros2 bag info` failed or the copy failed; 6 a required topic has 0 messages. The first failure's code is used;
++#       every failure is printed.
++set -uo pipefail
++ATT="${1:?attempt dir required}"
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
++set -u
++[[ -f "$ATT/record.pids" ]] || { echo "no record.pids in $ATT"; exit 1; }
++RC=0
++fail() { local c=$1; shift; echo "FAIL($c): $*"; [[ $RC -eq 0 ]] && RC=$c; return 0; }
++NAMES=(); SIDS=()
++while read -r name sid; do [[ -n "${sid:-}" ]] && { NAMES+=("$name"); SIDS+=("$sid"); }; done < "$ATT/record.pids"
++alive_any() { local s; for s in "${SIDS[@]}"; do pgrep -s "$s" >/dev/null 2>&1 && return 0; done; return 1; }
++signal_all() {
++  local sig=$1 i
++  for i in "${!SIDS[@]}"; do
++    if pgrep -s "${SIDS[$i]}" >/dev/null 2>&1; then pkill "-$sig" -s "${SIDS[$i]}"; echo "SIG$sig -> session ${NAMES[$i]} (${SIDS[$i]})"; fi
++  done
++}
++wait_gone() { local n=$1; for _ in $(seq 1 "$n"); do alive_any || return 0; sleep 1; done; alive_any && return 1; return 0; }
++
++signal_all INT
++if ! wait_gone 20; then signal_all TERM; wait_gone 10 || { signal_all KILL; sleep 2; }; fi
++if alive_any; then
++  for i in "${!SIDS[@]}"; do pgrep -s "${SIDS[$i]}" >/dev/null 2>&1 && fail 3 "session ${NAMES[$i]} (${SIDS[$i]}) still alive after SIGKILL"; done
++fi
++echo "record stop $(date -Is)" >> "$ATT/record.meta"
++
++echo "recorder exit codes (124 = time cap reached; ros2 topic echo returns 2 = signal.SIGINT when stopped):"
++for i in "${!NAMES[@]}"; do
++  f="$ATT/${NAMES[$i]}.exit"
++  if [[ -f "$f" ]]; then printf '  %-14s session %-7s exit=%s\n' "${NAMES[$i]}" "${SIDS[$i]}" "$(cat "$f")" | tee -a "$ATT/record.meta"
++  else fail 4 "${NAMES[$i]}.exit missing (recorder did not record its exit code)"; echo "  ${NAMES[$i]} exit=missing" >> "$ATT/record.meta"; fi
++done
++
++BAG=$(cat "$ATT/bag-path.txt" 2>/dev/null || true)
++if [[ $RC -eq 3 ]]; then
++  fail 5 "bag not copied because a recorder session is still alive"
++elif [[ -z "$BAG" || ! -d "$BAG" ]]; then
++  fail 5 "bag directory not found (${BAG:-no bag-path.txt})"
++else
++  if ros2 bag info "$BAG" > "$ATT/bag-info.txt" 2>&1; then echo "bag info ok"; else fail 5 "ros2 bag info failed (see bag-info.txt)"; fi
++  if mkdir -p "$ATT/rosbag" && cp -r "$BAG"/. "$ATT/rosbag/"; then echo "bag copied to $ATT/rosbag ($(du -sh "$ATT/rosbag" | cut -f1))"; else fail 5 "copying the bag failed"; fi
++  grep -E 'Duration|Messages|Topic:' "$ATT/bag-info.txt" | head -20
++  REQUIRED=(/clock /chassis/odom /tf)
++  if compgen -G "$ATT/goal-*.txt" >/dev/null; then REQUIRED+=(/navigate_to_pose/_action/status /navigate_to_pose/_action/feedback); fi
++  for t in "${REQUIRED[@]}"; do
++    n=$(grep -E "Topic: $t \|" "$ATT/bag-info.txt" | sed -E 's/.*Count: ([0-9]+).*/\1/' | head -1)
++    if [[ -z "$n" || "$n" -eq 0 ]]; then fail 6 "required topic $t recorded ${n:-no} messages"; fi
++  done
++fi
++for f in odom amcl_pose cmd_vel action_status tf_map_base; do
++  printf '%-14s %6d lines\n' "$f" "$(wc -l < "$ATT/$f.txt" 2>/dev/null || echo 0)"
++done
++echo "stop_record result: exit $RC"
++exit $RC
+diff --git a/scripts/wsl/test_rviz.sh b/scripts/wsl/test_rviz.sh
+new file mode 100644
+index 0000000..4c1df20
+--- /dev/null
++++ b/scripts/wsl/test_rviz.sh
+@@ -0,0 +1,30 @@
++#!/usr/bin/env bash
++# test_rviz.sh — RoboSim Eval D0b: can rviz2 start and stay up under WSLg? (plan doc C: "RViz 打不开")
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/test_rviz.sh [<out_dir>]
++# Runs `timeout 20 rviz2` (exit 124 = it survived the whole window = PASS). On any other exit code it retries once
++# with software OpenGL (LIBGL_ALWAYS_SOFTWARE=1) and the xcb Qt platform, and records both attempts.
++set -uo pipefail
++OUT="${1:-/mnt/d/RoboSim-Eval/artifacts/d0b}"
++mkdir -p "$OUT"
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
++set -u
++echo "=== test_rviz.sh $(date -Is) DISPLAY=${DISPLAY:-unset} WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-unset} ==="
++
++attempt() {  # attempt <name> [env assignments...]
++  local name="$1"; shift
++  local log="$OUT/rviz-$name.log"
++  echo "--- attempt '$name' env: $* ---"
++  env "$@" timeout 20 rviz2 > "$log" 2>&1
++  local rc=$?
++  echo "rviz2 exit=$rc (124 = survived 20 s) -> $log"
++  echo "last lines:"; tail -n 6 "$log" | sed 's/^/    /'
++  return $rc
++}
++
++attempt default; rc=$?
++if [[ $rc -eq 124 ]]; then echo "=== result: PASS (default GL) ==="; exit 0; fi
++attempt software LIBGL_ALWAYS_SOFTWARE=1 QT_QPA_PLATFORM=xcb; rc=$?
++if [[ $rc -eq 124 ]]; then echo "=== result: PASS (software GL: LIBGL_ALWAYS_SOFTWARE=1 QT_QPA_PLATFORM=xcb) ==="; exit 0; fi
++echo "=== result: FAIL (rviz2 exits early in both modes) ==="; exit 1
+diff --git a/scripts/wsl/test_talker_listener.sh b/scripts/wsl/test_talker_listener.sh
+new file mode 100644
+index 0000000..317c311
+--- /dev/null
++++ b/scripts/wsl/test_talker_listener.sh
+@@ -0,0 +1,39 @@
++#!/usr/bin/env bash
++# test_talker_listener.sh — RoboSim Eval D0b: WSL-internal ROS 2 communication check (plan doc B2.4).
++# Proves only that two ROS 2 nodes inside WSL can talk; it says nothing about Isaac Sim on Windows.
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/test_talker_listener.sh [--with-dds-profile] [<out_dir>]
++# --with-dds-profile additionally sources dds_env.sh so Fast DDS loads configs/network/fastdds.xml (UDPv4 only).
++# Exit 0 = listener received messages; 1 = it did not. Both nodes run under `timeout`, whose exit code 124 means
++# "ran for the full window" by design. Only the processes started here are stopped.
++set -uo pipefail
++WITH_DDS=no
++[[ "${1:-}" == "--with-dds-profile" ]] && { WITH_DDS=yes; shift; }
++OUT="${1:-/mnt/d/RoboSim-Eval/artifacts/d0b}"
++mkdir -p "$OUT"
++TAG=$([[ $WITH_DDS == yes ]] && echo "dds" || echo "default")
++TLOG="$OUT/talker-$TAG.log"; LLOG="$OUT/listener-$TAG.log"
++
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
++if [[ $WITH_DDS == yes ]]; then
++  # shellcheck disable=SC1091
++  source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
++fi
++set -u
++
++echo "=== test_talker_listener.sh $(date -Is) profile=$TAG RMW=$RMW_IMPLEMENTATION DOMAIN=$ROS_DOMAIN_ID FASTRTPS_DEFAULT_PROFILES_FILE=${FASTRTPS_DEFAULT_PROFILES_FILE:-unset} ==="
++timeout 20 ros2 run demo_nodes_cpp talker > "$TLOG" 2>&1 &
++TPID=$!
++echo "talker started pid=$TPID (timeout 20 s) -> $TLOG"
++sleep 2
++timeout 12 ros2 run demo_nodes_cpp listener > "$LLOG" 2>&1
++LRC=$?
++echo "listener finished exit=$LRC (124 = ran the full 12 s window) -> $LLOG"
++if kill -0 "$TPID" 2>/dev/null; then kill -INT "$TPID" 2>/dev/null; fi
++wait "$TPID"; TRC=$?
++echo "talker finished exit=$TRC (124 = full window, 130 = stopped by this script)"
++HEARD=$(grep -c 'I heard' "$LLOG" || true)
++PUBLISHED=$(grep -c 'Publishing' "$TLOG" || true)
++echo "talker published lines: $PUBLISHED ; listener 'I heard' lines: $HEARD"
++if [[ "$HEARD" -gt 0 ]]; then echo "=== result: PASS (WSL-internal only) ==="; exit 0; else echo "=== result: FAIL ==="; tail -5 "$TLOG" "$LLOG"; exit 1; fi
+diff --git a/scripts/wsl/watch_clock.sh b/scripts/wsl/watch_clock.sh
+new file mode 100644
+index 0000000..d2429eb
+--- /dev/null
++++ b/scripts/wsl/watch_clock.sh
+@@ -0,0 +1,32 @@
++#!/usr/bin/env bash
++# watch_clock.sh — RoboSim Eval D0c: record wall time against simulation time (/clock) as a continuous stream.
++#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/watch_clock.sh <seconds> <out_file>
++# Used for the pause/resume test (plan doc B7 step 3): while this runs, the user presses Pause and later Play in
++# Isaac Sim. A pause shows up as a gap in the stream (no /clock messages) with equal sim time before and after it.
++# Output lines: <wall time ISO with ns> <sim seconds as float>. Exit code 124 from timeout = full window, by design.
++set -uo pipefail
++SECS="${1:-90}"; OUT="${2:-/mnt/d/RoboSim-Eval/artifacts/d0c/clock-watch.txt}"
++mkdir -p "$(dirname "$OUT")"
++set +u
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --base-only || exit 2
++# shellcheck disable=SC1091
++source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
++set -u
++{
++echo "# watch_clock.sh start $(date -Is) duration=${SECS}s (continuous /clock stream)"
++timeout "$SECS" ros2 topic echo /clock --field clock 2>&1 | python3 -u -c '
++import sys, time, datetime
++sec = None
++for line in sys.stdin:
++    line = line.strip()
++    if line.startswith("sec:"):
++        sec = int(line.split(":")[1])
++    elif line.startswith("nanosec:") and sec is not None:
++        ns = int(line.split(":")[1])
++        print(datetime.datetime.now().isoformat(timespec="milliseconds"), f"{sec + ns/1e9:.3f}")
++        sec = None
++'
++echo "# watch_clock.sh end $(date -Is) timeout_exit=${PIPESTATUS[0]}"
++} > "$OUT" 2>&1
++echo "written $OUT ($(wc -l < "$OUT") lines)"
+diff --git a/tests/test_analyze_attempt.py b/tests/test_analyze_attempt.py
+new file mode 100644
+index 0000000..4b08880
+--- /dev/null
++++ b/tests/test_analyze_attempt.py
+@@ -0,0 +1,142 @@
++"""Fixed-input tests for scripts/wsl/analyze_attempt.py (plan doc A7: offline checks, no simulator, no ROS needed).
++
++Run (WSL):  python3 -m pytest -q /mnt/d/RoboSim-Eval/tests
++Each case builds a synthetic recording: the robot starts at odom (0, 0, 0), drives along +x to `final_x` until sim
++t = 4.0 s, then stands still. Receive time = 3 x sim time (RTF ~0.33, as measured with Nav2 running). Spawn (0, 0, 0)
++makes the AMCL-independent pose equal to odom; map->odom is identity, so the AMCL estimate equals it too.
++"""
++import math
++import os
++import sys
++
++import pytest
++
++sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts", "wsl"))
++import analyze_attempt as aa  # noqa: E402
++
++UUID = "aa" * 16
++OLD = "bb" * 16
++NS = 3_000_000_000  # receive ns per sim second
++GOAL = (2.0, 0.0, 0.0)
++SPAWN = (0.0, 0.0, 0.0)
++
++
++def make_run(final_x=2.0, rec_after=3.0, status_seq=((0.5, 2), (4.0, 4)), uuid=UUID, gap=None, feedback=True):
++    bag = {k: [] for k in ("clock", "odom", "cmd_vel", "status", "feedback", "tf_map_odom", "tf_odom_base")}
++    t_move_end = 4.0
++    for i in range(int((t_move_end + rec_after) * 60) + 1):
++        s = i / 60.0
++        if gap and gap[0] <= s < gap[1]:
++            continue
++        t = int(s * NS)
++        moving = s < t_move_end
++        x = final_x * s / t_move_end if moving else final_x
++        v = final_x / t_move_end if moving else 0.0
++        bag["clock"].append((t, s))
++        bag["odom"].append((t, s, "odom", "base_link", x, 0.0, 0.0, abs(v), 0.0))
++        bag["tf_odom_base"].append((t, s, x, 0.0, 0.0))
++        if i % 3 == 0:
++            bag["tf_map_odom"].append((t, s, 0.0, 0.0, 0.0))
++        if feedback and 0.5 <= s <= t_move_end and i % 2 == 0:
++            bag["feedback"].append((t, uuid, s, "map", x, 0.0, 0.0, max(0.0, final_x - x), s - 0.5, 0))
++    for s, code in status_seq:
++        bag["status"].append((int(s * NS), uuid, code))
++    return bag
++
++
++def transcript(goal=GOAL, uuid=UUID, rejected=False, status="SUCCEEDED"):
++    return {"transcript": "goal-test.txt", "sent_goal": list(goal) if goal else None, "goal_id": uuid, "rejected": rejected,
++            "status_text": status, "error_code": 0, "error_msg": "", "accepted_wall": "w0", "result_wall": "w1", "client_exit": 0}
++
++
++def test_success_is_reached_and_pass():
++    r, rows = aa.evaluate(make_run(), transcript(), GOAL, SPAWN)
++    assert (r["execution_status"], r["task_outcome"], r["data_status"], r["validation_status"]) == ("completed", "reached", "complete", "pass")
++    assert r["stop_still"]["state"] == "confirmed"
++    assert r["arrival_check"]["event"] == "stop_confirmed" and r["arrival_check"]["error_to_goal_m"] < 1e-6
++    assert r["safety_status"] == "unknown" and rows[0][0] == "recv_wall_ns"
++
++
++def test_aborted_is_unknown_not_unreachable_and_fails():
++    r, _ = aa.evaluate(make_run(status_seq=((0.5, 2), (4.0, 6))), transcript(status="ABORTED"), GOAL, SPAWN)
++    assert r["nav2_raw"]["terminal_status_name"] == "ABORTED"
++    assert r["task_outcome"] == "unknown" and r["validation_status"] == "fail"
++
++
++def test_canceled_goal():
++    r, _ = aa.evaluate(make_run(status_seq=((0.5, 2), (4.0, 5))), transcript(status="CANCELED"), GOAL, SPAWN)
++    assert (r["task_outcome"], r["validation_status"]) == ("canceled", "fail")
++
++
++def test_no_terminal_status_is_interrupted_and_inconclusive():
++    r, _ = aa.evaluate(make_run(status_seq=((0.5, 2),)), transcript(), GOAL, SPAWN)
++    assert (r["execution_status"], r["task_outcome"], r["validation_status"]) == ("interrupted", "unknown", "inconclusive")
++
++
++def test_recording_too_short_after_result_is_inconclusive_not_fail():
++    r, _ = aa.evaluate(make_run(rec_after=0.3), transcript(), GOAL, SPAWN)
++    assert r["stop_still"]["state"] == "not_observed"
++    assert r["validation_status"] == "inconclusive"
++
++
++def test_stale_status_of_an_older_goal_is_ignored():
++    bag = make_run(status_seq=((0.5, 2),))
++    bag["status"] = [(int(0.1 * NS), OLD, 4)] + bag["status"] + [(int(5.0 * NS), OLD, 4)]
++    r, _ = aa.evaluate(bag, transcript(), GOAL, SPAWN)
++    assert r["nav2_raw"]["terminal_status_code"] is None
++    assert r["target_goal"]["other_goal_ids_in_recording"] == [OLD]
++    assert (r["execution_status"], r["validation_status"]) == ("interrupted", "inconclusive")
++
++
++def test_without_transcript_the_goal_is_unverified_and_target_comes_from_the_bag():
++    tr = transcript(goal=None, uuid=None)
++    r, _ = aa.evaluate(make_run(), tr, GOAL, SPAWN)
++    assert r["target_goal"]["id"] == UUID and r["goal"]["verified_against_transcript"] is False
++    assert r["task_outcome"] == "reached" and r["validation_status"] == "inconclusive"
++
++
++def test_goal_argument_must_match_the_sent_goal():
++    with pytest.raises(aa.GoalMismatch):
++        aa.evaluate(make_run(), transcript(goal=(3.0, 0.0, 0.0)), GOAL, SPAWN)
++
++
++def test_data_gap_longer_than_dropout_makes_data_incomplete():
++    r, _ = aa.evaluate(make_run(gap=(2.0, 3.0)), transcript(), GOAL, SPAWN)  # 1 sim s = 3 s wall > 2 s dropout
++    assert r["data_status"] == "incomplete" and r["validation_status"] == "inconclusive"
++
++
++def test_without_spawn_there_is_no_independent_source():
++    r, _ = aa.evaluate(make_run(), transcript(), GOAL, None)
++    assert r["arrival_check"]["source"] == "nav2_feedback_map" and r["validation_status"] == "inconclusive"
++
++
++def test_rejected_goal_fails_and_keeps_the_reason():
++    bag = make_run(status_seq=())
++    r, _ = aa.evaluate(bag, transcript(uuid=None, rejected=True, status="REJECTED"), GOAL, SPAWN)
++    assert r["nav2_raw"]["rejected"] is True
++    assert (r["execution_status"], r["task_outcome"], r["validation_status"]) == ("completed", "unknown", "fail")
++
++
++def test_position_error_above_tolerance_fails():
++    goal = (2.8, 0.0, 0.0)
++    r, _ = aa.evaluate(make_run(), transcript(goal=goal), goal, SPAWN)
++    assert r["arrival_check"]["error_to_goal_m"] == pytest.approx(0.8)
++    assert (r["task_outcome"], r["validation_status"]) == ("unknown", "fail")
++
++
++def test_transcript_parser(tmp_path):
++    (tmp_path / "goal-202437.txt").write_text(
++        "send_goal start 2026-09-29T20:24:37-07:00 action=/navigate_to_pose frame=map x=-4.0 y=-1.0 yaw=0.0 qz=0.0 qw=1.0\n"
++        "2026-09-29T20:24:40.495 Goal accepted with ID: 8e28b7ce036f43659b4be8c71c404771\n"
++        "2026-09-29T20:25:06.105     error_code: 0\n"
++        "2026-09-29T20:25:06.105 error_msg: ''\n"
++        "2026-09-29T20:25:06.105 Goal finished with status: SUCCEEDED\n"
++        "send_goal end 2026-09-29T20:25:06-07:00 action_client_exit=0 settle_s=6\n", encoding="utf-8")
++    tr = aa.parse_goal_transcript(str(tmp_path))
++    assert tr["sent_goal"] == [-4.0, -1.0, 0.0] and tr["goal_id"] == "8e28b7ce036f43659b4be8c71c404771"
++    assert (tr["status_text"], tr["error_code"], tr["error_msg"], tr["client_exit"]) == ("SUCCEEDED", 0, "", 0)
++
++
++def test_pose_compose_with_the_real_spawn():
++    x, y, yaw = aa.pose_compose((-6.0, -1.0, math.pi), (0.5, 0.0, 0.0))
++    assert (x, y) == (pytest.approx(-6.5), pytest.approx(-1.0))

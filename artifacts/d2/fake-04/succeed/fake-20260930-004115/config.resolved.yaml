@@ -1,0 +1,80 @@
+scenario:
+  name: fake
+  goal:
+    x: 1.0
+    y: 0.0
+    yaw: 0.0
+  obstacles: []
+  expect: depends on the fake Nav2 mode
+run:
+  frame: map
+  units:
+    length: m
+    angle: rad
+  position_tolerance_m: 0.5
+  heading_assessed: false
+  stop_linear_mps: 0.05
+  stop_angular_radps: 0.1
+  stop_hold_sim_s: 1.0
+  stop_max_gap_sim_s: 0.25
+  limits:
+    ready_wall_s: 8.0
+    accept_wall_s: 5.0
+    nav_sim_s: 30.0
+    nav_wall_s: 8.0
+    cancel_wall_s: 5.0
+    stop_wall_s: 6.0
+  dropout_wall_s: 2.0
+  contact_filter: not measured in the fake test
+  record_cap_s: 60.0
+sim: null
+topics:
+  clock:
+    name: /clock
+    msg_type: rosgraph_msgs/msg/Clock
+    parent: null
+    child: null
+  odom:
+    name: /chassis/odom
+    msg_type: nav_msgs/msg/Odometry
+    parent: null
+    child: null
+  tf:
+    name: /tf
+    msg_type: tf2_msgs/msg/TFMessage
+    parent: odom
+    child: base_link
+  lidar:
+    name: /front_3d_lidar/lidar_points
+    msg_type: sensor_msgs/msg/PointCloud2
+    parent: null
+    child: null
+doctor:
+  discovery_timeout_s: 5.0
+  window_s: 3.0
+  thresholds:
+    clock_stall_s: 2.0
+    min_sim_progress_s: 0.2
+    streams:
+      odom:
+        min_rate_hz: 8.0
+        max_age_s: 2.0
+      tf:
+        min_rate_hz: 8.0
+        max_age_s: 2.0
+      lidar:
+        min_rate_hz: 1.0
+        max_age_s: 2.5
+env:
+  rmw: rmw_fastrtps_cpp
+  domain_id: '42'
+  ros_distro: jazzy
+  require_dds_profile: true
+runner_options:
+  scenario: fake
+  config: /mnt/d/RoboSim-Eval/tests/ros_fake/runner_fake.yaml
+  out: /mnt/d/RoboSim-Eval/artifacts/d2/fake-04/succeed
+  no_sim: true
+  no_nav2: true
+  no_record: true
+  no_analyze: true

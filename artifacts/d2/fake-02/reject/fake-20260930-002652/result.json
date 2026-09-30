@@ -1,0 +1,55 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "inconclusive",
+  "execution_status_analyzer": null,
+  "execution_status": "completed",
+  "runner": {
+    "run_id": "fake-20260930-002652",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 100493.057896366,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 100498.054009532,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 100498.054789118,
+        "t_sim": 2.625898271,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 100498.065121507,
+        "t_sim": 2.657869291,
+        "reason": "goal rejected"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 100498.065751058,
+        "t_sim": 2.657869291,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "nav2_ready_wall_s": 0.0
+  }
+}

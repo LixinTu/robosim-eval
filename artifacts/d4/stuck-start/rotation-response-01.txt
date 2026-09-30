@@ -1,0 +1,4 @@
+{"cmd_angular_radps": 0.0368, "hold_wall_s": 20.0, "yaw_before": 3.141577941852762, "yaw_after": -3.1412380033987124, "yaw_change_rad": 0.0003693619281117895, "gt_angular_speed_at_end_of_hold": 0.0005150538636371493, "moved_m": 0.009148598164646181, "sim_elapsed_s": 8.033}
+{"cmd_angular_radps": 0.1105, "hold_wall_s": 20.0, "yaw_before": 3.1415762333191055, "yaw_after": -2.888389959093562, "yaw_change_rad": 0.25321911476691944, "gt_angular_speed_at_end_of_hold": 0.07932011038064957, "moved_m": 0.04294972910925282, "sim_elapsed_s": 8.117}
+{"cmd_angular_radps": 0.2579, "hold_wall_s": 20.0, "yaw_before": 3.1415765918524214, "yaw_after": -1.4276021872000686, "yaw_change_rad": 1.7140065281270964, "gt_angular_speed_at_end_of_hold": 0.22860866785049438, "moved_m": 0.03705410404885768, "sim_elapsed_s": 8.167}
+exit=0

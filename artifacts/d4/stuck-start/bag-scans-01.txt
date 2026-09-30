@@ -1,0 +1,50 @@
+normal-20260930-003622 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.1600
+normal-20260930-004343 plan0=(-6.025,-0.975) dir5=0.0 dir20=0.0 n=240 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=-0.7000
+normal-20260930-004634 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+normal-20260930-012548 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.2579
+bypass-20260930-012001 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.1600
+cancel-20260930-010644 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+cancel-20260930-012218 plan0=(-6.025,-0.975) dir5=0.0 dir20=0.0 n=240 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=-0.1600
+cancel-20260930-012426 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+collision-20260930-011323 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+dropout-20260930-010804 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+normal-20260930-010104 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+timeout-20260930-011202 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+timeout-20260930-012837 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+unreachable-20260930-010458 first cmd w=0.1600
+bypass-20260930-013406 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+bypass-20260930-014400 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+bypass-20260930-015337 plan0=(-6.025,-0.975) dir5=0.0 dir20=0.0 n=240 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=-0.1600
+normal-20260930-013010 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+normal-20260930-014009 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+normal-20260930-014949 plan0=(-6.025,-1.025) dir5=0.0 dir20=0.0 n=239 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=180.00deg | first cmd w=0.0368
+unreachable-20260930-013807 first cmd w=0.1600
+unreachable-20260930-014759 first cmd w=0.1600
+unreachable-20260930-015531 first cmd w=0.1600
+normal-20260930-020110 plan0=(-6.025,-0.975) dir5=-1.5 dir20=-1.5 n=241 | amcl=(-6.000,-1.000,180.00deg) heading-minus-dir20=-178.50deg | first cmd w=-0.1600
+---
+run | contacts | first cmd | min-rotation phase wall s | first linear>0.1 after first cmd wall s | recoveries
+d2/runs/normal-20260930-003622 | False | 00:36:56.796000 | 0.0 | 12.049 | 0
+d2/runs/normal-20260930-004343 | False | 00:44:26.759000 | 0.0 | 9.198 | 0
+d2/runs/normal-20260930-004634 | False | 00:47:07.817000 | 8.4 | None | 0
+d3/runs-diagnosis/normal-20260930-012548 | False | 01:26:22.992000 | 0.0 | 11.538 | 0
+d3/runs/bypass-20260930-012001 | True | 01:20:37.130000 | 0.0 | 15.088 | 0
+d3/runs/cancel-20260930-010644 | True | 01:07:20.413000 | 12.4 | None | 0
+d3/runs/cancel-20260930-012218 | True | 01:22:54.437000 | 0.0 | None | 0
+d3/runs/cancel-20260930-012426 | True | 01:25:01.090000 | 0.0 | None | 0
+d3/runs/collision-20260930-011323 | True | 01:14:01.382000 | 105.1 | 130.786 | 10
+d3/runs/dropout-20260930-010804 | True | 01:08:41.048000 | 110.9 | 135.606 | 5
+d3/runs/normal-20260930-010104 | True | 01:01:41.541000 | 104.1 | 120.734 | 5
+d3/runs/timeout-20260930-011202 | True | 01:12:37.741000 | 14.8 | None | 0
+d3/runs/timeout-20260930-012837 | True | 01:29:12.878000 | 17.0 | None | 0
+d3/runs/unreachable-20260930-010458 | True | 01:05:37.411000 | 0.0 | None | 15
+d4/batch-20260930-013010/runs/bypass-20260930-013406 | True | 01:34:49.546000 | 103.7 | 129.404 | 5
+d4/batch-20260930-013010/runs/bypass-20260930-014400 | True | 01:44:38.648000 | 105.4 | 131.889 | 5
+d4/batch-20260930-013010/runs/bypass-20260930-015337 | True | 01:54:18.288000 | 0.0 | 9.198 | 0
+d4/batch-20260930-013010/runs/normal-20260930-013010 | True | 01:30:51.172000 | 104.2 | 122.249 | 5
+d4/batch-20260930-013010/runs/normal-20260930-014009 | True | 01:40:46.727000 | 106.6 | 131.448 | 5
+d4/batch-20260930-013010/runs/normal-20260930-014949 | True | 01:50:26.445000 | 104.9 | 122.839 | 5
+d4/batch-20260930-013010/runs/unreachable-20260930-013807 | True | 01:38:51.737000 | 0.0 | None | 15
+d4/batch-20260930-013010/runs/unreachable-20260930-014759 | True | 01:48:41.009000 | 0.0 | None | 15
+d4/batch-20260930-013010/runs/unreachable-20260930-015531 | True | 01:56:09.773000 | 0.0 | None | 15
+d5/defect3-before/normal-20260930-020110 | False | 02:01:57.601000 | 0.0 | 9.688 | 0

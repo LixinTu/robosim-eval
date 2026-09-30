@@ -1,0 +1,84 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "timeout",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "fail",
+  "execution_status_analyzer": null,
+  "execution_status": "completed",
+  "verdict_reasons": {
+    "fail": [
+      "navigation nav_wall_timeout: the runner canceled the goal"
+    ]
+  },
+  "runner": {
+    "run_id": "fake-20260930-002412",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 100341.915702469,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 100346.773108713,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 100346.773938557,
+        "t_sim": 2.577306071,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 100346.779486874,
+        "t_sim": 2.6253487570000003,
+        "reason": "goal accepted 9f4347c8ba284b08b3ecede02fa8eeb1"
+      },
+      {
+        "state": "CANCELING",
+        "t_wall": 100354.782290509,
+        "t_sim": 5.856242624,
+        "reason": "nav_wall_timeout"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 100354.812598573,
+        "t_sim": 5.856242624,
+        "reason": "terminal status CANCELED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 100354.813078143,
+        "t_sim": 5.856242624,
+        "reason": "robot at rest (stop-still confirmed at sim 3.586)"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": null,
+    "timeout_reason": "nav_wall_timeout",
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "nav2_ready_wall_s": 0.0,
+    "terminal": {
+      "status": 5,
+      "name": "CANCELED",
+      "error_code": 0,
+      "error_msg": "",
+      "feedback_count": 80,
+      "last_feedback": {
+        "distance_remaining": 0.0,
+        "recoveries": 0
+      }
+    },
+    "stop_confirmed_sim": 3.5855547210000003
+  }
+}

@@ -1,0 +1,55 @@
+
+===== info -v /front_3d_lidar/lidar_points =====
+CMD: timeout 15 ros2 topic info -v /front_3d_lidar/lidar_points
+Type: sensor_msgs/msg/PointCloud2
+
+Publisher count: 1
+
+Node name: _Render_PostProcess_SDGPipeline_Replicator_02_NodeWriterWriter
+Node namespace: /front_3d_lidar
+Topic type: sensor_msgs/msg/PointCloud2
+Topic type hash: RIHS01_9198cabf7da3796ae6fe19c4cb3bdd3525492988c70522628af5daa124bae2b5
+Endpoint type: PUBLISHER
+GID: 01.0f.54.eb.50.81.de.ca.11.00.00.00.00.00.03.03
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Subscription count: 0
+
+EXIT: 0
+
+===== hz /front_3d_lidar/lidar_points (8 s) =====
+CMD: timeout 8 ros2 topic hz /front_3d_lidar/lidar_points --window 20
+average rate: 2.844
+	min: 0.233s max: 0.698s std dev: 0.19974s window: 4
+average rate: 2.427
+	min: 0.233s max: 0.766s std dev: 0.21908s window: 7
+average rate: 2.662
+	min: 0.228s max: 0.766s std dev: 0.20933s window: 12
+average rate: 2.544
+	min: 0.228s max: 0.766s std dev: 0.20894s window: 15
+EXIT: 124
+
+===== sample /front_3d_lidar/lidar_points =====
+CMD: timeout 10 ros2 topic echo --once --no-arr /front_3d_lidar/lidar_points
+header:
+  stamp:
+    sec: 31
+    nanosec: 600000000
+  frame_id: front_3d_lidar
+height: 1
+width: 45049
+fields: '<sequence type: sensor_msgs/msg/PointField, length: 3>'
+is_bigendian: false
+point_step: 12
+row_step: 540588
+data: '<sequence type: uint8, length: 540588>'
+is_dense: true
+---
+EXIT: 0

@@ -1,0 +1,18 @@
+--- trial 1 00:31:44.889
+{"command": "reset", "state": "playing"}
+{"command": "reset-check", "entity": "/World/Nova_Carter_ROS
+doctor start 00:31:49.963
+doctor exit 0
+clock  /clock                           present      77 msgs  25.40 Hz  sim +1.267 s  RTF 0.42  last 0.00 s ago
+lidar  /front_3d_lidar/lidar_points     ok           10 msgs   3.30 Hz  max gap 0.472 s  last 0.09 s ago  stamp lag 0.067 s
+--- trial 2 00:31:55.972
+{"command": "reset", "state": "playing"}
+{"command": "reset-check", "entity": "/World/Nova_Carter_ROS
+doctor start 00:32:00.942
+doctor exit 0
+clock  /clock                           present      77 msgs  25.54 Hz  sim +1.267 s  RTF 0.43  last 0.05 s ago
+lidar  /front_3d_lidar/lidar_points     ok           11 msgs   3.65 Hz  max gap 0.248 s  last 0.32 s ago  stamp lag 0.150 s
+trial 3 (doctor 1.3 s after reset): exit 0 | lidar /front_3d_lidar/lidar_points ok 7 msgs 2.31 Hz max gap 0.472 s last 0.17 s ago stamp | 25.45 Hz sim +1.267 s RTF 0.43 last 0.00 s ago
+trial 4 (doctor 1.3 s after reset): exit 0 | lidar /front_3d_lidar/lidar_points ok 9 msgs 2.97 Hz max gap 0.711 s last 0.17 s ago stamp | 25.11 Hz sim +1.250 s RTF 0.43 last 0.05 s ago
+trial 5 (doctor 1.3 s after reset): exit 12 | lidar /front_3d_lidar/lidar_points stale 1 msgs 0.33 Hz max gap - s last 2.70 s ago stamp  | 25.30 Hz sim +1.250 s RTF 0.42 last 0.00 s ago
+trial 6 (doctor 1.3 s after reset): exit 0 | lidar /front_3d_lidar/lidar_points ok 9 msgs 2.99 Hz max gap 0.484 s last 0.36 s ago stamp | 24.96 Hz sim +1.233 s RTF 0.42 last 0.02 s ago

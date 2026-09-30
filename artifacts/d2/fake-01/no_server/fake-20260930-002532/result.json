@@ -1,0 +1,44 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "inconclusive",
+  "execution_status_analyzer": null,
+  "execution_status": "error",
+  "runner": {
+    "run_id": "fake-20260930-002532",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 100416.551584907,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 100421.858624119,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 100429.874313542,
+        "t_sim": 6.032908945,
+        "reason": "ready_timeout"
+      }
+    ],
+    "errors": [
+      "ready_timeout"
+    ],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {}
+  }
+}

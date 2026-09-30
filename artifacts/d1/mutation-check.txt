@@ -1,0 +1,12 @@
+# python3 artifacts/d1/mutation_check.py  (2026-09-29T23:41:46-07:00, cwd /mnt/d/RoboSim-Eval, WSL bash)
+baseline failures: []
+M1 stale streams never flagged -> caught by ['test_stale_stream_is_degraded']
+M2 slow streams never flagged -> caught by ['test_slow_stream_is_degraded']
+M3 missing publisher treated as silent -> caught by ['test_advancing_clock_but_missing_lidar_publisher_is_data_missing']
+M4 clock stall ignored -> caught by ['test_clock_that_stops_during_the_window_is_not_advancing']
+M5 frozen clock counts as progress -> caught by ['test_backward_clock_jump_is_reported_and_only_forward_progress_counts', 'test_clock_messages_with_frozen_sim_time_are_not_advancing', 'test_healthy_simulation_exits_zero_and_reports_real_rates_and_freshness']
+M6 environment errors ignored -> caught by ['test_missing_dds_profile_is_an_environment_error', 'test_wrong_message_type_is_an_interface_error', 'test_wrong_rmw_is_an_environment_error_even_when_data_flows']
+M7 backward clock jumps counted as progress -> caught by ['test_backward_clock_jump_is_reported_and_only_forward_progress_counts']
+after restore: []
+result: PASS
+exit=0

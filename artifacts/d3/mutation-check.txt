@@ -1,0 +1,13 @@
+# python3 artifacts/d3/mutation_check.py  (2026-09-30T01:06:51-07:00, cwd /mnt/d/RoboSim-Eval, WSL bash)
+baseline failures: []
+M1 false success accepted -> caught by ['test_bad_data_false_success_is_not_a_pass']
+M2 missing contact data treated as safe -> caught by ['test_bad_data_missing_contact_data_is_not_a_pass']
+M3 backward clock ignored -> caught by ['test_bad_data_time_going_backwards_is_not_a_pass']
+M4 cancel without acknowledgement ignored -> caught by ['test_bad_data_cancel_without_acknowledgement_is_not_a_pass']
+M5 ground contacts counted as collisions -> caught by ['test_bad_data_time_going_backwards_is_not_a_pass', 'test_collision_with_an_obstacle_fails_safety', 'test_injected_cancel_is_canceled_and_passes_its_scenario', 'test_interrupted_run_is_never_a_pass', 'test_normal_arrival_with_ground_contacts_only_passes', 'test_preset_unreachable_goal_with_abort_is_unreachable_and_passes_its_scenario', 'test_required_stream_gap_makes_data_incomplete', 'test_timeout_is_judged_separately', 'test_verdict_serializes']
+M6 robot self contacts counted -> caught by ['test_robot_self_contacts_are_ignored']
+M7 informational gaps make data incomplete -> caught by ['test_informational_amcl_gap_is_only_a_warning', 'test_injected_cancel_is_canceled_and_passes_its_scenario', 'test_normal_arrival_with_ground_contacts_only_passes', 'test_preset_unreachable_goal_with_abort_is_unreachable_and_passes_its_scenario', 'test_timeout_is_judged_separately', 'test_verdict_serializes']
+M8 abort read as unreachable without the preset label -> caught by ['test_abort_without_a_preset_label_stays_unknown_and_fails_a_reach_scenario']
+after restore: []
+result: PASS
+exit=0

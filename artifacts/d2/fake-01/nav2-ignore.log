@@ -1,0 +1,17 @@
+[ERROR] [1790753111.385853316] [fake_nav2.action_server]: Error raised in execute callback: Failed to publish feedback with an action server: feedback publisher is invalid, at ./src/rcl_action/action_server.c:1004
+Failed to publish log message to rosout: publisher's context is invalid, at ./src/rcl/publisher.c:423
+Traceback (most recent call last):
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/action/server.py", line 360, in _execute_goal
+    execute_result = await await_or_execute(execute_callback, goal_handle)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/executors.py", line 115, in await_or_execute
+    return callback(*args)
+           ^^^^^^^^^^^^^^^
+  File "/mnt/d/RoboSim-Eval/tests/ros_fake/fake_nav2.py", line 47, in execute
+    handle.publish_feedback(feedback)
+  File "/opt/ros/jazzy/lib/python3.12/site-packages/rclpy/action/server.py", line 157, in publish_feedback
+    self._action_server._handle.publish_feedback(feedback_message)
+rclpy._rclpy_pybind11.RCLError: Failed to publish feedback with an action server: feedback publisher is invalid, at ./src/rcl_action/action_server.c:1004
+[WARN] [1790753111.399058608] [fake_nav2.action_server]: Goal state not set, assuming aborted. Goal ID: [225  49  55 233 249 125  64  61 168  48 170 195  96 136  42 211]
+Failed to publish log message to rosout: publisher's context is invalid, at ./src/rcl/publisher.c:423
+The following exception was never retrieved: Failed get goal status array: feedback publisher is invalid, at ./src/rcl_action/action_server.c:1004

@@ -1,0 +1,6 @@
+start_wall=2026-09-30T01:28:59-07:00
+cmd=ros2 launch carter_navigation carter_navigation.launch.xml use_sim_time:=true 
+env RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml DISPLAY=:0
+overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation
+session=85654 launch_pid=85657 boot_id=66057f38-f187-4fe5-808c-e9c73475d5f7 wrapper_starttime=10398730
+stop_wall=2026-09-30T01:29:53-07:00 method=SIGINT(launch) elapsed_s=11 launch_exit=1 leftover_procs=no leftover_nodes=no

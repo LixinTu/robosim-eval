@@ -1,0 +1,3 @@
+﻿2026-09-29T23:28:50.2491979-07:00 queue start pid=27968 rounds=round1c-a,round1c-b,round1c-c,round1c-d max_attempts=4 not_before=2026-09-30T03:38
+2026-09-29T23:28:50.2876935-07:00 sleep until 2026-09-30T03:38:00 (14950 s): NotBefore
+codex-queue.stopped 2026-09-29T23:52:59.5231916-07:00 stopped by Claude to requeue with the D1 round (new queue logs to docs\review\codex-queue.log)

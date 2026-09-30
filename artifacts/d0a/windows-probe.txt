@@ -1,0 +1,382 @@
+﻿PROBE START: 2026-09-29 19:02:17 -07:00  host=WIN-THIV01L0JAE
+
+===== whoami =====
+CMD: whoami
+win-thiv01l0jae\administrator
+EXIT: 0
+
+===== is elevated =====
+CMD: ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+False
+EXIT: 0 (cmdlet)
+
+===== powershell version =====
+CMD: $PSVersionTable.PSVersion.ToString()
+5.1.19041.6456
+EXIT: 0 (cmdlet)
+
+===== execution policy =====
+CMD: Get-ExecutionPolicy -List | Format-Table -AutoSize
+
+        Scope ExecutionPolicy
+        ----- ---------------
+MachinePolicy       Undefined
+   UserPolicy       Undefined
+      Process          Bypass
+  CurrentUser    RemoteSigned
+ LocalMachine       Undefined
+EXIT: 0 (cmdlet)
+
+===== os =====
+CMD: Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber, OSArchitecture, @{n="TotalMemGB";e={[math]::Round($_.TotalVisibleMemorySize/1MB,1)}}, @{n="FreeMemGB";e={[math]::Round($_.FreePhysicalMemory/1MB,1)}} | Format-List
+
+
+Caption        : Microsoft Windows 10 专业版
+Version        : 10.0.19045
+BuildNumber    : 19045
+OSArchitecture : 64-bit
+TotalMemGB     : 63.7
+FreeMemGB      : 31.2
+EXIT: 0 (cmdlet)
+
+===== nvidia-smi summary =====
+CMD: nvidia-smi --query-gpu=name,driver_version,memory.total,memory.used,memory.free,utilization.gpu --format=csv
+name, driver_version, memory.total [MiB], memory.used [MiB], memory.free [MiB], utilization.gpu [%]
+NVIDIA GeForce RTX 4070 Laptop GPU, 591.44, 8188 MiB, 1313 MiB, 6636 MiB, 22 %
+EXIT: 0
+
+===== nvidia-smi full =====
+CMD: nvidia-smi
+Tue Sep 29 19:02:17 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 591.44                 Driver Version: 591.44         CUDA Version: 13.1     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                  Driver-Model | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 4070 ...  WDDM  |   00000000:01:00.0 Off |                  N/A |
+| N/A   63C    P0             11W /   61W |    1313MiB /   8188MiB |     23%      Default |
+|                                         |                        |                  N/A |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+EXIT: 0
+
+===== drives =====
+CMD: Get-PSDrive -PSProvider FileSystem | Select-Object Name, @{n="FreeGB";e={[math]::Round($_.Free/1GB,1)}}, @{n="UsedGB";e={[math]::Round($_.Used/1GB,1)}} | Format-Table -AutoSize
+
+Name FreeGB UsedGB
+---- ------ ------
+C    1421.2  437.5
+D    1523.8  339.2
+EXIT: 0 (cmdlet)
+
+===== wsl version =====
+CMD: wsl --version
+WSL 版本: 2.6.3.0
+内核版本: 6.6.87.2-1
+WSLg 版本: 1.0.71
+MSRDC 版本: 1.2.6353
+Direct3D 版本: 1.611.1-81528511
+DXCore 版本: 10.0.26100.1-240331-1435.ge-release
+Windows: 10.0.19045.6466
+EXIT: 0
+
+===== wsl distros =====
+CMD: wsl --list --verbose
+  NAME              STATE           VERSION
+* Ubuntu            Running         2
+  docker-desktop    Running         2
+EXIT: 0
+
+===== wsl invoke check =====
+CMD: wsl -d Ubuntu -- bash -c "echo wsl-ok; id -un"
+wsl-ok
+administrator
+EXIT: 0
+
+===== wslconfig =====
+CMD: if (Test-Path "$env:USERPROFILE\.wslconfig") { Get-Content "$env:USERPROFILE\.wslconfig" } else { "no .wslconfig" }
+no .wslconfig
+EXIT: 0 (cmdlet)
+
+===== isaac paths =====
+CMD: @('D:\isaac-sim-standalone-6.1.0-windows-x86_64\isaac-sim.bat','D:\isaac-sim-standalone-6.1.0-windows-x86_64\python.bat','D:\isaac-sim-standalone-6.1.0-windows-x86_64\post_install.bat','D:\isaac-sim-standalone-6.1.0-windows-x86_64\exts\isaacsim.ros2.core\jazzy\lib','D:\isaac-sim-standalone-6.1.0-windows-x86_64\exts\isaacsim.ros2.core\humble\lib','D:\isaac-sim-standalone-6.1.0-windows-x86_64\exts\isaacsim.ros2.bridge') | ForEach-Object { '{0}  {1}' -f (Test-Path $_), $_ }
+True  D:\isaac-sim-standalone-6.1.0-windows-x86_64\isaac-sim.bat
+True  D:\isaac-sim-standalone-6.1.0-windows-x86_64\python.bat
+True  D:\isaac-sim-standalone-6.1.0-windows-x86_64\post_install.bat
+True  D:\isaac-sim-standalone-6.1.0-windows-x86_64\exts\isaacsim.ros2.core\jazzy\lib
+True  D:\isaac-sim-standalone-6.1.0-windows-x86_64\exts\isaacsim.ros2.core\humble\lib
+True  D:\isaac-sim-standalone-6.1.0-windows-x86_64\exts\isaacsim.ros2.bridge
+EXIT: 0 (cmdlet)
+
+===== isaac top-level =====
+CMD: Get-ChildItem 'D:\isaac-sim-standalone-6.1.0-windows-x86_64' -Force | Select-Object Mode, Name | Format-Table -AutoSize
+
+Mode   Name                                          
+----   ----                                          
+d----- .vscode                                       
+d----- apps                                          
+d----- config                                        
+d----l extension_examples                            
+d----- exts                                          
+d----- extscache                                     
+d----- extsDeprecated                                
+d----- extsInternal                                  
+d----- extsUser                                      
+d----- jupyter_kernel                                
+d----- kit                                           
+d----- PACKAGE-LICENSES                              
+d----- python_packages                               
+d----- site                                          
+d----- skills                                        
+d----- standalone_examples                           
+d----- tests                                         
+d----- tools                                         
+-a---- AGENTS.md                                     
+-a---- APACHE-2.0-LICENSE.txt                        
+-a---- CLAUDE.md                                     
+-a---- clear_caches.bat                              
+-a---- isaac-sim.action_and_event_data_generation.bat
+-a---- isaac-sim.bat                                 
+-a---- isaac-sim.compatibility_check.bat             
+-a---- isaac-sim.fabric.bat                          
+-a---- isaac-sim.newton.bat                          
+-a---- isaac-sim.streaming.bat                       
+-a---- isaac-sim.xr.vr.bat                           
+-a---- LICENSE.txt                                   
+-a---- post_install.bat                              
+-a---- python.bat                                    
+-a---- requirements.txt                              
+-a---- run_tests.py                                  
+-a---- setup_python_env.bat                          
+-a---- setup_ros_env.bat                             
+-a---- tensorboard                                   
+-a---- ThirdPartyNotices.txt                         
+-a---- VERSION                                       
+-a---- warmup.bat
+EXIT: 0 (cmdlet)
+
+===== post_install.bat link lines =====
+CMD: Select-String -Path 'D:\isaac-sim-standalone-6.1.0-windows-x86_64\post_install.bat' -Pattern 'mklink|symlink|link|extension_examples|junction' | ForEach-Object { $_.LineNumber.ToString() + ': ' + $_.Line }
+19: :: Add symlink to Isaac Examples
+21: if exist extension_examples cmd /c rmdir extension_examples
+22: call mklink /D extension_examples exts\isaacsim.examples.interactive\isaacsim\examples\interactive
+23: :: Powershell New-Item -ItemType Junction -Path "extension_examples" -Target "exts\isaacsim.examples.interactive\isaacsim\examples\interactive"
+24: if %ERRORLEVEL% neq 0 (echo "Symlink extension_examples not created.") else (echo "Symlink extension_examples created.")
+EXIT: 0 (cmdlet)
+
+===== extension_examples item =====
+CMD: Get-Item 'D:\isaac-sim-standalone-6.1.0-windows-x86_64\extension_examples' -Force -ErrorAction SilentlyContinue | Select-Object Name, LinkType, Target, Mode | Format-List
+
+
+Name     : extension_examples
+LinkType : SymbolicLink
+Target   : {exts\isaacsim.examples.interactive\isaacsim\examples\interactive}
+Mode     : d----l
+EXIT: 0 (cmdlet)
+
+===== isaac processes =====
+CMD: Get-Process | Where-Object { $_.ProcessName -match "^kit$|^omni|isaac" } | Select-Object ProcessName, Id, StartTime, @{n="WorkingSetMB";e={[math]::Round($_.WorkingSet64/1MB)}}, Path | Format-List
+
+
+ProcessName  : kit
+Id           : 29036
+StartTime    : 2026/9/29 16:22:00
+WorkingSetMB : 801
+Path         : 
+
+ProcessName  : omni.telemetry.transmitter
+Id           : 19988
+StartTime    : 2026/9/29 16:22:05
+WorkingSetMB : 12
+Path         :
+EXIT: 0 (cmdlet)
+
+===== kit logs (newest 5) =====
+CMD: Get-ChildItem "$env:USERPROFILE\.nvidia-omniverse\logs\Kit" -Recurse -Filter *.log -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 5 FullName, LastWriteTime, Length | Format-List
+
+
+FullName      : C:\Users\Administrator\.nvidia-omniverse\logs\Kit\Isaac-Sim Full\6.1\kit_20260929_162201.log
+LastWriteTime : 2026/9/29 16:25:43
+Length        : 5231452
+EXIT: 0 (cmdlet)
+
+===== firewall profiles =====
+CMD: Get-NetFirewallProfile | Select-Object Name, Enabled, DefaultInboundAction, DefaultOutboundAction | Format-Table -AutoSize
+
+Name    Enabled DefaultInboundAction DefaultOutboundAction
+----    ------- -------------------- ---------------------
+Domain     True        NotConfigured         NotConfigured
+Private    True        NotConfigured         NotConfigured
+Public     True        NotConfigured         NotConfigured
+EXIT: 0 (cmdlet)
+
+===== connection profiles =====
+CMD: Get-NetConnectionProfile | Select-Object Name, InterfaceAlias, NetworkCategory, IPv4Connectivity | Format-Table -AutoSize
+
+Name  InterfaceAlias NetworkCategory IPv4Connectivity
+----  -------------- --------------- ----------------
+tlxwx WLAN                    Public         Internet
+EXIT: 0 (cmdlet)
+
+===== ipv4 addresses =====
+CMD: Get-NetIPAddress -AddressFamily IPv4 | Select-Object InterfaceAlias, IPAddress, PrefixLength | Sort-Object InterfaceAlias | Format-Table -AutoSize
+
+InterfaceAlias              IPAddress       PrefixLength
+--------------              ---------       ------------
+Loopback Pseudo-Interface 1 127.0.0.1                  8
+vEthernet (WSL)             172.28.208.1              20
+WLAN                        192.168.1.115             24
+本地连接* 1                     169.254.153.251           16
+本地连接* 2                     169.254.245.204           16
+蓝牙网络连接                      169.254.152.15            16
+以太网                         169.254.9.78              16
+EXIT: 0 (cmdlet)
+
+===== firewall rules mentioning kit or isaac =====
+CMD: Get-NetFirewallApplicationFilter | Where-Object { $_.Program -match "kit|isaac" } | Get-NetFirewallRule | Select-Object DisplayName, Enabled, Direction, Action, Profile | Format-Table -AutoSize
+
+EXIT: 0 (cmdlet)
+
+===== process env ROS/DDS =====
+CMD: Get-ChildItem Env: | Where-Object { $_.Name -match "ROS|RMW|FASTRTPS|CYCLONE|DDS" } | Format-Table -AutoSize
+
+EXIT: 0 (cmdlet)
+
+===== user env ROS/DDS =====
+CMD: [Environment]::GetEnvironmentVariables("User").GetEnumerator() | Where-Object { $_.Key -match "ROS|RMW|FASTRTPS|CYCLONE|DDS" } | Format-Table -AutoSize
+
+EXIT: 0 (cmdlet)
+
+===== machine env ROS/DDS =====
+CMD: [Environment]::GetEnvironmentVariables("Machine").GetEnumerator() | Where-Object { $_.Key -match "ROS|RMW|FASTRTPS|CYCLONE|DDS" } | Format-Table -AutoSize
+
+EXIT: 0 (cmdlet)
+
+===== existing fastdds xml candidates =====
+CMD: @("$env:USERPROFILE\.ros\fastdds.xml","C:\.ros\fastdds.xml","D:\robosim-assets\network\fastdds.xml") | ForEach-Object { "{0}  {1}" -f (Test-Path $_), $_ }
+False  C:\Users\Administrator\.ros\fastdds.xml
+False  C:\.ros\fastdds.xml
+False  D:\robosim-assets\network\fastdds.xml
+EXIT: 0 (cmdlet)
+
+===== codex command =====
+CMD: Get-Command codex | Select-Object Name, Source | Format-List
+
+
+Name   : codex.ps1
+Source : C:\Users\Administrator\AppData\Roaming\npm\codex.ps1
+EXIT: 0 (cmdlet)
+
+===== codex version =====
+CMD: codex --version
+codex-cli 0.157.0
+EXIT: 0
+
+===== codex login status =====
+CMD: codex login status
+
+EXIT: 0
+
+===== codex exec help (head) =====
+CMD: codex exec --help | Select-Object -First 80
+Run Codex non-interactively
+
+Usage: codex exec [OPTIONS] [PROMPT]
+       codex exec [OPTIONS] <COMMAND> [ARGS]
+
+Commands:
+  resume  Resume a previous session by id or pick the most recent with --last
+  fork    Fork a previous session by id into a new session
+  review  Run a code review against the current repository
+  help    Print this message or the help of the given subcommand(s)
+
+Arguments:
+  [PROMPT]
+          Initial instructions for the agent. If not provided as an argument (or if `-` is used),
+          instructions are read from stdin. If stdin is piped and a prompt is also provided, stdin
+          is appended as a `<stdin>` block
+
+Options:
+  -c, --config <key=value>
+          Override a configuration value that would otherwise be loaded from `~/.codex/config.toml`.
+          Use a dotted path (`foo.bar.baz`) to override nested values. The `value` portion is parsed
+          as TOML. If it fails to parse as TOML, the raw string is used as a literal.
+          
+          Examples: - `-c model="o3"` - `-c 'sandbox_permissions=["disk-full-read-access"]'` - `-c
+          shell_environment_policy.inherit=all`
+
+      --enable <FEATURE>
+          Enable a feature (repeatable). Equivalent to `-c features.<name>=true`
+
+      --disable <FEATURE>
+          Disable a feature (repeatable). Equivalent to `-c features.<name>=false`
+
+      --strict-config
+          Error out when config.toml contains fields that are not recognized by this version of
+          Codex
+
+  -i, --image <FILE>...
+          Optional image(s) to attach to the initial prompt
+
+  -m, --model <MODEL>
+          Model the agent should use
+
+      --oss
+          Use open-source provider
+
+      --local-provider <OSS_PROVIDER>
+          Specify which local provider to use (lmstudio or ollama). If not specified with --oss,
+          will use config default or show selection
+
+  -p, --profile <CONFIG_PROFILE_V2>
+          Layer $CODEX_HOME/<name>.config.toml on top of the base user config
+
+  -s, --sandbox <SANDBOX_MODE>
+          Select the sandbox policy to use when executing model-generated shell commands
+          
+          [possible values: read-only, workspace-write, danger-full-access]
+
+      --approve-for-me
+          Route approval requests through automatic review using the workspace-write sandbox
+
+      --dangerously-bypass-approvals-and-sandbox
+          Skip all confirmation prompts and execute commands without sandboxing. EXTREMELY
+          DANGEROUS. Intended solely for running in environments that are externally sandboxed
+
+      --dangerously-bypass-hook-trust
+          Run enabled hooks without requiring persisted hook trust for this invocation. DANGEROUS.
+          Intended only for automation that already vets hook sources
+
+  -C, --cd <DIR>
+          Tell the agent to use the specified directory as its working root
+
+      --worktree
+          Run the session in a new managed Git worktree
+
+      --add-dir <DIR>
+          Additional directories that should be writable alongside the primary workspace
+
+      --thread-source <SOURCE>
+          Source classification for newly created or forked threads
+EXIT: -1
+
+===== git =====
+CMD: git -C D:\RoboSim-Eval log --oneline -3; git -C D:\RoboSim-Eval status --short
+dbf67ce chore: add reference documents as baseline
+?? AGENTS.md
+?? CLAUDE.md
+?? artifacts/
+?? docs/
+?? scripts/
+EXIT: 0
+
+PROBE END: 2026-09-29 19:02:20 -07:00

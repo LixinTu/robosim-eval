@@ -1,0 +1,47 @@
+
+===== info -v /tf =====
+CMD: timeout 15 ros2 topic info -v /tf
+Type: tf2_msgs/msg/TFMessage
+
+Publisher count: 1
+
+Node name: _World_Nova_Carter_ROS_chassis_link_sensors_back_hawk_ROS_TF_PublisherTF
+Node namespace: /
+Topic type: tf2_msgs/msg/TFMessage
+Topic type hash: RIHS01_e369d0f05a23ae52508854b66f6aa0437f3449d652e8cbf22d5abe85d020f087
+Endpoint type: PUBLISHER
+GID: 01.0f.54.eb.50.81.de.ca.00.00.00.00.00.00.03.03
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Subscription count: 0
+
+EXIT: 0
+
+===== hz /tf (8 s) =====
+CMD: timeout 8 ros2 topic hz /tf --window 20
+average rate: 25.058
+	min: 0.023s max: 0.068s std dev: 0.01598s window: 20
+average rate: 25.535
+	min: 0.022s max: 0.062s std dev: 0.01509s window: 20
+average rate: 25.788
+	min: 0.023s max: 0.059s std dev: 0.01438s window: 20
+average rate: 26.223
+	min: 0.022s max: 0.060s std dev: 0.01487s window: 20
+average rate: 26.070
+	min: 0.022s max: 0.054s std dev: 0.01350s window: 20
+average rate: 26.149
+	min: 0.023s max: 0.055s std dev: 0.01319s window: 20
+EXIT: 124
+
+===== sample /tf =====
+CMD: timeout 10 ros2 topic echo --once --no-arr /tf
+transforms: '<sequence type: geometry_msgs/msg/TransformStamped, length: 48>'
+---
+EXIT: 0

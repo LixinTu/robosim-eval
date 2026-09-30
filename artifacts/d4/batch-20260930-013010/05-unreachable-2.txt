@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/d4/batch-20260930-013010/runs/unreachable-20260930-014759
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d4/batch-20260930-013010/runs/unreachable-20260930-014759", "exit": 0, "execution_status": "completed", "task_outcome": "unreachable", "validation_status": "pass", "errors": []}

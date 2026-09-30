@@ -1,0 +1,7 @@
+01:04:57 normal exit=0 {"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d3/runs/normal-20260930-010104", "exit": 0, "execution_status": "completed", "task_outcome": "reached", "validation_status": "pass", "errors": []}
+01:06:43 unreachable exit=0 {"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d3/runs/unreachable-20260930-010458", "exit": 0, "execution_status": "completed", "task_outcome": "unreachable", "validation_status": "pass", "errors": []}
+01:08:03 cancel exit=31 {"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d3/runs/cancel-20260930-010644", "exit": 31, "execution_status": "error", "task_outcome": "canceled", "validation_status": "fail", "errors": ["stop_timeout"]}
+01:12:01 dropout exit=11 {"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d3/runs/dropout-20260930-010804", "exit": 11, "execution_status": "completed", "task_outcome": "reached", "validation_status": "inconclusive", "errors": []}
+01:13:22 timeout exit=31 {"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d3/runs/timeout-20260930-011202", "exit": 31, "execution_status": "error", "task_outcome": "timeout", "validation_status": "fail", "errors": ["stop_timeout"]}
+01:20:00 collision exit=10 {"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d3/runs/collision-20260930-011323", "exit": 10, "execution_status": "completed", "task_outcome": "timeout", "validation_status": "fail", "errors": []}
+01:21:51 bypass exit=0 {"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d3/runs/bypass-20260930-012001", "exit": 0, "execution_status": "completed", "task_outcome": "reached", "validation_status": "pass", "errors": []}

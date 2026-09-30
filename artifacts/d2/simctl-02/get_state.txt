@@ -1,0 +1,6 @@
+waiting for service to become available...
+requester: making request: simulation_interfaces.srv.GetSimulationState_Request()
+
+response:
+simulation_interfaces.srv.GetSimulationState_Response(state=simulation_interfaces.msg.SimulationState(state=0), result=simulation_interfaces.msg.Result(result=1, error_message=''))
+

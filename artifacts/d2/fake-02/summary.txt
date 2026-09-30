@@ -1,0 +1,10 @@
+=== test_runner_fake.sh 2026-09-30T00:26:10-07:00 ROS_DOMAIN_ID=42 ===
+succeed          exit 11  (want 11 ) execution completed    (want completed   ) check ok    8s  PASS
+abort            exit 11  (want 11 ) execution completed    (want completed   ) check ok    8s  PASS
+nav_timeout      exit 10  (want 10 ) execution completed    (want completed   ) check ok   14s  PASS
+reject           exit 11  (want 11 ) execution completed    (want completed   ) check ok    6s  PASS
+interrupt        exit 20  (want 20 ) execution interrupted  (want interrupted ) check ok   11s  PASS
+cancel_ignored   exit 31  (want 31 ) execution error        (want error       ) check ok   19s  PASS
+never_at_rest    exit 31  (want 31 ) execution error        (want error       ) check ok   14s  PASS
+no_server        exit 30  (want 30 ) execution error        (want error       ) check ok   16s  PASS
+=== result: PASS ===

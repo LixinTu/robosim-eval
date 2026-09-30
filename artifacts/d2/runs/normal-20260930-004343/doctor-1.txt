@@ -1,0 +1,9 @@
+doctor 2026-09-30T00:43:51-07:00 config=/mnt/d/RoboSim-Eval/configs/baseline.yaml window=5.0s discovery<=5.0s
+env: RMW=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 ROS_DISTRO=jazzy FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml (exists=True)
+clock  /clock                           present      125 msgs  24.89 Hz  sim +2.067 s  RTF 0.42  last 0.03 s ago
+odom   /chassis/odom                    ok           127 msgs  25.29 Hz  max gap 0.061 s  last 0.00 s ago  stamp lag -0.017 s
+tf     /tf odom->base_link              ok           126 msgs  25.09 Hz  max gap 0.061 s  last 0.02 s ago  stamp lag 0.000 s
+lidar  /front_3d_lidar/lidar_points     silent       0 msgs   0.00 Hz  max gap - s  last - s ago  stamp lag - s
+reason: lidar: publisher present but no message in 5.0 s
+verdict: degraded (exit 12); window 5.02 s wall
+written /mnt/d/RoboSim-Eval/artifacts/d2/runs/normal-20260930-004343/doctor/doctor-20260930-004351.json

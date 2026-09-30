@@ -1,0 +1,75 @@
+{
+  "scenarios": [
+    "normal",
+    "bypass",
+    "unreachable"
+  ],
+  "repeats": 3,
+  "attempts": [
+    {
+      "index": 0,
+      "scenario": "normal",
+      "repeat": 1,
+      "exit": 0,
+      "wall_s": 235.7
+    },
+    {
+      "index": 1,
+      "scenario": "bypass",
+      "repeat": 1,
+      "exit": 0,
+      "wall_s": 241.3
+    },
+    {
+      "index": 2,
+      "scenario": "unreachable",
+      "repeat": 1,
+      "exit": 0,
+      "wall_s": 121.4
+    },
+    {
+      "index": 3,
+      "scenario": "normal",
+      "repeat": 2,
+      "exit": 0,
+      "wall_s": 231.2
+    },
+    {
+      "index": 4,
+      "scenario": "bypass",
+      "repeat": 2,
+      "exit": 0,
+      "wall_s": 239.7
+    },
+    {
+      "index": 5,
+      "scenario": "unreachable",
+      "repeat": 2,
+      "exit": 0,
+      "wall_s": 109.9
+    },
+    {
+      "index": 6,
+      "scenario": "normal",
+      "repeat": 3,
+      "exit": 0,
+      "wall_s": 227.4
+    },
+    {
+      "index": 7,
+      "scenario": "bypass",
+      "repeat": 3,
+      "exit": 0,
+      "wall_s": 113.9
+    },
+    {
+      "index": 8,
+      "scenario": "unreachable",
+      "repeat": 3,
+      "exit": 0,
+      "wall_s": 107.8
+    }
+  ],
+  "stopped_by": null,
+  "status": 0
+}
