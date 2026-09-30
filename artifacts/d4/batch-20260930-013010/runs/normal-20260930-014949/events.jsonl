@@ -1,0 +1,22 @@
+{"t_mono": 105159.502183, "wall": "2026-09-30T01:49:50.680-07:00", "t_sim": null, "event": "state", "state": "PREPARE", "reason": "run started", "fsm_t_mono": 105159.502123211, "fsm_t_sim": null}
+{"t_mono": 105161.530536, "wall": "2026-09-30T01:49:52.708-07:00", "t_sim": 34.533333333, "event": "sim_state", "state": "playing"}
+{"t_mono": 105162.024199, "wall": "2026-09-30T01:49:53.202-07:00", "t_sim": 34.533333333, "event": "contacts_installed", "bodies": 8}
+{"t_mono": 105162.040097, "wall": "2026-09-30T01:49:53.218-07:00", "t_sim": 34.75, "event": "reset_request"}
+{"t_mono": 105165.382691, "wall": "2026-09-30T01:49:56.560-07:00", "t_sim": 34.766666666, "event": "reset_done", "state": "playing"}
+{"t_mono": 105166.761145, "wall": "2026-09-30T01:49:57.939-07:00", "t_sim": 0.066666666, "event": "reset_check", "ok": true, "position_error_m": 6.961822509765625e-05, "yaw_error_rad": -1.0823935783221827e-05, "reasons": [], "pose": {"entity": "/World/Nova_Carter_ROS/chassis_link", "frame": "nova_carter", "x": -6.000069618225098, "y": -1.0, "z": 8.195638656616211e-07, "yaw": 3.1415818296540095, "linear_speed": 0.00045721673452715945, "angular_speed": 0.0008622691384516656, "received_wall": 1790758197.9393375}}
+{"t_mono": 105167.677661, "wall": "2026-09-30T01:49:58.855-07:00", "t_sim": 0.066666666, "event": "contacts_cleared", "pre_run_events": 12}
+{"t_mono": 105174.011724, "wall": "2026-09-30T01:50:05.189-07:00", "t_sim": 0.066666666, "event": "doctor", "attempt": 1, "exit_code": 0}
+{"t_mono": 105174.012304, "wall": "2026-09-30T01:50:05.190-07:00", "t_sim": 0.066666666, "event": "state", "state": "WAIT_READY", "reason": "prepared", "fsm_t_mono": 105174.01226609, "fsm_t_sim": 0.066666666}
+{"t_mono": 105179.644821, "wall": "2026-09-30T01:50:10.823-07:00", "t_sim": 0.066666666, "event": "start_nav2", "exit_code": 0}
+{"t_mono": 105188.253691, "wall": "2026-09-30T01:50:21.470-07:00", "t_sim": 7.233333333, "event": "state", "state": "SEND_GOAL", "reason": "nav2 ready after 14.24 s", "fsm_t_mono": 105188.253665118, "fsm_t_sim": 7.233333333}
+{"t_mono": 105193.145716, "wall": "2026-09-30T01:50:26.362-07:00", "t_sim": 7.233333333, "event": "record_start", "exit_code": 0}
+{"t_mono": 105193.149123, "wall": "2026-09-30T01:50:26.365-07:00", "t_sim": 7.233333333, "event": "goal_sent", "x": 0.0, "y": -1.0, "yaw": 0.0, "frame": "map"}
+{"t_mono": 105193.150782, "wall": "2026-09-30T01:50:26.367-07:00", "t_sim": 7.233333333, "event": "state", "state": "EXECUTING", "reason": "goal accepted 10151079b5a846cdba067bea8b17a69a", "fsm_t_mono": 105193.150765251, "fsm_t_sim": 7.233333333}
+{"t_mono": 105339.252207, "wall": "2026-09-30T01:53:02.707-07:00", "t_sim": 60.483333333, "event": "state", "state": "STOP_CONFIRM", "reason": "terminal status SUCCEEDED", "fsm_t_mono": 105339.252175113, "fsm_t_sim": 60.483333333}
+{"t_mono": 105342.128769, "wall": "2026-09-30T01:53:05.584-07:00", "t_sim": 61.55, "event": "ground_truth", "entity": "/World/Nova_Carter_ROS/chassis_link", "frame": "nova_carter", "x": -0.2922627627849579, "y": -0.890632152557373, "z": 7.450580596923828e-08, "yaw": -0.10295037043242736, "linear_speed": 0.0006480046818516406, "angular_speed": 0.0002563825692050159, "received_wall": 1790758385.584148, "sim_time_paired": 61.55, "error_to_goal_m": 0.31205584206185}
+{"t_mono": 105342.129194, "wall": "2026-09-30T01:53:05.584-07:00", "t_sim": 61.55, "event": "state", "state": "TEARDOWN", "reason": "robot at rest (stop-still confirmed at sim 61.550)", "fsm_t_mono": 105342.129167659, "fsm_t_sim": 61.55}
+{"t_mono": 105342.806449, "wall": "2026-09-30T01:53:06.261-07:00", "t_sim": 61.55, "event": "contacts_fetched", "events": 0, "dropped": 0}
+{"t_mono": 105348.383917, "wall": "2026-09-30T01:53:11.839-07:00", "t_sim": 61.55, "event": "record_stop", "exit_code": 0}
+{"t_mono": 105356.03867, "wall": "2026-09-30T01:53:19.494-07:00", "t_sim": 61.55, "event": "analyze", "exit_code": 11}
+{"t_mono": 105371.506863, "wall": "2026-09-30T01:53:36.922-07:00", "t_sim": 61.55, "event": "nav2_stop", "exit_code": 0}
+{"t_mono": 105371.507142, "wall": "2026-09-30T01:53:36.922-07:00", "t_sim": 61.55, "event": "state", "state": "DONE", "reason": "teardown finished", "fsm_t_mono": 105371.507114727, "fsm_t_sim": 61.55}

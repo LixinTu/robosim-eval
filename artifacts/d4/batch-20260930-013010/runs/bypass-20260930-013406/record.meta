@@ -1,0 +1,8 @@
+record start 2026-09-30T01:34:44-07:00 attempt=/mnt/d/RoboSim-Eval/artifacts/d4/batch-20260930-013010/runs/bypass-20260930-013406 max=480s bag=/home/administrator/robosim_bags/bypass-20260930-013406-20260930-013444
+record stop 2026-09-30T01:37:41-07:00
+  bag            session 87544   exit=0
+  odom           session 87553   exit=2
+  amcl_pose      session 87563   exit=2
+  cmd_vel        session 87586   exit=2
+  action_status  session 87594   exit=2
+  tf_map_base    session 87615   exit=0

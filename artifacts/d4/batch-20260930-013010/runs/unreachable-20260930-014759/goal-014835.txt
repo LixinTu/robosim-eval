@@ -1,0 +1,6 @@
+send_goal start 2026-09-30T01:48:35.931-07:00 action=/navigate_to_pose frame=map x=-10.05 y=-1.0 yaw=3.141592653589793 (robosim_eval.runner, rclpy action client)
+2026-09-30T01:48:35.934-07:00 Goal accepted with ID: 94c6e3feb280467ea4b7e9543f14646b
+2026-09-30T01:49:22.972-07:00 error_code: 208
+2026-09-30T01:49:22.972-07:00 error_msg: ''
+2026-09-30T01:49:22.972-07:00 Goal finished with status: ABORTED
+send_goal end 2026-09-30T01:49:25.796-07:00 action_client_exit=0

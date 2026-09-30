@@ -1,0 +1,62 @@
+{
+  "normal": {
+    "attempts": 3,
+    "validation": {
+      "pass": 3
+    },
+    "outcome": {
+      "reached": 3
+    },
+    "safety": {
+      "pass": 3
+    },
+    "data": {
+      "complete": 3
+    },
+    "mean_accept_to_result_sim_s_success_only": 52.0,
+    "mean_basis": "reached runs only (3 of 3)",
+    "max_arrival_error_m": 0.31205584206185,
+    "collisions": 0,
+    "max_reset_error_m": 6.961822509765625e-05
+  },
+  "bypass": {
+    "attempts": 3,
+    "validation": {
+      "pass": 3
+    },
+    "outcome": {
+      "reached": 3
+    },
+    "safety": {
+      "pass": 3
+    },
+    "data": {
+      "complete": 3
+    },
+    "mean_accept_to_result_sim_s_success_only": 40.94,
+    "mean_basis": "reached runs only (3 of 3)",
+    "max_arrival_error_m": 0.31933282988591205,
+    "collisions": 0,
+    "max_reset_error_m": 6.961822509765625e-05
+  },
+  "unreachable": {
+    "attempts": 3,
+    "validation": {
+      "pass": 3
+    },
+    "outcome": {
+      "unreachable": 3
+    },
+    "safety": {
+      "pass": 3
+    },
+    "data": {
+      "complete": 3
+    },
+    "mean_accept_to_result_sim_s_success_only": null,
+    "mean_basis": "reached runs only (0 of 3)",
+    "max_arrival_error_m": 3.9720028670625562,
+    "collisions": 0,
+    "max_reset_error_m": 6.961822509765625e-05
+  }
+}

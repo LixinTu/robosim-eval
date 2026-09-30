@@ -1,0 +1,34 @@
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=base-only overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+SIGINT -> session bag (87544)
+SIGINT -> session odom (87553)
+SIGINT -> session amcl_pose (87563)
+SIGINT -> session cmd_vel (87586)
+SIGINT -> session action_status (87594)
+SIGINT -> session tf_map_base (87615)
+recorder exit codes (124 = time cap reached; ros2 topic echo returns 2 = signal.SIGINT when stopped):
+  bag            session 87544   exit=0
+  odom           session 87553   exit=2
+  amcl_pose      session 87563   exit=2
+  cmd_vel        session 87586   exit=2
+  action_status  session 87594   exit=2
+  tf_map_base    session 87615   exit=0
+bag info ok
+bag copied to /mnt/d/RoboSim-Eval/artifacts/d4/batch-20260930-013010/runs/bypass-20260930-013406/rosbag (27M)
+Duration:          175.466961849s
+Messages:          29995
+Topic information: Topic: /amcl_pose | Type: geometry_msgs/msg/PoseWithCovarianceStamped | Count: 13 | Serialization Format: cdr
+                   Topic: /chassis/odom | Type: nav_msgs/msg/Odometry | Count: 3438 | Serialization Format: cdr
+                   Topic: /clock | Type: rosgraph_msgs/msg/Clock | Count: 3438 | Serialization Format: cdr
+                   Topic: /cmd_vel | Type: geometry_msgs/msg/Twist | Count: 3116 | Serialization Format: cdr
+                   Topic: /initialpose | Type: geometry_msgs/msg/PoseWithCovarianceStamped | Count: 0 | Serialization Format: cdr
+                   Topic: /navigate_to_pose/_action/feedback | Type: nav2_msgs/action/NavigateToPose_FeedbackMessage | Count: 15301 | Serialization Format: cdr
+                   Topic: /navigate_to_pose/_action/status | Type: action_msgs/msg/GoalStatusArray | Count: 2 | Serialization Format: cdr
+                   Topic: /plan | Type: nav_msgs/msg/Path | Count: 149 | Serialization Format: cdr
+                   Topic: /scan | Type: sensor_msgs/msg/LaserScan | Count: 550 | Serialization Format: cdr
+                   Topic: /tf | Type: tf2_msgs/msg/TFMessage | Count: 3988 | Serialization Format: cdr
+odom             3424 lines
+amcl_pose          13 lines
+cmd_vel          3121 lines
+action_status      50 lines
+tf_map_base      8030 lines
+stop_record result: exit 0

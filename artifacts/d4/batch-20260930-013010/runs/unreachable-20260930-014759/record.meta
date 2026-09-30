@@ -1,0 +1,8 @@
+record start 2026-09-30T01:48:32-07:00 attempt=/mnt/d/RoboSim-Eval/artifacts/d4/batch-20260930-013010/runs/unreachable-20260930-014759 max=480s bag=/home/administrator/robosim_bags/unreachable-20260930-014759-20260930-014832
+record stop 2026-09-30T01:49:31-07:00
+  bag            session 91092   exit=0
+  odom           session 91101   exit=2
+  amcl_pose      session 91111   exit=2
+  cmd_vel        session 91134   exit=2
+  action_status  session 91144   exit=2
+  tf_map_base    session 91161   exit=0
