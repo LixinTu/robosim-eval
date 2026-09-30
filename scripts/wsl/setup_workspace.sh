@@ -12,9 +12,11 @@ TAG=IsaacSim-6.1.0
 WS_ROOT="${ROBOSIM_VENDOR_ROOT:-$HOME/robotics/vendor/isaac-ros-6.1}"
 LOG_DIR=/mnt/d/RoboSim-Eval/artifacts/d0b
 mkdir -p "$LOG_DIR"
-LOG="$LOG_DIR/setup-workspace.log"
+LOG="${ROBOSIM_SETUP_LOG:-$LOG_DIR/setup-workspace.log}"            # override to re-run without touching D0b evidence
+EXIT_FILE="${LOG%.log}.exit"
+mkdir -p "$(dirname "$LOG")"
 exec > >(tee -a "$LOG") 2>&1
-trap 'rc=$?; echo; echo "=== setup_workspace.sh end $(date -Is) exit=$rc ==="; echo "$rc" > "$LOG_DIR/setup-workspace.exit"' EXIT
+trap 'rc=$?; echo; echo "=== setup_workspace.sh end $(date -Is) exit=$rc ==="; echo "$rc" > "$EXIT_FILE"' EXIT
 
 echo "=== setup_workspace.sh start $(date -Is) user=$(id -un) ws=$WS_ROOT ==="
 step() { echo; echo "--- [$(date +%T)] $* ---"; }
@@ -50,13 +52,16 @@ echo "paths: $PKG_PATHS"
 
 step "3. rosdep (simulate; stop if anything would be installed)"
 # shellcheck disable=SC2086
-if ! rosdep install --from-paths $PKG_PATHS --ignore-src -r --simulate; then echo "rosdep --simulate reported unresolved keys (see above); continuing so the build result is recorded"; fi
-# shellcheck disable=SC2086
-MISSING=$(rosdep install --from-paths $PKG_PATHS --ignore-src -r --simulate 2>/dev/null | grep -E '^\s*(sudo|apt)' || true)
-if [[ -n "$MISSING" ]]; then
-  echo "ERROR: rosdep would install packages (needs sudo). Add them to install_ros2_jazzy.sh and re-run it:"; echo "$MISSING"; exit 6
+if SIM_OUT=$(rosdep install --from-paths $PKG_PATHS --ignore-src -r --simulate 2>&1); then SIM_RC=0; else SIM_RC=$?; fi
+echo "$SIM_OUT"
+if [[ $SIM_RC -ne 0 ]]; then
+  echo "ERROR: rosdep --simulate failed (exit $SIM_RC); dependencies cannot be confirmed (see output above)"; exit 7
 fi
-echo "rosdep: nothing to install"
+if grep -qE '^\s*(sudo|apt)' <<<"$SIM_OUT"; then
+  echo "ERROR: rosdep would install packages (needs sudo). Add them to install_ros2_jazzy.sh and re-run it:"
+  grep -E '^\s*(sudo|apt)' <<<"$SIM_OUT"; exit 6
+fi
+echo "rosdep: simulate exit 0, nothing to install"
 
 step "4. colcon build --packages-up-to carter_navigation"
 colcon build --packages-up-to carter_navigation --event-handlers console_direct+ --cmake-args -DCMAKE_BUILD_TYPE=Release

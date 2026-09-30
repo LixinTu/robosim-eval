@@ -30,4 +30,4 @@ Thumbs.db
 # ---- Runtime pid files written by the recorder/launch scripts (transient; PIDs are recorded in commands.md) ----
 artifacts/**/*.pid
 artifacts/**/pid-*
-artifacts/**/*.err
+# (*.err recorder stderr files are kept: small, and they are failure evidence; see review finding R4)

@@ -3,11 +3,12 @@
 # map-frame position (from TF map->base_link) and optional candidate points, to choose a reachable goal by eye.
 #   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/map_overview.sh [<out_file>] [x,y ...]
 # Legend: '#' occupied, '.' free, '?' unknown, 'R' robot, digits = candidate points in argument order. Read-only.
+# Exit: the rendering step's status (0 = overview written).
 set -uo pipefail
 OUT="${1:-/dev/stdout}"; shift || true
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh || exit 2
+source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2
 # shellcheck disable=SC1091
 source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
 set -u
@@ -55,4 +56,6 @@ xs = ''.join(('|' if (c % 10 == 0) else ' ') for c in range(cols))
 print(f"{'':7} +{xs}+")
 print(f"{'':7}  x labels every 10 chars (5 m) starting at x={ox:.2f}: " + ' '.join(f"{ox + c*cell:.1f}" for c in range(0, cols, 10)))
 PY
-[[ "$OUT" != /dev/stdout ]] && echo "written $OUT ($(wc -l < "$OUT") lines)"
+PYRC=$?
+if [[ "$OUT" != /dev/stdout ]]; then echo "written $OUT ($(wc -l < "$OUT") lines)"; fi
+exit $PYRC

@@ -37,10 +37,11 @@ run "/clock sample" timeout 10 ros2 topic echo --once /clock
 } | tee "$OUT/01-clock.txt"
 if grep -q 'average rate' "$OUT/01-clock.txt"; then CLOCK_OK=1; fi
 
-EXISTING=$(timeout 15 ros2 topic list 2>/dev/null || true)
+if EXISTING=$(timeout 15 ros2 topic list 2>&1); then LIST_RC=0; else LIST_RC=$?; fi
+if [[ $LIST_RC -ne 0 ]]; then echo "WARNING: ros2 topic list failed (exit $LIST_RC); per-topic checks below are skipped, not absent:"; echo "$EXISTING"; EXISTING=""; fi
 for t in "${CANDIDATES[@]}"; do
   [[ "$t" == "/clock" ]] && continue
-  if ! grep -qx "$t" <<<"$EXISTING"; then echo "skip $t (not present)"; continue; fi
+  if ! grep -qx "$t" <<<"$EXISTING"; then echo "skip $t ($([[ $LIST_RC -eq 0 ]] && echo not present || echo topic list failed))"; continue; fi
   f="$OUT/topic$(echo "$t" | tr '/' '_').txt"
   {
   run "info -v $t" timeout 15 ros2 topic info -v "$t"

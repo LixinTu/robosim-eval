@@ -59,4 +59,6 @@ run "topic list (daemon)" timeout 15 ros2 topic list
 run "topic list (no daemon, spin 8 s)" timeout 20 ros2 topic list --no-daemon --spin-time 8
 run "wsl own dds sockets" bash -c 'ss -ulnp 2>/dev/null | grep -E ":74[0-9]{2} |:7[0-9]{3} " || echo "no 7xxx udp sockets listed"'
 } 2>&1 | tee "$OUT/diag.txt"
-echo "written: $OUT/diag.txt"
+TEE_RC=${PIPESTATUS[1]}
+echo "written: $OUT/diag.txt (tee exit $TEE_RC)"
+exit $TEE_RC

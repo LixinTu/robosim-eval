@@ -8,16 +8,18 @@
 #   - wall-timestamped text streams: odom (csv), amcl_pose (csv), cmd_vel (csv), action status, tf map->base_link
 # Each recorder runs in its own session (setsid) under a wrapper bash that writes the recorder's real exit code to
 # <attempt_dir>/<name>.exit (124 = hit the time cap, by design; `ros2 topic echo` returns 2 = signal.SIGINT when stopped).
-# Session ids are in <attempt_dir>/record.pids. The wrapper survives a session-wide SIGINT/SIGTERM (SIGINT is ignored on
-# entry for `&` jobs of a non-interactive shell; TERM is trapped) so it can record the exit code; `timeout` installs its
-# own signal handlers, so the recorders themselves get default dispositions and do stop on SIGINT (verified run-02).
-# Stop early with stop_record.sh <attempt_dir>. Exit 0 when all recorders started.
+# Session ids are in <attempt_dir>/record.pids; stale pid files are deleted first and each new session id is awaited
+# (up to 5 s) instead of a fixed sleep. The wrapper survives a session-wide SIGINT/SIGTERM (SIGINT is ignored on entry
+# for `&` jobs of a non-interactive shell; TERM is trapped) so it can record the exit code; `timeout` installs its own
+# signal handlers, so the recorders themselves get default dispositions and do stop on SIGINT (verified run-02).
+# Stop with stop_record.sh <attempt_dir>, which also checks that data arrived.
+# Exit: 0 when every recorder is running 2 s after start; 1 otherwise (see <name>.log / <name>.err).
 set -uo pipefail
 ATT="${1:?attempt dir required}"; MAX="${2:-320}"
 mkdir -p "$ATT"
 set +u
 # shellcheck disable=SC1091
-source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh || exit 2
+source /mnt/d/RoboSim-Eval/scripts/wsl/ros_env.sh --full || exit 2
 # shellcheck disable=SC1091
 source /mnt/d/RoboSim-Eval/scripts/wsl/dds_env.sh || exit 2
 set -u
@@ -32,19 +34,27 @@ signal.signal(signal.SIGINT, signal.SIG_IGN)
 for line in sys.stdin:
     print(datetime.datetime.now().isoformat(timespec="milliseconds"), line.rstrip(), flush=True)'
 
+register() { # register <name>: wait (up to 5 s) for the wrapper to write its session id, then record it
+  local name="$1" sid=""
+  for _ in $(seq 1 25); do
+    if [[ -s "$ATT/pid-$name" ]]; then sid=$(cat "$ATT/pid-$name"); break; fi
+    sleep 0.2
+  done
+  echo "$name ${sid:-MISSING}" >> "$ATT/record.pids"
+}
 start() { # start <name> <command...>   (detached, INT-capped, exit code -> <name>.exit)
   local name="$1"; shift
-  rm -f "$ATT/$name.exit"
+  rm -f "$ATT/$name.exit" "$ATT/pid-$name"
   setsid nohup bash -c 'echo $$ > "$0"; trap "true" INT TERM; "${@:2}"; echo $? > "$1"' \
     "$ATT/pid-$name" "$ATT/$name.exit" timeout -s INT "$MAX" "$@" < /dev/null > "$ATT/$name.log" 2>&1 &
-  sleep 0.5; echo "$name $(cat "$ATT/pid-$name" 2>/dev/null)" >> "$ATT/record.pids"
+  register "$name"
 }
 startpipe() { # startpipe <name> <command...>  (stdout wall-timestamped into <name>.txt, exit code of the command)
   local name="$1"; shift
-  rm -f "$ATT/$name.exit"
+  rm -f "$ATT/$name.exit" "$ATT/pid-$name"
   setsid nohup bash -c 'echo $$ > "$0"; trap "true" INT TERM; "${@:2}" | python3 -u -c "$STAMP_PY"; echo "${PIPESTATUS[0]}" > "$1"' \
     "$ATT/pid-$name" "$ATT/$name.exit" timeout -s INT "$MAX" "$@" < /dev/null > "$ATT/$name.txt" 2> "$ATT/$name.err" &
-  sleep 0.5; echo "$name $(cat "$ATT/pid-$name" 2>/dev/null)" >> "$ATT/record.pids"
+  register "$name"
 }
 
 echo "record start $(date -Is) attempt=$ATT max=${MAX}s bag=$BAG" | tee "$ATT/record.meta"
@@ -60,6 +70,6 @@ sleep 2
 echo "sessions:"; cat "$ATT/record.pids"
 rc=0
 while read -r name sid; do
-  if pgrep -s "$sid" >/dev/null 2>&1; then echo "  running $name (session $sid)"; else echo "  NOT running $name (session $sid; see $name.log/.err)"; rc=1; fi
+  if [[ "$sid" =~ ^[0-9]+$ ]] && pgrep -s "$sid" >/dev/null 2>&1; then echo "  running $name (session $sid)"; else echo "  NOT running $name (session $sid; see $name.log/.err)"; rc=1; fi
 done < "$ATT/record.pids"
 exit $rc
