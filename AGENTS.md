@@ -62,7 +62,7 @@ wsl -d Ubuntu -- python3 -m pytest -q -p no:cacheprovider /mnt/d/RoboSim-Eval/te
 1. 只做当前计划中最靠前的小交付;不先搭框架、网页、persona、world model。
 2. 复用现有安装:Isaac Sim 6.1.0 在 `D:\isaac-sim-standalone-6.1.0-windows-x86_64`;WSL 发行版名为 `Ubuntu`。不重装、不换驱动、不迁移。
 3. 本机是 6.1 官方不支持的配置(Windows 10 + 8 GB 显存);用户已决定先做完项目再升级。所有记录标注 unsupported configuration,不承诺可用,不再提议升级。
-4. 不新增付费服务,不 push,不部署,不删除或覆盖用户文件,不停止 Docker Desktop,不杀用户自己开的 Isaac GUI,不 `wsl --shutdown`(会影响 docker-desktop 并改变 WSL IP;确需时先说明并征得同意)。
+4. 不新增付费服务,agent 不执行 git push(远程 origin 是 GitHub 仓库,推送只由用户执行),不部署,不删除或覆盖用户文件,不停止 Docker Desktop,不杀用户自己开的 Isaac GUI,不 `wsl --shutdown`(会影响 docker-desktop 并改变 WSL IP;确需时先说明并征得同意)。
 5. 证据即事实:每条验证记录 命令 | shell | cwd | 退出码 | 日志;常驻进程记 启动、观察时段、停止方式、退出码、退出原因。不用 `|| true`、不吞异常、不削弱断言、不把"已启动"写成"通过";用 tee 必须配 pipefail。`timeout` 的退出码 124 记为"观察满时长"。
 6. 固定输入测试、ROS 假节点测试、真实 Isaac 集成分开记录;没开仿真时集成验证必须显示未执行或失败。产品证据(artifacts/)与过程证据(docs/review/)分开存放,互不推导。
 7. 需要 GUI 操作时只给用户当前必需的步骤并说明完成后检查什么;不假装已点过。Windows 侧每次改动都意味着用户要重启 Isaac,所以先做完无 GUI 的验证再请用户重启。
@@ -92,6 +92,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\wind
 
 ## 其他
 
-- 本仓库纯本地、无 remote;不要建议或执行 `git push`。
+- 远程 origin 是 GitHub 仓库 LixinTu/robosim-eval(2026-09-30 起);推送只由用户执行,agent 不执行 `git push`。发布版本在 master,审查修复在 `fix/review-round1`。
 - Conventional Commits;小步提交,每步可独立验证与回退。`master` = 基线,`feature/*` = 当前交付。
 - 回复用户用中文;技术名词保留英文;项目文档用中文。

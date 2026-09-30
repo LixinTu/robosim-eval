@@ -359,7 +359,7 @@ RoboSim-Eval/
 
 ## 12. 后续路线
 
-D1–D5 已实现(§14–§15)。剩下的按顺序是:完成 §16.4 的修复并合并;在真实 Isaac 上重跑全部预设情形(normal、normal_slow、bypass、unreachable、cancel、timeout、dropout、collision),并从终端按 Ctrl-C 分别中断一次单次运行和一次批量;处理 Codex 其余分片的报告;用户验收;然后在本地合并分支(本仓库没有远程,不推送)。
+D1–D5 已实现(§14–§15)。剩下的按顺序是:完成 §16.4 的修复并合并;在真实 Isaac 上重跑全部预设情形(normal、normal_slow、bypass、unreachable、cancel、timeout、dropout、collision),并从终端按 Ctrl-C 分别中断一次单次运行和一次批量;处理 Codex 其余分片的报告;用户验收;然后合并并发新版本。v0.1.0 已于 2026-09-30 合入 master 并推送到 GitHub,审查修复在 `fix/review-round1` 上。
 
 更远的扩展在计划文档 A8,例如按用户偏好约束导航(减速、保持距离)的对比实验、实验 Agent,都没有开始。D5 的"声明参数改动 + 事先预测 + 复跑对比"可以作为这类对比实验的起点。
 
