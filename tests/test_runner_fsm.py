@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from robosim_eval.runner_fsm import Limits, RunStateMachine, State, deadline_exceeded
+from robosim_eval.runner_fsm import Limits, RunStateMachine, State, deadline_exceeded, refresh_clock
 
 LIM = Limits(ready_wall_s=60, accept_wall_s=10, nav_sim_s=120, nav_wall_s=300, cancel_wall_s=10, stop_wall_s=10)
 
@@ -233,3 +233,37 @@ def test_odom_buffer_is_bounded():
     for i in range(10):
         append_sample(buf, (float(i), 0.0, 0.0), 4)
     assert [s[0] for s in buf] == [6.0, 7.0, 8.0, 9.0]
+
+
+class FakeClockFeed:
+    """Stands in for rclpy.spin_once on a node whose /clock queue still holds messages from before a blocking call."""
+
+    def __init__(self, stale, fresh):
+        self.queue = list(stale)   # delivered one per spin, oldest first
+        self.fresh = list(fresh)   # arrive only once the queue is empty and the spin is allowed to wait
+        self.count, self.latest = 0, None
+
+    def spin_once(self, timeout):
+        if self.queue:
+            self.latest = self.queue.pop(0)
+            self.count += 1
+        elif timeout > 0 and self.fresh:
+            self.latest = self.fresh.pop(0)
+            self.count += 1
+
+
+def test_refresh_clock_drains_stale_messages_then_waits_for_a_fresh_one():
+    feed = FakeClockFeed(stale=[1.0, 1.1, 1.2, 1.3, 1.4], fresh=[2.7, 2.8])
+    assert refresh_clock(feed.spin_once, lambda: feed.count, wait_s=2.0) is True
+    assert feed.latest == 2.7   # not 1.4, the last message queued during the blocking call
+
+
+def test_refresh_clock_reports_when_no_fresh_message_arrives():
+    feed = FakeClockFeed(stale=[1.0], fresh=[])
+    t = [0.0]
+
+    def now():
+        t[0] += 0.1
+        return t[0]
+
+    assert refresh_clock(feed.spin_once, lambda: feed.count, wait_s=1.0, now=now) is False

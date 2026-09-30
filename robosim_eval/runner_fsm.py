@@ -16,8 +16,9 @@ the plan stops further batch runs when a stop is not confirmed); otherwise "inte
 from __future__ import annotations
 
 import enum
+import time
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 
 class State(enum.Enum):
@@ -195,3 +196,22 @@ def append_sample(buffer: List[tuple], sample: tuple, max_len: int) -> None:
         buffer.clear()
     buffer.append(sample)
     del buffer[:-max_len]
+
+
+def refresh_clock(spin_once: Callable[[float], None], clock_count: Callable[[], int], wait_s: float = 5.0,
+                  max_drain: int = 200, now: Callable[[], float] = time.monotonic) -> bool:
+    """Make the node's simulation time current again after a blocking call (a subprocess, a service call).
+
+    While the runner does not spin, /clock messages queue up or are dropped, so the last value it holds is old: the
+    goal acceptance time was 1.1-2.1 s of simulation time behind after the recorder start (D5, docs/defect-record.md).
+    First process what is already queued (spin_once(0)), then wait for one /clock message that arrives afterwards.
+    Returns False when none arrives within wait_s (simulation paused or stalled)."""
+    for _ in range(max_drain):
+        spin_once(0.0)
+    target = clock_count() + 1
+    end = now() + wait_s
+    while clock_count() < target:
+        if now() >= end:
+            return False
+        spin_once(0.1)
+    return True

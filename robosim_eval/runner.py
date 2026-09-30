@@ -32,7 +32,7 @@ from robosim_eval.config import BaselineConfig, Scenario, load_config
 from robosim_eval.evaluator import ContactPolicy, EvalInputs, evaluate_run
 from robosim_eval.nav2_params import write_params
 from robosim_eval.run_io import VENDOR_PKG, EventLog, Transcript, to_plain, write_manifest, write_resolved_config
-from robosim_eval.runner_fsm import RunStateMachine, State, StopStillTracker, append_sample, doctor_retry
+from robosim_eval.runner_fsm import RunStateMachine, State, StopStillTracker, append_sample, doctor_retry, refresh_clock
 
 REPO = Path(__file__).resolve().parents[1]
 WSL = REPO / "scripts" / "wsl"
@@ -69,6 +69,7 @@ class RunNode:
         self.node = Node("robosim_runner")
         self.sim_time: Optional[float] = None
         self.clock_backward = 0
+        self.clock_msgs = 0
         self.odom: List[tuple] = []
         self.feedback_count = 0
         self.last_feedback: Dict[str, Any] = {}
@@ -82,6 +83,7 @@ class RunNode:
         if self.sim_time is not None and t < self.sim_time:
             self.clock_backward += 1
         self.sim_time = t
+        self.clock_msgs += 1
 
     def _on_odom(self, msg) -> None:
         t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
@@ -327,6 +329,11 @@ class Runner:
                 self.fsm.fail(f"record_d0.sh exit {rc}", *self.now())
                 return False
             self.started["record"] = True
+        # The recorder start blocked for seconds without spinning: refresh the simulation time before it becomes the
+        # base of the navigation limit and of the injections (goal acceptance was 1.1-2.1 s sim late before, D5).
+        fresh = refresh_clock(lambda t: self.rn.rclpy.spin_once(self.rn.node, timeout_sec=t),
+                              lambda: self.rn.clock_msgs)
+        self.ev.write("clock_refreshed", ok=fresh)
         g = self.scenario.goal
         goal = self.rn.NavigateToPose.Goal()
         goal.pose.header.frame_id = self.cfg.run.frame
