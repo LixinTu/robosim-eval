@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/d3/runs/timeout-20260930-011202
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d3/runs/timeout-20260930-011202", "exit": 31, "execution_status": "error", "task_outcome": "timeout", "validation_status": "fail", "errors": ["stop_timeout"]}

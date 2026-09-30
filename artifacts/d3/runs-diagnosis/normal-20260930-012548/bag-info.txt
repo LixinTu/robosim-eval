@@ -1,0 +1,21 @@
+
+Files:             normal-20260930-012548-20260930-012618_0.mcap
+Bag size:          7.8 MiB
+Storage id:        mcap
+ROS Distro:        jazzy
+Duration:          51.306219881s
+Start:             Sep 30 2026 01:26:19.337738707 (1790756779.337738707)
+End:               Sep 30 2026 01:27:10.643958588 (1790756830.643958588)
+Messages:          8367
+Topic information: Topic: /amcl_pose | Type: geometry_msgs/msg/PoseWithCovarianceStamped | Count: 11 | Serialization Format: cdr
+                   Topic: /chassis/odom | Type: nav_msgs/msg/Odometry | Count: 1049 | Serialization Format: cdr
+                   Topic: /clock | Type: rosgraph_msgs/msg/Clock | Count: 1050 | Serialization Format: cdr
+                   Topic: /cmd_vel | Type: geometry_msgs/msg/Twist | Count: 852 | Serialization Format: cdr
+                   Topic: /initialpose | Type: geometry_msgs/msg/PoseWithCovarianceStamped | Count: 0 | Serialization Format: cdr
+                   Topic: /navigate_to_pose/_action/feedback | Type: nav2_msgs/action/NavigateToPose_FeedbackMessage | Count: 3984 | Serialization Format: cdr
+                   Topic: /navigate_to_pose/_action/status | Type: action_msgs/msg/GoalStatusArray | Count: 2 | Serialization Format: cdr
+                   Topic: /plan | Type: nav_msgs/msg/Path | Count: 40 | Serialization Format: cdr
+                   Topic: /scan | Type: sensor_msgs/msg/LaserScan | Count: 165 | Serialization Format: cdr
+                   Topic: /tf | Type: tf2_msgs/msg/TFMessage | Count: 1214 | Serialization Format: cdr
+Service:           0
+Service information: 

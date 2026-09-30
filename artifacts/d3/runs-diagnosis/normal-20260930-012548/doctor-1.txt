@@ -1,0 +1,8 @@
+doctor 2026-09-30T01:25:56-07:00 config=/mnt/d/RoboSim-Eval/configs/baseline.yaml window=5.0s discovery<=5.0s
+env: RMW=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 ROS_DISTRO=jazzy FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml (exists=True)
+clock  /clock                           present      113 msgs  22.56 Hz  sim +1.867 s  RTF 0.37  last 0.00 s ago
+odom   /chassis/odom                    ok           112 msgs  22.36 Hz  max gap 0.070 s  last 0.03 s ago  stamp lag 0.017 s
+tf     /tf odom->base_link              ok           112 msgs  22.36 Hz  max gap 0.070 s  last 0.03 s ago  stamp lag 0.017 s
+lidar  /front_3d_lidar/lidar_points     ok           14 msgs   2.80 Hz  max gap 0.798 s  last 0.22 s ago  stamp lag 0.117 s
+verdict: healthy (exit 0); window 5.01 s wall
+written /mnt/d/RoboSim-Eval/artifacts/d3/runs-diagnosis/normal-20260930-012548/doctor/doctor-20260930-012556.json

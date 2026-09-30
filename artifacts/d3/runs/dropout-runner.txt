@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/d3/runs/dropout-20260930-010804
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d3/runs/dropout-20260930-010804", "exit": 11, "execution_status": "completed", "task_outcome": "reached", "validation_status": "inconclusive", "errors": []}

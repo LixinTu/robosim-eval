@@ -90,6 +90,31 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_scenario.sh normal 
 | 31 | 出错且应中止后续批次(取消或停车没有确认) |
 | 2 | 用法或配置错误 |
 
+## 判定与失败处理(D3)
+
+`result.json` 的五个状态字段由 `robosim_eval/evaluator.py` 给出,规则写在模块说明里,要点:
+
+- 到达看 sim_control 真值(不是 AMCL);Nav2 报成功但真值超出 0.5 m 是"虚假成功",判 fail。
+- 不可达必须同时满足:情形在配置里预设为不可达并写明离线证据、Nav2 中止或拒绝、真值没到。只有中止记 unknown。
+- 安全看 Isaac 内的接触报告(需要用 `start_isaac_ros2.ps1 -PythonServer` 启动 Isaac);没测到就是 unknown,不是"没碰撞"。与两个地面碰撞平面、机器人自身的接触不算碰撞。
+- 判定必需的数据是 /clock、odom、Isaac 侧 TF;AMCL 估计只作参考,它的断流只记警告。
+
+情形(`configs/baseline.yaml` 的 `scenarios`):normal、bypass、unreachable,以及故障注入 cancel(发目标 5 s 后取消)、dropout(中途暂停仿真 6 s)、timeout(导航时限压到 6 s)、collision(路上放一个激光看不到的 0.10 m 矮箱子)。
+
+```powershell
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_scenario.sh collision --out /mnt/d/RoboSim-Eval/artifacts/d3/runs
+```
+
+没有 Python 执行服务时加 `--no-contacts`,安全字段会是 unknown。
+
+## 批量复跑与报告(D4)
+
+```powershell
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_batch.sh      # normal、bypass、unreachable 各 3 次
+```
+
+每次尝试都先复位并用真值核对;停车没确认会中止后续批次。结果在 `artifacts/d4/batch-<时间>/`:`batch.json`、`runs/<每次运行>/`、`runs/report.html`(静态页面,双击打开)、`runs/summary.json`。报告只从已保存的记录生成,可单独重建:`python3 -m robosim_eval.report <runs 目录>`。
+
 ## 关闭顺序
 
 1. `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh /mnt/d/RoboSim-Eval/artifacts/d0d/<run_dir>`:先核对归属(开机 ID、包装进程启动时刻、命令行都要与启动时记录的一致,否则拒绝并以 5 退出),然后 SIGINT 只发给 `ros2 launch`,最多等 45 s,必要时对本会话升级 SIGTERM、SIGKILL;launch 真实退出码写在 `<run_dir>/nav2.exit`;最后用不走 daemon 的 fresh discovery 核对没有残留 Nav2 节点。退出 0 = 无残留;1 = 有残留;3 = 残留检查本身失败。实测 10–13 s 结束;launch 退出码为 1,因为 Nav2 组件容器在清理阶段 SIGSEGV、rviz2 以 -9 或 -11 退出(上游已知问题,见 docs/plan.md §9)。

@@ -1,0 +1,8 @@
+record start 2026-09-30T01:08:35-07:00 attempt=/mnt/d/RoboSim-Eval/artifacts/d3/runs/dropout-20260930-010804 max=480s bag=/home/administrator/robosim_bags/dropout-20260930-010804-20260930-010835
+record stop 2026-09-30T01:11:35-07:00
+  bag            session 80180   exit=0
+  odom           session 80189   exit=2
+  amcl_pose      session 80199   exit=2
+  cmd_vel        session 80222   exit=2
+  action_status  session 80232   exit=2
+  tf_map_base    session 80251   exit=2

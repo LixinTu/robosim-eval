@@ -1,0 +1,6 @@
+bag 83635
+odom 83644
+amcl_pose 83654
+cmd_vel 83677
+action_status 83685
+tf_map_base 83704

@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/d3/runs/bypass-20260930-012001
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d3/runs/bypass-20260930-012001", "exit": 0, "execution_status": "completed", "task_outcome": "reached", "validation_status": "pass", "errors": []}

@@ -31,7 +31,7 @@ from robosim_eval import contacts as contact_client
 from robosim_eval.config import BaselineConfig, Scenario, load_config
 from robosim_eval.evaluator import ContactPolicy, EvalInputs, evaluate_run
 from robosim_eval.run_io import EventLog, Transcript, to_plain, write_manifest, write_resolved_config
-from robosim_eval.runner_fsm import RunStateMachine, State, StopStillTracker, doctor_retry
+from robosim_eval.runner_fsm import RunStateMachine, State, StopStillTracker, append_sample, doctor_retry
 
 REPO = Path(__file__).resolve().parents[1]
 WSL = REPO / "scripts" / "wsl"
@@ -85,8 +85,7 @@ class RunNode:
     def _on_odom(self, msg) -> None:
         t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
         tw = msg.twist.twist
-        self.odom.append((t, math.hypot(tw.linear.x, tw.linear.y), abs(tw.angular.z)))
-        del self.odom[:-400]
+        append_sample(self.odom, (t, math.hypot(tw.linear.x, tw.linear.y), abs(tw.angular.z)), 400)
 
     def on_feedback(self, fb) -> None:
         self.feedback_count += 1
@@ -382,10 +381,19 @@ class Runner:
         r = self.cfg.run
         tracker = StopStillTracker(r.stop_linear_mps, r.stop_angular_radps, r.stop_hold_sim_s, r.stop_max_gap_sim_s)
         last_fed: Optional[float] = self.facts.get("terminal_sim")  # samples stamped before the result do not count
+        diag = {"start_after": last_fed, "fed": 0, "max_gap": 0.0, "max_v": 0.0, "max_w": 0.0, "buffer_first": None,
+                "buffer_last": None}
         while self.fsm.state is State.STOP_CONFIRM:
             self.rn.spin(0.05)
-            for t, v, w in list(self.rn.odom):  # feed each odometry sample once, in stamp order
+            buf = list(self.rn.odom)
+            if buf:
+                diag["buffer_first"], diag["buffer_last"] = buf[0][0], buf[-1][0]
+            for t, v, w in buf:  # feed each odometry sample once, in stamp order
                 if last_fed is None or t > last_fed:
+                    if diag["fed"]:
+                        diag["max_gap"] = max(diag["max_gap"], t - last_fed)
+                    diag["fed"] += 1
+                    diag["max_v"], diag["max_w"] = max(diag["max_v"], v), max(diag["max_w"], w)
                     last_fed = t
                     if tracker.update(t, v, w) is not None:
                         break
@@ -402,7 +410,7 @@ class Runner:
                 return True
             to = self.fsm.check(*self.now())
             if to:
-                self.ev.write("timeout", name=to)
+                self.ev.write("timeout", name=to, stop_still_diagnostics={**diag, "last_fed": last_fed})
                 self.fsm.timeout(to, *self.now())
                 self._sync()
                 return False

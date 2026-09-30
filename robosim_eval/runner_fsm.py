@@ -184,3 +184,14 @@ def doctor_retry(exit_code: int, attempt: int, max_attempts: int) -> bool:
     and its first seconds are irregular (0-1 frames in a window was measured, artifacts/d2/repro-doctor-after-reset).
     Healthy, not advancing, missing data, environment errors and hangs are never retried; attempts are bounded."""
     return exit_code == 12 and attempt < max_attempts
+
+
+def append_sample(buffer: List[tuple], sample: tuple, max_len: int) -> None:
+    """Append a (sim stamp, ...) sample to a bounded buffer. A stamp older than the newest one means the simulator's
+    timeline was reset: every sample of the old timeline is dropped first (real run cancel-20260930-012218 fed a
+    pre-reset sample stamped 46.5 s after the clock had restarted, and the stop-still check then skipped every new
+    sample)."""
+    if buffer and sample[0] < buffer[-1][0]:
+        buffer.clear()
+    buffer.append(sample)
+    del buffer[:-max_len]

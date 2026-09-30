@@ -1,0 +1,8 @@
+record start 2026-09-30T01:13:55-07:00 attempt=/mnt/d/RoboSim-Eval/artifacts/d3/runs/collision-20260930-011323 max=480s bag=/home/administrator/robosim_bags/collision-20260930-011323-20260930-011355
+record stop 2026-09-30T01:19:29-07:00
+  bag            session 81801   exit=0
+  odom           session 81810   exit=2
+  amcl_pose      session 81820   exit=2
+  cmd_vel        session 81845   exit=2
+  action_status  session 81853   exit=2
+  tf_map_base    session 81872   exit=0

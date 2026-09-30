@@ -215,3 +215,21 @@ def test_cancel_reason_is_recorded_for_timeouts_and_interrupts():
     fsm2.go(State.EXECUTING, 31.0, 12.4, "goal accepted")
     fsm2.interrupt("SIGINT", 40.0, 15.0)
     assert fsm2.cancel_reason == "interrupt"
+
+
+def test_odom_buffer_drops_the_old_timeline_after_a_reset():
+    from robosim_eval.runner_fsm import append_sample
+    buf = []
+    for t in (44.0, 45.0, 46.48):          # before the sim_control reset
+        append_sample(buf, (t, 0.0, 0.0), 400)
+    for t in (0.05, 0.1, 12.6):            # after the reset the clock restarts near 0
+        append_sample(buf, (t, 0.0, 0.0), 400)
+    assert [s[0] for s in buf] == [0.05, 0.1, 12.6]
+
+
+def test_odom_buffer_is_bounded():
+    from robosim_eval.runner_fsm import append_sample
+    buf = []
+    for i in range(10):
+        append_sample(buf, (float(i), 0.0, 0.0), 4)
+    assert [s[0] for s in buf] == [6.0, 7.0, 8.0, 9.0]
