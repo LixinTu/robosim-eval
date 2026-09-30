@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # record_d0.sh — RoboSim Eval D0d: record one navigation attempt's raw evidence (plan doc B6.5, A6).
 #   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/record_d0.sh <attempt_dir> [<max_seconds>]
-# Starts, detached and duration-capped (default 320 s wall, SIGINT so rosbag writes metadata.yaml):
+# Starts, detached and duration-capped (default 320 s wall; timeout sends SIGINT so rosbag writes metadata.yaml):
 #   - a rosbag (WSL-local ~/robosim_bags, copied into <attempt_dir>/rosbag afterwards; bags are git-ignored) with
 #     /clock /chassis/odom /tf /tf_static /cmd_vel /scan /amcl_pose /plan /goal_pose /initialpose and the hidden
 #     NavigateToPose action status/feedback topics
 #   - wall-timestamped text streams: odom (csv), amcl_pose (csv), cmd_vel (csv), action status, tf map->base_link
-# PIDs are written to <attempt_dir>/record.pids; stop early with stop_record.sh <attempt_dir>. Exit 0 when started.
+# Each recorder runs in its own session (setsid) under a wrapper bash that writes the recorder's real exit code to
+# <attempt_dir>/<name>.exit (124 = hit the time cap, by design; `ros2 topic echo` returns 2 = signal.SIGINT when stopped).
+# Session ids are in <attempt_dir>/record.pids. The wrapper survives a session-wide SIGINT/SIGTERM (SIGINT is ignored on
+# entry for `&` jobs of a non-interactive shell; TERM is trapped) so it can record the exit code; `timeout` installs its
+# own signal handlers, so the recorders themselves get default dispositions and do stop on SIGINT (verified run-02).
+# Stop early with stop_record.sh <attempt_dir>. Exit 0 when all recorders started.
 set -uo pipefail
 ATT="${1:?attempt dir required}"; MAX="${2:-320}"
 mkdir -p "$ATT"
@@ -21,18 +26,24 @@ mkdir -p "$(dirname "$BAG")"
 echo "$BAG" > "$ATT/bag-path.txt"
 : > "$ATT/record.pids"
 
-stamp() { python3 -u -c 'import sys,datetime
-for line in sys.stdin: print(datetime.datetime.now().isoformat(timespec="milliseconds"), line.rstrip())'; }
+# Line stamper for text streams: ignores SIGINT so it drains the pipe until EOF instead of dying with a traceback.
+export STAMP_PY='import signal, sys, datetime
+signal.signal(signal.SIGINT, signal.SIG_IGN)
+for line in sys.stdin:
+    print(datetime.datetime.now().isoformat(timespec="milliseconds"), line.rstrip(), flush=True)'
 
-start() { # start <name> <command...>   (detached, INT-capped)
+start() { # start <name> <command...>   (detached, INT-capped, exit code -> <name>.exit)
   local name="$1"; shift
-  setsid nohup bash -c 'echo $$ > "$0"; exec "$@"' "$ATT/pid-$name" timeout -s INT "$MAX" "$@" < /dev/null > "$ATT/$name.log" 2>&1 &
+  rm -f "$ATT/$name.exit"
+  setsid nohup bash -c 'echo $$ > "$0"; trap "true" INT TERM; "${@:2}"; echo $? > "$1"' \
+    "$ATT/pid-$name" "$ATT/$name.exit" timeout -s INT "$MAX" "$@" < /dev/null > "$ATT/$name.log" 2>&1 &
   sleep 0.5; echo "$name $(cat "$ATT/pid-$name" 2>/dev/null)" >> "$ATT/record.pids"
 }
-startpipe() { # startpipe <name> <command...>  (stdout wall-timestamped into <name>.txt)
+startpipe() { # startpipe <name> <command...>  (stdout wall-timestamped into <name>.txt, exit code of the command)
   local name="$1"; shift
-  setsid nohup bash -c 'echo $$ > "$0"; shift; exec "$@" | python3 -u -c "import sys,datetime
-for line in sys.stdin: print(datetime.datetime.now().isoformat(timespec=\"milliseconds\"), line.rstrip())"' "$ATT/pid-$name" _ timeout -s INT "$MAX" "$@" < /dev/null > "$ATT/$name.txt" 2> "$ATT/$name.err" &
+  rm -f "$ATT/$name.exit"
+  setsid nohup bash -c 'echo $$ > "$0"; trap "true" INT TERM; "${@:2}" | python3 -u -c "$STAMP_PY"; echo "${PIPESTATUS[0]}" > "$1"' \
+    "$ATT/pid-$name" "$ATT/$name.exit" timeout -s INT "$MAX" "$@" < /dev/null > "$ATT/$name.txt" 2> "$ATT/$name.err" &
   sleep 0.5; echo "$name $(cat "$ATT/pid-$name" 2>/dev/null)" >> "$ATT/record.pids"
 }
 
@@ -40,11 +51,15 @@ echo "record start $(date -Is) attempt=$ATT max=${MAX}s bag=$BAG" | tee "$ATT/re
 start bag ros2 bag record -o "$BAG" --include-hidden-topics \
   /clock /chassis/odom /tf /tf_static /cmd_vel /scan /amcl_pose /plan /goal_pose /initialpose \
   /navigate_to_pose/_action/status /navigate_to_pose/_action/feedback
-startpipe odom      ros2 topic echo --csv --field pose.pose /chassis/odom
-startpipe amcl_pose ros2 topic echo --csv /amcl_pose
-startpipe cmd_vel   ros2 topic echo --csv /cmd_vel
+startpipe odom          ros2 topic echo --csv --field pose.pose /chassis/odom
+startpipe amcl_pose     ros2 topic echo --csv /amcl_pose
+startpipe cmd_vel       ros2 topic echo --csv /cmd_vel
 startpipe action_status ros2 topic echo /navigate_to_pose/_action/status
-startpipe tf_map_base ros2 run tf2_ros tf2_echo map base_link -r 5
+startpipe tf_map_base   ros2 run tf2_ros tf2_echo map base_link -r 5
 sleep 2
-echo "pids:"; cat "$ATT/record.pids"
-for p in $(awk '{print $2}' "$ATT/record.pids"); do kill -0 "$p" 2>/dev/null && echo "  running $p" || echo "  NOT running $p (see logs)"; done
+echo "sessions:"; cat "$ATT/record.pids"
+rc=0
+while read -r name sid; do
+  if pgrep -s "$sid" >/dev/null 2>&1; then echo "  running $name (session $sid)"; else echo "  NOT running $name (session $sid; see $name.log/.err)"; rc=1; fi
+done < "$ATT/record.pids"
+exit $rc

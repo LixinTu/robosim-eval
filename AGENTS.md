@@ -24,9 +24,25 @@
 
 优先级:根目录三份 ZH 文档是 2026-09-29 冻结的需求参考,它们里面的"当前状态"列已作废;状态只看 docs/plan.md。文件名保留下载时的 "(1)" 后缀,引用时写真实路径。
 
-## 跑起来
+## 跑起来(2026-09-29 本机实测;完整顺序与期望值见 docs/setup.md)
 
-尚无已验证的命令。每条命令在本机实测通过后才写入这里与 docs/setup.md。
+```powershell
+# Windows 普通 PowerShell:启动 Isaac Sim + ROS 2 bridge(然后在 GUI 加载 Nova Carter 示例并 Play)
+powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\start_isaac_ros2.ps1
+powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\check_isaac_bridge.ps1   # bridge 是否加载、显存
+# WSL(从 Windows 调用;脚本内部自动 source ros_env.sh + dds_env.sh)
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_ros_install.sh                    # 安装自检,PASS/FAIL
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/probe_topics.sh <out_dir>                # Isaac 数据是否到达(/clock 等)
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/start_nav2.sh <run_dir>                  # Nav2 + RViz,独立进程组
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_nav2_ready.sh <run_dir>            # 生命周期、/scan、/map、action、TF
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/record_d0.sh <attempt_dir> 330           # bag + 文本流
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/send_goal.sh <attempt_dir> X Y YAW       # 地图空闲核对 + 发一个目标
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_record.sh <attempt_dir>
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/analyze_attempt.sh <attempt_dir> --goal X Y YAW   # result.json + trajectory.csv
+wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/stop_nav2.sh <run_dir>
+```
+
+一次性安装(需 sudo 密码,用户在 Ubuntu 终端运行):`bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh`,然后 `setup_workspace.sh`;防火墙规则(管理员):`scripts\windows\allow_wsl_to_isaac_firewall.ps1`。
 
 ## 硬规则(来自计划文档 §0.2 与两份 harness pack)
 
@@ -43,7 +59,15 @@
 
 ## 审查门
 
-默认:Claude Code 主实现 → Codex 新会话只读审查(`codex exec`;确切的只读沙箱参数在阶段 1 核实后补到这里)→ Claude Code 逐条核实、只修有效项、重跑受影响检查 → Codex 复核修复后的范围。最多两轮。"无发现"不等于验收通过;Codex 不可用时标"待独立审查",不伪造跨模型审查。审查前先提交并冻结,审查期间不改动源码。
+默认:Claude Code 主实现 → Codex 新会话只读审查 → Claude Code 逐条核实、只修有效项、重跑受影响检查 → Codex 复核修复后的范围。最多两轮。"无发现"不等于验收通过;Codex 不可用时标"待独立审查",不伪造跨模型审查。审查前先提交并冻结,审查期间不改动源码。
+
+只读审查命令(参数按本机 codex-cli 0.157.0 的 `codex exec --help` 核实;已登录;提示词放文件里经 stdin 传入;实际运行记录见 docs/review/):
+
+```powershell
+Get-Content -Raw <提示词文件> | codex exec --sandbox read-only -C D:\RoboSim-Eval -o <报告文件> -
+```
+
+审查材料与报告放在 docs/review/;提示词模板是 Codex-Harness-Pack-ZH(1).md 的"默认:Codex 独立审查提示词"。
 
 ## 什么要问人
 

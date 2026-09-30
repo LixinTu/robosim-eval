@@ -51,6 +51,18 @@
 | 第三方工作区 | `~/robotics/vendor/isaac-ros-6.1`(WSL ext4),tag IsaacSim-6.1.0,HEAD `a9e8471ee901bc2332c1e4aca94ac580713ca3ab`,树干净;构建闭包 carter_navigation + isaacsim_bringup + isaac_ros_navigation_goal;overlay `jazzy_ws/install/setup.bash` |
 | carter_navigation 关键配置(钉住版本) | launch 参数 map / params_file / use_sim_time(默认 True);地图 `carter_warehouse_navigation.yaml`(分辨率 0.05,原点 [-11.975, -17.975, 0]);amcl `set_initial_pose: true`,initial_pose x=-6.0 y=-1.0 yaw=3.14159;bt_navigator odom_topic `/chassis/odom`;局部代价地图用 `/front_2d_lidar/scan` 与 `/back_2d_lidar/scan`,全局代价地图与碰撞监视用 `/scan`(由 pointcloud_to_laserscan 从 `/front_3d_lidar/lidar_points` 转换,target_frame front_3d_lidar);collision_monitor 输出 `cmd_vel`(输入 `cmd_vel_smoothed`);params 未设置 enable_stamped_cmd_vel(Jazzy 默认为 geometry_msgs/Twist,须在 D0c 用 `ros2 topic info -v` 与 Isaac 订阅方核对) |
 
+## 运行时实测(D0c/D0d,2026-09-29 19:35–20:30)
+
+| 项目 | 实测 |
+| --- | --- |
+| Isaac + Nova Carter 示例场景 | 显存峰值 3754 MiB / 8188(GUI 内显示 3.9 GiB);GPU 利用率 80%;视口 20 FPS;kit 工作集 14.7 GB;仿真实时因子约 0.4 |
+| Windows↔WSL 通信 | Fast DDS,domain 0,UDPv4-only profile;需要防火墙规则 "RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)"(入站/UDP/kit.exe/vEthernet (WSL));Isaac 的 SPDP 多播本来就能到 WSL,缺的是 WSL→Windows 入站 |
+| Isaac 发布的 topic | /clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、前双目 image_raw/camera_info、5 路 IMU;订阅 /cmd_vel(geometry_msgs/Twist);无 2D LaserScan、无 /tf_static |
+| Nav2(钉住默认参数) | 10 个生命周期节点 active;/scan 3.5 Hz;/map 480×776;amcl 自动初始位姿;RViz 经 WSLg 显示(OpenGL 4.5) |
+| 首次导航 | 目标 (-4.0,-1.0) SUCCEEDED,8.47 s 仿真时间,停稳确认;终点误差:AMCL 独立来源(仿真状态里程计 + USD 出生位姿)0.090 m,AMCL 估计 0.230 m |
+| 位置来源 | 场景 USD `/World/Nova_Carter_ROS` 出生位姿 translate (-6, -1, 0)、yaw π(= amcl initial_pose);/chassis/odom 由 `isaacsim.core.nodes.IsaacComputeOdometry` 从底盘仿真状态计算,相对 Play 起点(理想里程计);机器人零指令下缓爬约 1 mm/仿真秒,Nav2 启动时 AMCL 初始位姿因此偏 0.324 m(证据:artifacts/d0d/run-01/usd-inspection.txt、attempt-01/result.json) |
+| Nav2 停止 | SIGINT 只发给 ros2 launch 时 13 s 全部退出;组件容器清理阶段 SIGSEGV、rviz2 被 SIGKILL,launch 退出码 1(上游已知问题,无残留) |
+
 ## 门槛 1→2 判定
 
 - 两侧探测均有完整输出、退出码 0;Isaac 两个关键路径存在 → 通过。

@@ -13,6 +13,11 @@
   "safety_status": "unknown (contact/collision not measured in D0)",
   "data_status": "complete",
   "validation_status": "pass",
+  "arrival_check": {
+    "source": "sim_state_odom_plus_spawn",
+    "error_to_goal_m": 0.089702422708976,
+    "tolerance_m": 0.5
+  },
   "nav2_raw": {
     "terminal_status_code": 4,
     "terminal_status_name": "SUCCEEDED",
@@ -37,15 +42,74 @@
       "y": -1.002056241696005,
       "yaw": 0.019111762049455045,
       "error_to_goal_m": 0.249577093762643,
-      "source": "Nav2 feedback current_pose (map frame; localization estimate, not ground truth)"
+      "source": "Nav2 feedback current_pose (map frame; AMCL-based localization estimate)"
     },
     "tf_map_base_link": {
       "x": -4.228891789710769,
       "y": -1.0214551717964917,
       "yaw": 0.021284539933207114,
       "error_to_goal_m": 0.22989514086603863,
-      "source": "/tf map->odom (AMCL) composed with odom->base_link (Isaac odometry)"
+      "source": "/tf map->odom (AMCL) composed with odom->base_link (Isaac odometry); estimate"
+    },
+    "sim_state_odom_plus_spawn": {
+      "x": -4.072169135131093,
+      "y": -1.0532742017705559,
+      "yaw": 0.07209025042665651,
+      "error_to_goal_m": 0.089702422708976,
+      "yaw_error_rad": 0.07209025042665651,
+      "source": "/chassis/odom (IsaacComputeOdometry: simulated chassis state relative to Play start) composed with USD spawn [-6.0, -1.0, 3.141592653589793]; independent of AMCL"
     }
+  },
+  "position_source_crosscheck": {
+    "at_goal_accept": {
+      "sim_state_xy": [
+        -6.5659,
+        -0.9996
+      ],
+      "amcl_estimate_xy": [
+        -6.2415,
+        -0.9999
+      ],
+      "amcl_minus_sim_state_m": 0.3244
+    },
+    "at_terminal_status": {
+      "sim_state_xy": [
+        -4.0938,
+        -1.0548
+      ],
+      "amcl_estimate_xy": [
+        -4.2496,
+        -1.0021
+      ],
+      "amcl_minus_sim_state_m": 0.1645
+    },
+    "at_bag_end": {
+      "sim_state_xy": [
+        -4.0722,
+        -1.0533
+      ],
+      "amcl_estimate_xy": [
+        -4.2289,
+        -1.0215
+      ],
+      "amcl_minus_sim_state_m": 0.1599
+    },
+    "map_to_odom_first": [
+      -5.6756,
+      -0.9999,
+      -3.1409
+    ],
+    "map_to_odom_last": [
+      -6.1515,
+      -0.8703,
+      3.0908
+    ],
+    "map_to_odom_implied_by_spawn": [
+      -6.0,
+      -1.0,
+      3.1416
+    ],
+    "interpretation": "If the odometry started at the spawn, the true map->odom equals the spawn pose; the difference between map_to_odom_first and the spawn is AMCL's initial error, and its evolution shows AMCL re-localizing during the attempt."
   },
   "stop_still": {
     "rule": "|v|<0.05 m/s and |w|<0.1 rad/s for 1.0 s sim time after terminal status, on /chassis/odom twist",
@@ -65,7 +129,7 @@
     "tf_odom_base": 904
   },
   "notes": [
-    "Positions come from Nav2/AMCL estimates and Isaac odometry; independent simulation ground truth was not recorded (D3).",
+    "The AMCL-independent source is derived from Isaac's IsaacComputeOdometry output plus the USD spawn; it is not a separate ground-truth topic (D3).",
     "safety_status is unknown because contact/collision data was not measured (D3).",
     "rejected/aborted goals would be reported as unknown, not unreachable (plan doc A5)."
   ]

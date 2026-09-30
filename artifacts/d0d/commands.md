@@ -27,10 +27,27 @@
 | 20:25:07 → 20:25:12 | `stop_record.sh …/attempt-01` | Git Bash → wsl.exe(脚本文件) | /mnt/d/RoboSim-Eval | 0 | attempt-01/bag-info.txt、rosbag/(mcap 6.3 MB,不入 Git)、odom.txt、amcl_pose.txt、cmd_vel.txt、action_status.txt | bag 47.7 s、5982 条:/clock 904、/chassis/odom 904、/cmd_vel 540、feedback 2405、status 2、/plan 25、/scan 145、/tf 1049、/amcl_pose 8;action_status 文本流:20:24:40.519 status 2(EXECUTING)→ 20:25:06.131 status 4(SUCCEEDED);cmd_vel 从 -0.16/-0.32/-0.48 rad/s 的转向斜坡开始,20:25:09 起全零。**缺陷**:SIGINT 只发到原进程组,`timeout` 自建的进程组未收到,四个文本流跑到 20:27 仍在写(bag 已正常停止);20:28 用 `pkill -INT -s <会话>` 按会话结束,stop_record.sh 已改为按会话发送 |
 | 20:3x | `analyze_attempt.sh …/attempt-01 --goal -4.0 -1.0 0.0` | Git Bash → wsl.exe(脚本文件,rosbag2_py) | /mnt/d/RoboSim-Eval | 0(4 s) | attempt-01/result.json、trajectory.csv | **task_outcome=reached, validation=pass, data=complete, safety=unknown(未测)**;接受→结果 8.47 s 仿真 / 25.61 s 现实;终点 map 系:Nav2 反馈 (-4.250, -1.002, yaw 0.019) 误差 0.250 m,TF 合成 (-4.229, -1.021) 误差 0.230 m(容差 0.5 m;两者都是定位估计,非独立真值);停稳(|v|<0.05, |w|<0.1 持续 1 s 仿真时间)在 sim 519.53 s 确认,结果后最大 |v| 0.168 m/s(减速尾段)、最大 |w| 0.045 rad/s;trajectory.csv 含 904 条 odom、904 条 TF 合成 map 位姿、2405 条反馈位姿,各带 frame 与来源 |
 
+## 位置来源交叉核对(2026-09-29 20:3x–20:4x)
+
+| 时间(本地) | 命令 | shell | cwd | 退出码 | 日志/样本 | 备注 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 20:3x | `temp/explore_sources.sh …/attempt-01/rosbag`(探索性,temp/ 不入库;结论已并入 analyze_attempt.py) | Git Bash → wsl.exe | /mnt/d/RoboSim-Eval | 0 | 会话记录 | 原地转身期间 odom 平移仅 2.9 cm,而 AMCL 的 map→odom 从 (-5.676, -1.000, -3.141) 变到最终 (-6.152, -0.870, 3.091) |
+| 20:3x | `curl` 下载场景 USD 与机器人 payload USD 到 temp/usd/;`scripts/windows/inspect_usd.py`(Isaac python.bat + omni.usd.libs 的 pxr,仅子进程设置 PYTHONPATH/PATH);读 `exts/isaacsim.core.nodes/ogn/docs/OgnIsaacComputeOdometry.rst` | PowerShell → cmd → python.bat | D:\RoboSim-Eval | 0 | run-01/usd-inspection.txt(含 URL、sha256、输出) | 场景 USD:`/World/Nova_Carter_ROS` `xformOp:translate = (-6, -1, 0)`、`xformOp:orient = (6.1e-17, 0, 0, 1)`(yaw = π),与 Nav2 参数 amcl initial_pose 一致;机器人 USD:`transform_tree_odometry/isaac_compute_odometry_node -> isaacsim.core.nodes.IsaacComputeOdometry` 供 `ros2_publish_odometry`;该节点唯一输入是 chassis prim(文档:"Usd prim reference to the articulation root or rigid body prim"),即 /chassis/odom 取自仿真底盘状态、相对 Play 起点,无轮速/噪声模型 |
+| 20:4x | `analyze_attempt.sh …/attempt-01 --goal -4.0 -1.0 0.0 --spawn -6.0 -1.0 3.141592653589793`(脚本新增 AMCL 独立来源) | Git Bash → wsl.exe | /mnt/d/RoboSim-Eval | 0 | attempt-01/result.json(已覆盖)、trajectory.csv(新增 904 行独立来源位姿) | **到达核对改用 AMCL 独立来源**:仿真状态里程计 + USD 出生位姿 → 终点 (-4.072, -1.053),到目标 0.090 m;AMCL 估计 0.230 m、Nav2 反馈 0.250 m。接受目标时 AMCL 与独立来源相差 0.324 m(Nav2 启动前机器人已缓爬离开出生点,而 set_initial_pose 仍用出生点);结束时相差 0.160 m(AMCL 转身时自行重定位了大部分) |
+
+## 停止路径验证(stop_nav2.sh / stop_record.sh)
+
+| 时间(本地) | 命令 | 退出码 | 证据 | 备注 |
+| --- | --- | --- | --- | --- |
+| 20:43:08 | `stop_nav2.sh …/run-01`(旧版:SIGINT 发整个进程组) | 0 | run-01/nav2-launch.meta、nav2-launch.log 末尾 | 所有进程退出,但子进程收到两次 SIGINT(直接 + launch 转发):组件容器清理 route_server 时 "Magick: abort due to signal 11 (SIGSEGV)",exit -6;rviz2 exit -6;"残留节点"告警是 ros2 daemon 缓存造成的误报(pgrep 无进程) |
+| 20:45:42 → 20:47:51 | run-02-stoptest:`start_nav2.sh` → `record_d0.sh …/record-test 60` → 8 s → `stop_record.sh` → `stop_nav2.sh` | 0 / 0 / 0 / 1 | run-02-stoptest/ | 记录器链路通过:6 个会话全部结束,bag 退出 0(15 s、997 条),`ros2 topic echo` 退出 2(ros2cli 在 KeyboardInterrupt 时返回 signal.SIGINT),tf2_echo 退出 0。stop_nav2 缺陷:`pgrep -s <会话> -f "ros2 launch …"` 匹配到了包装 bash(其命令行含同一字符串),SIGINT 被包装进程 trap,45 s 后升级 SIGTERM/SIGKILL,launch 退出码 143;无残留。脚本末尾的展示用 grep 无匹配导致退出码 1(已改为只反映残留) |
+| 20:48:39 → 20:50:28 | run-03-stoptest:改为按父进程取 launch PID | 0(停止结果无残留) | run-03-stoptest/ | SIGINT 发到了 launch(59041),但 launch 日志在 SIGINT 后无任何输出 → launch 忽略 SIGINT。根因:非交互 shell 的 `&` 后台命令继承 SIGINT=忽略,Python 的 ros2 launch 保持忽略;C++ 子进程自己装处理函数所以 run-01 有反应;记录器在 `timeout` 下所以不受影响。仍靠 SIGTERM/SIGKILL 结束,无残留 |
+| 20:51:44 → 20:52:41 | run-04-stoptest:包装进程前加 `env --default-signal=INT,TERM`(coreutils 9.4) | 0 | run-04-stoptest/nav2-launch.meta、nav2-launch.log | **修复确认**:仅 SIGINT(launch)13 s 全部退出,无升级、无残留进程、fresh discovery 无 Nav2 节点;pointcloud_to_laserscan "finished cleanly";**已知上游问题**:组件容器清理时仍 SIGSEGV(exit -6,与 run-01 相同),rviz2 在 launch 的 SIGINT→SIGTERM 超时后被 SIGKILL(-9),launch 退出码 1。三次尝试后结束该问题的排查(预算内) |
+
 ## D0d 验收判定
 
-- Nav2 接受并完成目标 ✔(原始状态码 4,error_code 0)
-- 轨迹显示移动 ✔(odom x 0.56 → -1.97;map x -6.24 → -4.25;先转向后直行)
-- 到达且停稳 ✔(误差 0.23–0.25 m < 0.5 m;停稳规则满足)
-- 原始证据保留 ✔(bag、反馈转录、文本流、result.json、trajectory.csv)
-- 未验证:碰撞/接触、独立仿真真值、朝向考核(记录 yaw 0.019 rad,未纳入验收)
+- Nav2 接受并完成目标 ✔(原始状态码 4,error_code 0,0 次恢复)
+- 轨迹显示移动 ✔(独立来源 map x -6.566 → -4.072;先原地转身约 180°,再直行约 2.5 m)
+- 到达且停稳 ✔(AMCL 独立来源误差 0.090 m;AMCL 估计 0.230 m;均 < 0.5 m;停稳规则在结果后 1.15 s 仿真时间满足)
+- 原始证据保留 ✔(bag 信息、反馈转录、文本流、result.json、trajectory.csv、USD 检查)
+- 未验证:碰撞/接触;独立来源依赖"Play 后未重置、里程计从出生点起算"两个前提,不是单独的真值 topic;朝向未纳入验收(独立来源 yaw 0.072 rad)

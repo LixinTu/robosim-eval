@@ -10,11 +10,11 @@
 | D0a · 环境证据 | 完成(2026-09-29 19:02–19:04) | docs/environment.md;artifacts/d0a/(两侧探测原始输出 + commands.md) | 门槛 1→2 通过;发现:WSL 内无 ROS 2,sudo 需密码 |
 | D0b · ROS 2 Jazzy + 6.1.0 示例工作区 | 完成(2026-09-29 19:16–19:30) | artifacts/d0b/commands.md(安装日志、check-ros-install、talker/listener ×2、rviz2 测试、setup-workspace.log) | 门槛 2→3 通过。工作区 `~/robotics/vendor/isaac-ros-6.1`,HEAD a9e8471…;安装脚本首跑退出码 1 是校验步骤的 `set -u` 缺陷(已修),安装本身成功 |
 | D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 完成(2026-09-29 19:35–20:12) | artifacts/d0c/commands.md;probe-04-playing/(/clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、tf2_echo odom→base_link);clock-continuity-01;clock-pause-test-02(暂停 29 s 时钟停、恢复后继续);bridge-check-01/02;kit-udp-endpoints-01;diag-01 | 门槛 3→4 通过。排障:Windows 防火墙阻断 WSL→kit.exe 入站(用户以管理员加一条限定规则后解决);首次 Play 后 7 s 时间线被停止(重新 Play 解决)。发现:示例场景不发布 2D 雷达扫描(params 的局部代价地图两路来源无数据,D0d 记偏差);USD 动画时间线每 ~41 s 循环但仿真时钟不受影响;显存峰值 3754 MiB |
-| D0d · 一次真实 A→B | 完成(2026-09-29 20:13–20:30) | artifacts/d0d/commands.md;run-01/(nav2-launch.log、ready-check-01、map-overview、rviz-before-goal 截图);run-01/attempt-01/(goal-202437.txt、result.json、trajectory.csv、bag-info、文本流) | 目标 map (-4.0,-1.0,yaw 0) 由 CLI action client 发送:SUCCEEDED、error_code 0、8.47 s 仿真时间、终点误差 0.23–0.25 m、停稳确认 → task_outcome=reached。Nav2 用钉住默认参数;局部代价地图两路 2D 雷达无数据(记偏差);机器人零指令下 ~0.6 mm/s 缓爬(记现象) |
+| D0d · 一次真实 A→B | 完成(2026-09-29 20:13–20:52) | artifacts/d0d/commands.md;run-01/(nav2-launch.log、ready-check-01、map-overview、rviz 截图、usd-inspection);run-01/attempt-01/(goal-202437.txt、result.json、trajectory.csv、bag-info、文本流);run-02/03/04-stoptest(停止路径验证) | 目标 map (-4.0,-1.0,yaw 0) 由 CLI action client 发送:SUCCEEDED、error_code 0、0 次恢复、8.47 s 仿真时间、停稳确认;**AMCL 独立来源**(仿真状态里程计 + USD 出生位姿)终点误差 0.090 m,AMCL 估计 0.230 m → task_outcome=reached。发现见 §9 |
 | D0 交付 + 独立审查 | 进行中 | docs/setup.md、docs/review/(待生成) | Codex 0.157.0 已登录;`codex exec --sandbox read-only` 可用 |
-| D1 doctor / D2 单次运行 / D3 判定 / D4 批量复跑 / D5 作品交付 | 未开始 | — | D0 通过后按序进行 |
+| D1 doctor / D2 单次运行 / D3 判定 / D4 批量复跑 / D5 作品交付 | 未开始 | — | D0 独立审查结束后按序进行;下一项是 D1 的第一个小验收(见 §11) |
 
-**当前任务(D0c,用户回合):** 用户正常关闭当前 Isaac GUI(PID 29036)→ 在新的普通 PowerShell 运行 `powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\start_isaac_ros2.ps1` → 若弹防火墙对话框对 kit.exe 允许(含公用网络)→ Window → Examples → Robotics Examples → ROS2 → Navigation → Nova Carter → Load Sample Scene → Play → 告诉 Claude。Claude 随后运行 `scripts/windows/check_isaac_bridge.ps1`(bridge 是否加载、显存)与 `scripts/wsl/probe_topics.sh`(/clock、odom、TF、雷达)。
+**当前任务(D0 交付):** 冻结审查快照 → Codex 独立只读审查(`codex exec --sandbox read-only`)与 Claude 内部预审并行 → 逐条核实、修复有效项、重跑受影响检查 → 必要时第二轮复核 → 最终交付说明与用户三步验收。
 
 **D0b 结果(2026-09-29 19:16–19:30):** ROS 2 Jazzy desktop + Nav2 + 闭包依赖装好(用户执行);WSL 内 talker/listener 默认与加载 fastdds.xml 均通;rviz2 在 WSLg 下存活 20 s(OpenGL 4.5);工作区 `~/robotics/vendor/isaac-ros-6.1` @ a9e8471…,`colcon build --packages-up-to carter_navigation` 成功;launch 参数 map / params_file / use_sim_time 可查询。
 
@@ -103,12 +103,12 @@
 - 最终报告按 pack 七项:完成范围与改动文件;启动命令与必要条件;diff、验证结果与证据位置;失败/未验证/剩余问题/审查状态;三步验收;关键文件与函数;审查材料位置与下次会话入口 + 已存入项目的规则。产品证据与过程证据分节。
 
 ## 7. 本轮验收清单
-- [ ] D0a:环境记录与现有改动清单;GUI 截图只证明打开。
-- [ ] D0b:包可发现、构建成功、launch 参数可查询;命令与退出码。
-- [ ] D0c:/clock 持续推进;里程计、TF、激光有样本和频率;暂停可识别。
-- [ ] D0d:Nav2 接受并完成目标,轨迹显示移动,到达且停稳;原始证据保留。
-- [ ] B7 六项最低交付:环境与依赖版本记录 / 已验证启动顺序 / 一次真实 A→B 的记录 / 最小 diff 说明 / 未验证清单 / 独立审查材料。
-- [ ] 用户三步验收:新终端启动看到地图与实时数据;发目标看到达并打开记录核对;暂停看数据停、恢复看数据回来。
+- [x] D0a:环境记录与现有改动清单;GUI 截图只证明打开。→ docs/environment.md、artifacts/d0a/
+- [x] D0b:包可发现、构建成功、launch 参数可查询;命令与退出码。→ artifacts/d0b/commands.md
+- [x] D0c:/clock 持续推进;里程计、TF、激光有样本和频率;暂停可识别。→ artifacts/d0c/probe-04-playing/、clock-pause-test-02.txt
+- [x] D0d:Nav2 接受并完成目标,轨迹显示移动,到达且停稳;原始证据保留。→ artifacts/d0d/run-01/attempt-01/result.json
+- [ ] B7 六项最低交付:环境与依赖版本记录 ✔ / 已验证启动顺序 ✔(docs/setup.md)/ 一次真实 A→B 的记录 ✔ / 最小 diff 说明 ✔(审查包)/ 未验证清单 ✔(§9)/ 独立审查材料(进行中)
+- [ ] 用户三步验收:新终端启动看到地图与实时数据;发目标看到达并打开记录核对;暂停看数据停、恢复看数据回来。(待用户)
 
 ## 8. 偏差记录
 - fastdds.xml 路径:仓库内 `configs/network/` 而非 `D:\robosim-assets\network`(见决定记录)。
@@ -116,9 +116,26 @@
 - Windows 启动脚本将**不**预设 ROS_DISTRO(计划文档 B4 块预设了它):本机 `isaac-sim.bat` 自动调用 `setup_ros_env.bat`,该脚本只在 ROS_DISTRO 未设时才把自带 jazzy 库加入 PATH 与 AMENT_PREFIX_PATH;预设会跳过这一步。脚本只预设 RMW_IMPLEMENTATION=rmw_fastrtps_cpp、ROS_DOMAIN_ID、FASTRTPS_DEFAULT_PROFILES_FILE,并在启动后用 kit 日志核对实际生效值。
 - 阶段 2 安装省略了 ROS 文档建议的整体 `apt upgrade`(项目规则:不做无关系统升级);若 apt 因依赖被 hold 而失败,再用 `--with-upgrade` 重跑并记录。
 - S6(docs.ros.org)被反爬页拦截,改读计划文档允许的官方托管镜像 repo.test.ros2.org;安装脚本的命令逐条来自该镜像。
+- Nav2 用钉住版本的默认参数运行;示例场景不发布 /front_2d_lidar/scan 与 /back_2d_lidar/scan,局部代价地图这两路观测源无数据。D0 首次导航未因此受阻,所以没有改参数;D2 起若要消除,把 params 复制到 configs/nav2/ 并把局部代价地图观测源改为 /scan,用 `params_file:=` 引用。
+- 到达核对使用"仿真状态里程计 + USD 出生位姿"作为 AMCL 独立来源(计划文档 A5 要求"用独立位置来源核对"),它不是单独的真值 topic,前提写在 result.json 的 notes 里。
+- 首次导航目标由 CLI action client 发送(为拿到原始 result 与 error_code),未用 RViz Nav2 Goal;RViz 发目标的路径留给用户验收第 2 步。
 
-## 9. 未验证清单(交付时更新)
-- 碰撞/接触、独立仿真真值、自动重置、批量运行、取消/超时处理、doctor/runner/evaluator/report 均未实现或未验证(D1–D4 范围)。
+## 9. 发现、已知问题与未验证清单
+**发现(影响后续交付):**
+- Nav2 启动时 AMCL 初始位姿偏差 0.324 m:机器人在零指令下缓慢前爬(Play 后 505 s 仿真时间内 0.56 m),而 amcl `set_initial_pose` 固定用出生点。转身时 AMCL 自行重定位,结束时仍偏 0.160 m。→ D2/D4 每次运行前必须重置场景并尽快启动,或按实际位姿设置初始定位。
+- /chassis/odom 由 `IsaacComputeOdometry` 计算(仿真底盘状态,相对 Play 起点,无轮速/噪声模型)= 理想里程计。它适合做评测侧的位置核对,但不能证明真实定位鲁棒性(计划文档 A5)。
+- 仿真实时因子约 0.4;USD 动画时间线每 ~41 s 循环一次(一帧 dt=0 的差速控制器警告),仿真时钟不受影响。
+- 首次 Play 后 7 s 时间线曾被停止(topic 在、无数据),重新 Play 恢复。
+
+**已知问题:**
+- Nav2 停止时组件容器在清理阶段 SIGSEGV("Magick: abort due to signal 11",exit -6),rviz2 在 SIGINT/SIGTERM 超时后被 launch SIGKILL,launch 退出码 1;run-01 与 run-04 两次复现,不影响导航与记录,已无残留进程。
+- RViz 在 WSLg 下启动时报一次 GLSL 链接错误(`indexed_8bit_image`),地图与激光照常显示。
+- 首次导航的反馈转录 goal-202437.txt 为 2.7 MB(CLI 高频反馈);以后可只保存摘要。
+
+**未验证(D1–D4 范围或待用户):**
+- 碰撞/接触(safety_status=unknown)、单独的仿真真值 topic、自动重置、批量运行、取消与超时处理、doctor/runner/evaluator/report 均未实现。
+- RViz Nav2 Goal 发目标路径、`record_d0.sh` 以外的记录方式、Heightmap 回退路线未执行。
+- 只做了一次导航尝试;不据此声称任何导航性能。
 
 ## 10. 风险
 - 8 GB 显存 + Windows 10:场景可能跑不起来 → Heightmap 缩场景;仍不行则如实记硬件阻塞。
@@ -126,3 +143,8 @@
 - RViz 在 WSLg 下可能起不来 → 阶段 2 提前测,失败走 CLI 路线并如实标注。
 - sudo/管理员、colcon 构建时间、rosdep 网络、10 分钟工具上限(后台作业规避)。
 - 总时长粗估半天到一天,并受用户在 GUI 步骤的可用时间影响。
+
+## 11. 下一项:D1 诊断工具的第一个小验收(D0 审查结束后开始)
+- 用户操作:仿真在 Play 时运行 doctor;然后暂停仿真再运行一次。
+- 预期:正常时报告 /clock、/chassis/odom、/tf、/front_3d_lidar/lidar_points 的实际频率与新鲜度并退出 0;暂停时在有限时间内(候选:max(5 个正常周期, 2 s))判定时钟停止并非零退出。
+- 验证:固定输入测试(不需要仿真)+ 真实 Isaac 集成各一次,分别记录;复用 probe_topics.sh / watch_clock.sh 的经验,不另起框架。
