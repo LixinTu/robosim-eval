@@ -7,7 +7,7 @@
 # For each item in order: skip it when codex-<round>-report.md already exists in its folder; otherwise run
 # run_codex_review.ps1 -Round <round> -Dir <folder>. A failed attempt keeps its files as
 # codex-<round>-attemptN-{status,stderr,stdout}.txt. When the failure is the usage limit, the "try again at <time>" in
-# stderr is parsed and the queue sleeps until 3 minutes after it (30 minutes when the time cannot be parsed), then
+# stderr is parsed (codex_queue_lib.ps1) and the queue sleeps until 3 minutes after it (30 minutes when the time cannot be parsed), then
 # retries the same round. Any other failure stops the queue (exit 1). At most MaxAttempts attempts per round (exit 2
 # when exhausted). Only one queue runs at a time: <ReviewRoot>\codex-queue.lock holds the owner PID (exit 3 if taken).
 # Log: <ReviewRoot>\codex-queue.log. Writes only review files; Codex itself runs with --sandbox read-only.
@@ -31,19 +31,14 @@ function Wait-Until([datetime]$when, [string]$why) {
     Write-QueueLog "sleep until $($when.ToString('s')) ($secs s): $why"
     if ($secs -gt 0) { Start-Sleep -Seconds $secs }
 }
+. (Join-Path $PSScriptRoot 'codex_queue_lib.ps1')
 function Get-RetryTime([string]$stderrFile) {
-    $m = Select-String -Path $stderrFile -Pattern 'try again at ([A-Za-z]+) (\d{1,2})(?:st|nd|rd|th)?, (\d{4}) (\d{1,2}):(\d{2}) ?(AM|PM)' |
-        Select-Object -Last 1
-    if (-not $m) { return (Get-Date).AddMinutes(30) }
-    $g = $m.Matches[0].Groups
-    $text = '{0} {1} {2} {3}:{4} {5}' -f $g[1].Value, $g[2].Value, $g[3].Value, $g[4].Value, $g[5].Value, $g[6].Value
-    try {
-        return [datetime]::ParseExact($text, [string[]]@('MMM d yyyy h:mm tt', 'MMMM d yyyy h:mm tt'),
-            [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None).AddMinutes(3)
-    } catch {
-        Write-QueueLog "could not parse '$text'; waiting 30 min"
+    $when = ConvertFrom-RetryText -Text ((Get-Content -Raw $stderrFile -ErrorAction SilentlyContinue) + '') -Now (Get-Date)
+    if ($null -eq $when) {
+        Write-QueueLog "no retry time found in $stderrFile; waiting 30 min"
         return (Get-Date).AddMinutes(30)
     }
+    return $when
 }
 
 if ($Items) {
