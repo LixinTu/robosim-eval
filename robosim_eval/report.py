@@ -281,6 +281,8 @@ def _fmt(v: Any, nd: int = 3) -> str:
 
 def _collisions_cell(st: Mapping[str, Any]) -> str:
     n, k = st["attempts"], st["collisions_measured_runs"]
+    if n == 0:
+        return "-"
     if k == 0:
         return f"not measured<br><small>0 of {n} runs measured</small>"
     if k == n:

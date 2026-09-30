@@ -244,6 +244,7 @@ def test_aborted_batch_is_stated_and_every_not_run_attempt_is_listed(tmp_path: P
     assert summ["batch"]["state"] == "aborted" and summ["batch"]["planned"] == 6 and summ["batch"]["not_run"] == 4
     assert [a["fate"] for a in summ["attempts"]][:2] == ["ran (runner exit 0)", "ran (runner exit 31); aborted the batch"]
     assert summ["scenarios"]["unreachable"]["attempts"] == 0 and summ["scenarios"]["unreachable"]["not_run"] == 2
+    assert scenario_row(html, "unreachable")["collisions"] == "-"   # nothing ran: neither 0 nor "not measured"
 
 
 def test_interrupted_batch_is_stated_in_the_headline(tmp_path: Path):
