@@ -6,6 +6,15 @@
 # setup_ros_env.bat, which adds the bundled jazzy libraries to PATH and AMENT_PREFIX_PATH only when ROS_DISTRO is
 # unset (verified 2026-09-29, see docs/environment.md). RMW_IMPLEMENTATION is preset so that script's default
 # (rmw_zenoh_cpp) is not applied. Refuses to start when another Isaac (kit.exe) is already running.
+#
+# D2 addition: isaacsim.ros2.sim_control is switched on by default (setting ros_sim_control_extension=true, read by
+# isaacsim.app.setup after the ROS bridge). It offers the ROS 2 simulation_interfaces services (/get_simulation_state,
+# /set_simulation_state, /reset_simulation, /load_world, /spawn_entity, /delete_entity, /get_entity_state, ...) over the
+# same Fast DDS path and firewall rule as the topics. Callers must never request state QUITTING (it closes Isaac).
+#   -NoSimControl   start exactly as in D0 (bridge only)
+param(
+    [switch]$NoSimControl
+)
 $ErrorActionPreference = 'Stop'
 $robosimIsaac = 'D:\isaac-sim-standalone-6.1.0-windows-x86_64'
 $robosimDds   = 'D:\RoboSim-Eval\configs\network\fastdds.xml'
@@ -28,7 +37,10 @@ if (Test-Path Env:ROS_LOCALHOST_ONLY) { Remove-Item Env:ROS_LOCALHOST_ONLY }
 Write-Output "RMW_IMPLEMENTATION=$env:RMW_IMPLEMENTATION ROS_DOMAIN_ID=$env:ROS_DOMAIN_ID"
 Write-Output "FASTRTPS_DEFAULT_PROFILES_FILE=$env:FASTRTPS_DEFAULT_PROFILES_FILE"
 Write-Output "Starting Isaac Sim with the ROS 2 bridge at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') (this window stays open while Isaac runs)"
-& "$robosimIsaac\isaac-sim.bat" --/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge
+$isaacArgs = @('--/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge')
+if (-not $NoSimControl) { $isaacArgs += '--/isaac/startup/ros_sim_control_extension=true' }
+Write-Output "isaac-sim.bat $($isaacArgs -join ' ')"
+& "$robosimIsaac\isaac-sim.bat" @isaacArgs
 $rc = $LASTEXITCODE
 Write-Output "isaac-sim.bat exited with code $rc at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 exit $rc
