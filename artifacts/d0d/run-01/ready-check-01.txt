@@ -1,0 +1,468 @@
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=/mnt/d/RoboSim-Eval/artifacts/d0d/run-01 overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+dds_env.sh: FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml
+=== check_nav2_ready.sh 2026-09-29T20:15:33-07:00 run_dir=/mnt/d/RoboSim-Eval/artifacts/d0d/run-01 ===
+
+===== node list =====
+CMD: timeout 15 ros2 node list
+/amcl
+/behavior_server
+/bt_navigator
+/bt_navigator_navigate_through_poses_rclcpp_node
+/bt_navigator_navigate_to_pose_rclcpp_node
+/collision_monitor
+/controller_server
+/docking_server
+/global_costmap/global_costmap
+/launch_ros_56471
+/lifecycle_manager_localization
+/lifecycle_manager_navigation
+/local_costmap/local_costmap
+/map_server
+/nav2_container
+/planner_server
+/pointcloud_to_laserscan
+/route_server
+/rviz
+/rviz_navigation_dialog_action_client
+/smoother_server
+/transform_listener_impl_577bbb4bcc10
+/transform_listener_impl_577bbc65c830
+/transform_listener_impl_61de3e67f790
+/transform_listener_impl_79c400002080
+/transform_listener_impl_79c448008090
+/velocity_smoother
+/waypoint_follower
+EXIT: 0
+
+===== lifecycle map_server =====
+CMD: timeout 6 ros2 lifecycle get /map_server
+active [3]
+EXIT: 0
+
+===== lifecycle amcl =====
+CMD: timeout 6 ros2 lifecycle get /amcl
+active [3]
+EXIT: 0
+
+===== lifecycle planner_server =====
+CMD: timeout 6 ros2 lifecycle get /planner_server
+active [3]
+EXIT: 0
+
+===== lifecycle controller_server =====
+CMD: timeout 6 ros2 lifecycle get /controller_server
+active [3]
+EXIT: 0
+
+===== lifecycle bt_navigator =====
+CMD: timeout 6 ros2 lifecycle get /bt_navigator
+active [3]
+EXIT: 0
+
+===== lifecycle behavior_server =====
+CMD: timeout 6 ros2 lifecycle get /behavior_server
+active [3]
+EXIT: 0
+
+===== lifecycle smoother_server =====
+CMD: timeout 6 ros2 lifecycle get /smoother_server
+active [3]
+EXIT: 0
+
+===== lifecycle velocity_smoother =====
+CMD: timeout 6 ros2 lifecycle get /velocity_smoother
+active [3]
+EXIT: 0
+
+===== lifecycle collision_monitor =====
+CMD: timeout 6 ros2 lifecycle get /collision_monitor
+active [3]
+EXIT: 0
+
+===== lifecycle waypoint_follower =====
+CMD: timeout 6 ros2 lifecycle get /waypoint_follower
+active [3]
+EXIT: 0
+
+===== /scan hz (8 s) =====
+CMD: timeout 8 ros2 topic hz /scan --window 20
+average rate: 3.541
+	min: 0.265s max: 0.327s std dev: 0.02256s window: 5
+average rate: 3.556
+	min: 0.265s max: 0.327s std dev: 0.01780s window: 9
+average rate: 3.574
+	min: 0.265s max: 0.327s std dev: 0.01541s window: 13
+average rate: 3.572
+	min: 0.260s max: 0.327s std dev: 0.01559s window: 17
+average rate: 3.596
+	min: 0.260s max: 0.327s std dev: 0.01506s window: 20
+EXIT: 124
+
+===== /scan info =====
+CMD: timeout 10 ros2 topic info -v /scan
+Type: sensor_msgs/msg/LaserScan
+
+Publisher count: 1
+
+Node name: pointcloud_to_laserscan
+Node namespace: /
+Topic type: sensor_msgs/msg/LaserScan
+Topic type hash: RIHS01_64c191398013af96509d518dac71d5164f9382553fce5c1f8cca5be7924bd828
+Endpoint type: PUBLISHER
+GID: 01.0f.c3.eb.aa.dc.16.d1.00.00.00.00.00.00.15.03
+QoS profile:
+  Reliability: BEST_EFFORT
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Subscription count: 4
+
+Node name: rviz
+Node namespace: /
+Topic type: sensor_msgs/msg/LaserScan
+Topic type hash: RIHS01_64c191398013af96509d518dac71d5164f9382553fce5c1f8cca5be7924bd828
+Endpoint type: SUBSCRIPTION
+GID: 01.0f.c3.eb.a8.dc.12.84.00.00.00.00.00.00.5c.04
+QoS profile:
+  Reliability: BEST_EFFORT
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Node name: amcl
+Node namespace: /
+Topic type: sensor_msgs/msg/LaserScan
+Topic type hash: RIHS01_64c191398013af96509d518dac71d5164f9382553fce5c1f8cca5be7924bd828
+Endpoint type: SUBSCRIPTION
+GID: 01.0f.c3.eb.a9.dc.d3.b7.00.00.00.00.00.00.d3.04
+QoS profile:
+  Reliability: BEST_EFFORT
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Node name: collision_monitor
+Node namespace: /
+Topic type: sensor_msgs/msg/LaserScan
+Topic type hash: RIHS01_64c191398013af96509d518dac71d5164f9382553fce5c1f8cca5be7924bd828
+Endpoint type: SUBSCRIPTION
+GID: 01.0f.c3.eb.a9.dc.d3.b7.00.00.00.00.00.02.f2.04
+QoS profile:
+  Reliability: BEST_EFFORT
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Node name: global_costmap
+Node namespace: /global_costmap
+Topic type: sensor_msgs/msg/LaserScan
+Topic type hash: RIHS01_64c191398013af96509d518dac71d5164f9382553fce5c1f8cca5be7924bd828
+Endpoint type: SUBSCRIPTION
+GID: 01.0f.c3.eb.a9.dc.d3.b7.00.00.00.00.00.03.7a.04
+QoS profile:
+  Reliability: BEST_EFFORT
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+EXIT: 0
+
+===== /front_2d_lidar/scan hz (5 s, expected absent) =====
+CMD: timeout 5 ros2 topic hz /front_2d_lidar/scan --window 5
+EXIT: 124
+
+===== /map once (transient_local) =====
+CMD: timeout 15 ros2 topic echo --once --no-arr --qos-durability transient_local --qos-reliability reliable /map
+header:
+  stamp:
+    sec: 292
+    nanosec: 166666666
+  frame_id: map
+info:
+  map_load_time:
+    sec: 292
+    nanosec: 166666666
+  resolution: 0.05000000074505806
+  width: 480
+  height: 776
+  origin:
+    position:
+      x: -11.975
+      y: -17.975
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+data: '<sequence type: int8, length: 372480>'
+---
+EXIT: 0
+
+===== param use_sim_time amcl =====
+CMD: timeout 6 ros2 param get /amcl use_sim_time
+Boolean value is: True
+EXIT: 0
+
+===== param use_sim_time controller_server =====
+CMD: timeout 6 ros2 param get /controller_server use_sim_time
+Boolean value is: True
+EXIT: 0
+
+===== param amcl set_initial_pose =====
+CMD: timeout 6 ros2 param get /amcl set_initial_pose
+Boolean value is: True
+EXIT: 0
+
+===== param amcl initial_pose.x/y/yaw =====
+CMD: bash -c for k in initial_pose.x initial_pose.y initial_pose.yaw; do timeout 6 ros2 param get /amcl $k; done
+Double value is: -6.0
+Double value is: -1.0
+Double value is: 3.14159
+EXIT: 0
+
+===== action list -t =====
+CMD: timeout 15 ros2 action list -t
+/backup [nav2_msgs/action/BackUp]
+/compute_and_track_route [nav2_msgs/action/ComputeAndTrackRoute]
+/compute_path_through_poses [nav2_msgs/action/ComputePathThroughPoses]
+/compute_path_to_pose [nav2_msgs/action/ComputePathToPose]
+/compute_route [nav2_msgs/action/ComputeRoute]
+/dock_robot [nav2_msgs/action/DockRobot]
+/drive_on_heading [nav2_msgs/action/DriveOnHeading]
+/follow_gps_waypoints [nav2_msgs/action/FollowGPSWaypoints]
+/follow_path [nav2_msgs/action/FollowPath]
+/follow_waypoints [nav2_msgs/action/FollowWaypoints]
+/navigate_through_poses [nav2_msgs/action/NavigateThroughPoses]
+/navigate_to_pose [nav2_msgs/action/NavigateToPose]
+/smooth_path [nav2_msgs/action/SmoothPath]
+/spin [nav2_msgs/action/Spin]
+/undock_robot [nav2_msgs/action/UndockRobot]
+/wait [nav2_msgs/action/Wait]
+EXIT: 0
+
+===== /cmd_vel info =====
+CMD: timeout 10 ros2 topic info -v /cmd_vel
+Type: geometry_msgs/msg/Twist
+
+Publisher count: 2
+
+Node name: collision_monitor
+Node namespace: /
+Topic type: geometry_msgs/msg/Twist
+Topic type hash: RIHS01_9c45bf16fe0983d80e3cfe750d6835843d265a9a6c46bd2e609fcddde6fb8d2a
+Endpoint type: PUBLISHER
+GID: 01.0f.c3.eb.a9.dc.d3.b7.00.00.00.00.00.02.f5.03
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Node name: docking_server
+Node namespace: /
+Topic type: geometry_msgs/msg/Twist
+Topic type hash: RIHS01_9c45bf16fe0983d80e3cfe750d6835843d265a9a6c46bd2e609fcddde6fb8d2a
+Endpoint type: PUBLISHER
+GID: 01.0f.c3.eb.a9.dc.d3.b7.00.00.00.00.00.03.54.03
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Subscription count: 1
+
+Node name: _World_Nova_Carter_ROS_differential_drive_ros2_subscribe_twist
+Node namespace: /
+Topic type: geometry_msgs/msg/Twist
+Topic type hash: RIHS01_9c45bf16fe0983d80e3cfe750d6835843d265a9a6c46bd2e609fcddde6fb8d2a
+Endpoint type: SUBSCRIPTION
+GID: 01.0f.54.eb.50.81.de.ca.0e.00.00.00.00.00.03.04
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+EXIT: 0
+
+===== tf odom -> base_link (4 s) =====
+CMD: timeout 4 ros2 run tf2_ros tf2_echo odom base_link
+[INFO] [1790738175.955144504] [tf2_echo]: Waiting for transform odom ->  base_link: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+At time 340.316666666
+- Translation: [0.378, -0.000, -0.001]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, -0.001]
+- Rotation: in RPY (degree) [-0.000, 0.000, -0.047]
+- Matrix:
+  1.000  0.001  0.000  0.378
+ -0.001  1.000  0.000 -0.000
+ -0.000 -0.000  1.000 -0.001
+  0.000  0.000  0.000  1.000
+At time 340.666666666
+- Translation: [0.378, -0.000, -0.001]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, -0.001]
+- Rotation: in RPY (degree) [-0.000, 0.000, -0.047]
+- Matrix:
+  1.000  0.001  0.000  0.378
+ -0.001  1.000  0.000 -0.000
+ -0.000 -0.000  1.000 -0.001
+  0.000  0.000  0.000  1.000
+At time 341.16666666
+- Translation: [0.378, -0.000, -0.001]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, -0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, -0.001]
+- Rotation: in RPY (degree) [-0.000, 0.000, -0.047]
+- Matrix:
+  1.000  0.001  0.000  0.378
+ -0.001  1.000  0.000 -0.000
+ -0.000 -0.000  1.000 -0.001
+  0.000  0.000  0.000  1.000
+[INFO] [1790738179.601073920] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+EXIT: 124
+
+===== tf map -> odom (6 s) =====
+CMD: timeout 6 ros2 run tf2_ros tf2_echo map odom
+[INFO] [1790738179.953344866] [tf2_echo]: Waiting for transform map ->  odom: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+At time 342.600000000
+- Translation: [-5.676, -1.000, 0.001]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 1.000, -0.000]
+- Rotation: in RPY (radian) [0.000, -0.000, -3.141]
+- Rotation: in RPY (degree) [0.000, -0.000, -179.958]
+- Matrix:
+ -1.000  0.001  0.000 -5.676
+ -0.001 -1.000  0.000 -1.000
+  0.000  0.000  1.000  0.001
+  0.000  0.000  0.000  1.000
+At time 343.0
+- Translation: [-5.676, -1.000, 0.001]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 1.000, -0.000]
+- Rotation: in RPY (radian) [0.000, -0.000, -3.141]
+- Rotation: in RPY (degree) [0.000, -0.000, -179.958]
+- Matrix:
+ -1.000  0.001  0.000 -5.676
+ -0.001 -1.000  0.000 -1.000
+  0.000  0.000  1.000  0.001
+  0.000  0.000  0.000  1.000
+At time 343.400000000
+- Translation: [-5.676, -1.000, 0.001]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 1.000, -0.000]
+- Rotation: in RPY (radian) [0.000, -0.000, -3.141]
+- Rotation: in RPY (degree) [0.000, -0.000, -179.958]
+- Matrix:
+ -1.000  0.001  0.000 -5.676
+ -0.001 -1.000  0.000 -1.000
+  0.000  0.000  1.000  0.001
+  0.000  0.000  0.000  1.000
+At time 343.700000000
+- Translation: [-5.676, -1.000, 0.001]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 1.000, -0.000]
+- Rotation: in RPY (radian) [0.000, -0.000, -3.141]
+- Rotation: in RPY (degree) [0.000, -0.000, -179.958]
+- Matrix:
+ -1.000  0.001  0.000 -5.676
+ -0.001 -1.000  0.000 -1.000
+  0.000  0.000  1.000  0.001
+  0.000  0.000  0.000  1.000
+At time 344.100000000
+- Translation: [-5.676, -1.000, 0.001]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 1.000, -0.000]
+- Rotation: in RPY (radian) [0.000, -0.000, -3.141]
+- Rotation: in RPY (degree) [0.000, -0.000, -179.958]
+- Matrix:
+ -1.000  0.001  0.000 -5.676
+ -0.001 -1.000  0.000 -1.000
+  0.000  0.000  1.000  0.001
+  0.000  0.000  0.000  1.000
+[INFO] [1790738185.608156328] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+EXIT: 124
+
+===== tf map -> base_link (6 s) =====
+CMD: timeout 6 ros2 run tf2_ros tf2_echo map base_link
+[INFO] [1790738185.952417793] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1790738187.921091141] [tf2_echo]: Waiting for transform map ->  base_link: Lookup would require extrapolation into the past.  Requested time 344.216667 but the earliest data is at time 344.600000, when looking up transform from frame [base_link] to frame [map]
+[INFO] [1790738188.921162533] [tf2_echo]: Waiting for transform map ->  base_link: Lookup would require extrapolation into the past.  Requested time 344.566667 but the earliest data is at time 344.600000, when looking up transform from frame [base_link] to frame [map]
+At time 344.933333333
+- Translation: [-6.058, -1.000, -0.000]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 1.000, 0.000]
+- Rotation: in RPY (radian) [0.000, -0.000, 3.142]
+- Rotation: in RPY (degree) [0.000, -0.000, 179.996]
+- Matrix:
+ -1.000 -0.000  0.000 -6.058
+  0.000 -1.000  0.000 -1.000
+  0.000  0.000  1.000 -0.000
+  0.000  0.000  0.000  1.000
+At time 345.283333333
+- Translation: [-6.059, -1.000, -0.000]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 1.000, 0.000]
+- Rotation: in RPY (radian) [0.000, -0.000, 3.142]
+- Rotation: in RPY (degree) [0.000, -0.000, 179.995]
+- Matrix:
+ -1.000 -0.000  0.000 -6.059
+  0.000 -1.000  0.000 -1.000
+  0.000  0.000  1.000 -0.000
+  0.000  0.000  0.000  1.000
+[INFO] [1790738191.613143871] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+EXIT: 124
+
+===== /amcl_pose once (8 s) =====
+CMD: timeout 8 ros2 topic echo --once --no-arr /amcl_pose
+header:
+  stamp:
+    sec: 292
+    nanosec: 400000000
+  frame_id: map
+pose:
+  pose:
+    position:
+      x: -6.000000000000445
+      y: -1.0
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.9999999999991198
+      w: 1.3267948966775328e-06
+  covariance: '<array type: double[36]>'
+---
+EXIT: 0
+
+===== /clock hz (5 s) =====
+CMD: timeout 5 ros2 topic hz /clock --window 20
+average rate: 21.008
+	min: 0.033s max: 0.077s std dev: 0.01237s window: 20
+average rate: 22.348
+	min: 0.029s max: 0.065s std dev: 0.01225s window: 20
+average rate: 22.011
+	min: 0.031s max: 0.061s std dev: 0.01003s window: 20
+EXIT: 124
+
+=== end 2026-09-29T20:16:38-07:00 ===
+written /mnt/d/RoboSim-Eval/artifacts/d0d/run-01/ready-201532.txt
