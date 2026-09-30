@@ -1,0 +1,87 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "inconclusive",
+  "execution_status_analyzer": null,
+  "execution_status": "interrupted",
+  "runner": {
+    "run_id": "fake-20260930-004213",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 101357.52492907,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 101362.70716748,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 101362.708283587,
+        "t_sim": 2.718814699,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 101362.718974354,
+        "t_sim": 2.750898696,
+        "reason": "goal accepted 234494a316334f3b89cb76aaeabed269"
+      },
+      {
+        "state": "CANCELING",
+        "t_wall": 101365.765944916,
+        "t_sim": 4.014869275,
+        "reason": "interrupt (SIGINT)"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 101365.83443719,
+        "t_sim": 4.030897502,
+        "reason": "terminal status CANCELED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 101368.326235751,
+        "t_sim": 5.038812819,
+        "reason": "robot at rest (stop-still confirmed at sim 5.039)"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 101368.327540831,
+        "t_sim": 5.038812819,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": "SIGINT",
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0,
+    "terminal_sim": 4.030897502,
+    "terminal": {
+      "status": 5,
+      "name": "CANCELED",
+      "error_code": 0,
+      "error_msg": "",
+      "feedback_count": 31,
+      "last_feedback": {
+        "distance_remaining": 0.0,
+        "recoveries": 0
+      }
+    },
+    "stop_confirmed_sim": 5.038914103
+  }
+}

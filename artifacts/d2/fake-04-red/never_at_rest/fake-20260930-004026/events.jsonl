@@ -1,0 +1,10 @@
+{"t_mono": 101255.863354, "wall": "2026-09-30T00:40:26.890-07:00", "t_sim": null, "event": "state", "state": "PREPARE", "reason": "run started", "fsm_t_mono": 101255.863334693, "fsm_t_sim": null}
+{"t_mono": 101261.053674, "wall": "2026-09-30T00:40:32.080-07:00", "t_sim": null, "event": "doctor", "attempt": 1, "exit_code": 0}
+{"t_mono": 101261.053942, "wall": "2026-09-30T00:40:32.081-07:00", "t_sim": null, "event": "state", "state": "WAIT_READY", "reason": "prepared", "fsm_t_mono": 101261.05391746, "fsm_t_sim": null}
+{"t_mono": 101261.054687, "wall": "2026-09-30T00:40:32.081-07:00", "t_sim": 2.703593172, "event": "state", "state": "SEND_GOAL", "reason": "nav2 ready after 0.0 s", "fsm_t_mono": 101261.054676815, "fsm_t_sim": 2.703593172}
+{"t_mono": 101261.058188, "wall": "2026-09-30T00:40:32.085-07:00", "t_sim": 2.703593172, "event": "goal_sent", "x": 1.0, "y": 0.0, "yaw": 0.0, "frame": "map"}
+{"t_mono": 101261.060069, "wall": "2026-09-30T00:40:32.087-07:00", "t_sim": 2.751589463, "event": "state", "state": "EXECUTING", "reason": "goal accepted 7464b476bd434563a7ede691bac3b940", "fsm_t_mono": 101261.060059593, "fsm_t_sim": 2.751589463}
+{"t_mono": 101263.072291, "wall": "2026-09-30T00:40:34.099-07:00", "t_sim": 3.567578842, "event": "state", "state": "STOP_CONFIRM", "reason": "terminal status SUCCEEDED", "fsm_t_mono": 101263.072272802, "fsm_t_sim": 3.567578842}
+{"t_mono": 101269.088547, "wall": "2026-09-30T00:40:40.115-07:00", "t_sim": 5.983613507, "event": "timeout", "name": "stop_timeout"}
+{"t_mono": 101269.088905, "wall": "2026-09-30T00:40:40.116-07:00", "t_sim": 5.983613507, "event": "state", "state": "TEARDOWN", "reason": "stop_timeout", "fsm_t_mono": 101269.088882527, "fsm_t_sim": 5.983613507}
+{"t_mono": 101269.090236, "wall": "2026-09-30T00:40:40.117-07:00", "t_sim": 5.983613507, "event": "state", "state": "DONE", "reason": "teardown finished", "fsm_t_mono": 101269.09022367, "fsm_t_sim": 5.983613507}

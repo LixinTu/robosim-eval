@@ -64,7 +64,7 @@ echo "=== test_runner_fake.sh $(date -Is) ROS_DOMAIN_ID=$ROS_DOMAIN_ID ==="
 start isaac tests/ros_fake/fake_isaac.py --duration 600
 sleep 1.5
 start nav2-succeed tests/ros_fake/fake_nav2.py --mode succeed --duration 2
-check succeed 11 completed 'r["runner"]["terminal"]["name"] == "SUCCEEDED" and r["runner"]["states"][-1]["state"] == "DONE"'
+check succeed 11 completed 'r["runner"]["terminal"]["name"] == "SUCCEEDED" and r["runner"]["states"][-1]["state"] == "DONE" and r["runner"]["stop_confirmed_sim"] - r["runner"]["terminal_sim"] >= 0.99'
 stop_all
 start isaac tests/ros_fake/fake_isaac.py --duration 600; sleep 1.5
 start nav2-abort tests/ros_fake/fake_nav2.py --mode abort --duration 2

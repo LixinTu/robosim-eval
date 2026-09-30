@@ -36,6 +36,7 @@ NAV2_NODES = ["map_server", "amcl", "planner_server", "controller_server", "bt_n
               "smoother_server", "velocity_smoother", "collision_monitor", "waypoint_follower"]  # = check_nav2_ready.sh
 STATUS = {4: "SUCCEEDED", 5: "CANCELED", 6: "ABORTED"}
 EXIT = {"pass": 0, "fail": 10, "inconclusive": 11}
+STOP_SETTLE_WALL_S = 3.0
 
 
 def script(name: str, args: List[str], log: Path, timeout: float) -> int:
@@ -299,6 +300,7 @@ class Runner:
                 self.transcript.line(f"error_code: {res.result.error_code}")
                 self.transcript.line(f"error_msg: '{res.result.error_msg}'")
                 self.transcript.line(f"Goal finished with status: {name}")
+                self.facts["terminal_sim"] = self.rn.sim_time  # stop-still is only judged on samples after this
                 self.facts["terminal"] = {"status": res.status, "name": name, "error_code": res.result.error_code,
                                           "error_msg": res.result.error_msg, "feedback_count": self.rn.feedback_count,
                                           "last_feedback": self.rn.last_feedback}
@@ -323,7 +325,7 @@ class Runner:
     def _confirm_stop(self) -> bool:
         r = self.cfg.run
         tracker = StopStillTracker(r.stop_linear_mps, r.stop_angular_radps, r.stop_hold_sim_s, r.stop_max_gap_sim_s)
-        last_fed: Optional[float] = None
+        last_fed: Optional[float] = self.facts.get("terminal_sim")  # samples stamped before the result do not count
         while self.fsm.state is State.STOP_CONFIRM:
             self.rn.spin(0.05)
             for t, v, w in list(self.rn.odom):  # feed each odometry sample once, in stamp order
@@ -357,6 +359,8 @@ class Runner:
         if self.transcript is not None:
             self.transcript.end(0)
         codes = self.facts["exit_codes"]
+        if self.started["record"] and "stop_confirmed_sim" in self.facts:
+            time.sleep(STOP_SETTLE_WALL_S)  # keep recording briefly so the offline analysis sees the whole rest window
         if self.started["record"]:
             codes["stop_record"] = script("stop_record.sh", [str(self.run_dir)], self.run_dir / "stop_record.txt", 180)
             self.ev.write("record_stop", exit_code=codes["stop_record"])

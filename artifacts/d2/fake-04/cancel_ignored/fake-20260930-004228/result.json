@@ -1,0 +1,75 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "timeout",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "fail",
+  "execution_status_analyzer": null,
+  "execution_status": "error",
+  "verdict_reasons": {
+    "fail": [
+      "navigation nav_wall_timeout: the runner canceled the goal"
+    ]
+  },
+  "runner": {
+    "run_id": "fake-20260930-004228",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 101371.820121827,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 101377.073892174,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 101377.074821344,
+        "t_sim": 2.730709734,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 101377.084759337,
+        "t_sim": 2.778687757,
+        "reason": "goal accepted aff2927fcdea48b48cf1b45dfc73c0de"
+      },
+      {
+        "state": "CANCELING",
+        "t_wall": 101385.098670385,
+        "t_sim": 6.010665886,
+        "reason": "nav_wall_timeout"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 101390.138449063,
+        "t_sim": 8.02667063,
+        "reason": "cancel_timeout"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 101390.139250141,
+        "t_sim": 8.02667063,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [
+      "cancel_timeout"
+    ],
+    "interrupted_by": null,
+    "timeout_reason": "nav_wall_timeout",
+    "abort_batch": true,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0
+  }
+}
