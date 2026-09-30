@@ -1,0 +1,516 @@
+[
+ {
+  "part": "s16",
+  "found": {
+   "issues": [
+    {
+     "id": "s16-1",
+     "quote": "在发目标阶段被中断、等接受超时,或目标已接受后出现内部错误时,运行器不取消已接受的目标、不确认停车,退出码是 30,批量会继续跑。",
+     "problem": "The exit code is wrong for the interrupt case. The sentence gives 30 for all three triggers, but an interrupt during SEND_GOAL exits 20, which is the code README documents as 'interrupted by Ctrl-C (goal cancelled, torn down)'. That is the misleading part of runner-1.",
+     "evidence": "review-wf/result.json runner-1 evidence, Case A (SIGINT while record_d0.sh blocks): 'runner exit: 20; ... SEND_GOAL -> TEARDOWN[interrupt (SIGINT)] ... cancel requests: 0'. Case B (accept_timeout): 'runner exit: 30'. Verification v1_sendgoal.py: case 1 'exit 20', case 2 'exit 30'. Only runner-3 (internal error) is 'exits 30'. batch.py lines 58-62 abort only on rc==31, so the batch does continue in all three cases.",
+     "fix": "在发目标阶段被中断或等接受超时时,运行器已经发出的目标不会被取消,也不确认停车;被中断时退出码是 20(README 把它写成\"已取消目标并收尾\"),接受超时和目标已接受后的内部错误退出码是 30。三种情况批量都会继续跑。"
+    },
+    {
+     "id": "s16-2",
+     "quote": "下面是确认后仍为 Major 的问题,按影响归类。",
+     "problem": "Overstated severity. The first bullet (收尾不完整) also contains two findings that verification downgraded to Minor. One is the internal error after acceptance (runner-3). The other is '收尾的任何一步抛异常,后面的停录制、停 Nav2、写 result.json 都会被跳过' (runner-4). Of the three runner findings in this bullet, only runner-1 stayed Major.",
+     "evidence": "result.json: runner-3 severity Major -> verification confirmed/Minor ('I downgrade to Minor because the trigger is an edge case'); runner-4 Major -> confirmed/Minor ('It is an edge case ... hence Minor'). The 12 confirmed Majors are eval-1, runner-1, runner-2, simctl-1, doctor_config-2, report_batch-3, report_batch-4, shell-1, shell-2, docs-1, docs-2 and critic-1.",
+     "fix": "把 runner-3、runner-4 标成降级项,例如在第一条末尾写:\"同类但复核后降为 Minor 的还有两条:目标已接受后出现内部错误时同样不取消、不确认停车;收尾某一步抛异常时,其后的停录制、停 Nav2、写 result.json 会被跳过。\""
+    },
+    {
+     "id": "s16-3",
+     "quote": "**D0 的常驻进程脚本**(Codex 报告):停止录制只凭历史会话号发信号,没有核对归属;录制器异常退出时停止脚本仍可能返回 0;管道只保存上游退出码;同一目录重复启动录制会丢掉上一轮的进程登记;进程登记失败时仍可能复制正在写的 bag;launch 异常退出后残留的 Nav2 节点无法清理;发目标时的地图空闲检查固定读 NVIDIA 的地图,可能与本次实际加载的地图不一致。",
+     "problem": "This bullet sits under '确认后仍为 Major', but the seven items carry Codex's own severity and no confirmation record exists for them. Claude's review covered three of the same problems and, after verification, rated them Minor: SID signalling without an ownership check (shell-3), re-running record_d0 in the same dir (shell-4), and stop_nav2 leftovers after the launch exits (shell-5).",
+     "evidence": "codex-round1c-b-report.md labels items 1-7 as Major and items 8-9 as Minor. It classes several as '有代码依据的问题,未实施误杀复现' (no reproduction). result.json: shell-3, shell-4 and shell-5 are all Minor -> confirmed/Minor. cluster-shell.json holds only Claude items. No verification record for Codex round1c-b exists in review-wf/ or docs/review/.",
+     "fix": "**D0 的常驻进程脚本**(Codex 报告,以下 7 条是 Codex 自评的 Major,尚未逐条复核;其中按会话号发信号、重复启动录制、launch 退出后的残留三条,Claude 审查复核后评为 Minor):……"
+    },
+    {
+     "id": "s16-4",
+     "quote": "README 写的\"Ctrl-C 只会让它取消目标并照常收尾\"从没按终端方式验证过。",
+     "problem": "Wrong attribution. The quoted sentence is in docs/setup.md, not README. README says something different ('20 = 被 Ctrl-C 中断(已取消目标并收尾)'). The same bullet also says both scripts wrap 'the runner', but run_batch.sh wraps batch.py, not the runner. The 'Ctrl-C does not reach it' result was reproduced on a Linux pty, not in a real Windows console.",
+     "evidence": "grep at f74af95: docs/setup.md:81 'Ctrl-C 只会让它取消目标并照常收尾。' and README.md:43 '20 = 被 Ctrl-C 中断(已取消目标并收尾)'. runner-2/docs-2/report_batch-3 verification: 'I modelled wsl.exe as a pty ... could not drive a real Windows console'. run_batch.sh:16 is 'timeout -s INT -k 1200 14400 python3 ...batch'.",
+     "fix": "`run_scenario.sh` 用 `timeout` 包住运行器,`run_batch.sh` 用 `timeout` 包住批量进程,都没有加 `--foreground`。`timeout` 会把自己和子进程放进新的进程组,在伪终端上复现时,终端的 Ctrl-C 送不到运行器,也送不到批量(真实 Windows 控制台未测)。README 写的\"20 = 被 Ctrl-C 中断(已取消目标并收尾)\"和 docs/setup.md 写的\"Ctrl-C 只会让它取消目标并照常收尾\"从没按终端方式验证过。"
+    },
+    {
+     "id": "s16-5",
+     "quote": "**A5 的\"任务开始时验证起点和目标位于允许区域\"没有实现**。",
+     "problem": "The claim is unscoped and conflicts with the D0 bullet a few lines below, which describes send_goal.sh's goal free-cell check against the NVIDIA map. The gap is in the D2+ runner: it checks only that the robot is back at the configured spawn (ground-truth reset check), never checks start or goal against the map, and does not call send_goal.sh.",
+     "evidence": "send_goal.sh:29-37 at f74af95 loads carter_warehouse_navigation.yaml and runs a free-cell pose check ('pose check FAILED'). runner.py:344 sends the goal directly with send_goal_async. doctor_config-2: 'The runner checks only the start (reset check against the spawn) and never checks the goal against the map.' The same section's D0 bullet says '发目标时的地图空闲检查固定读 NVIDIA 的地图'.",
+     "fix": "**D2 起的运行器没有实现 A5 的\"任务开始时验证起点和目标位于允许区域\"**:运行器只用真值核对机器人回到了配置的出生点,从不对照地图检查起点和目标;D0 的 `send_goal.sh` 有目标空闲检查,但运行器不调用它。"
+    },
+    {
+     "id": "s16-6",
+     "quote": "`isaac_py.ps1` 一出错(例如 Isaac 主循环卡住超过 75 s 导致读超时),stderr 就是中文;客户端按严格 UTF-8 解码,抛出的 UnicodeDecodeError 不属于 ContactError,没有被捕获。发生在收尾取接触数据时,后面的停录制、停 Nav2、写 result.json 都会被跳过。",
+     "problem": "Overgeneralised and incomplete. Verification found that only uncaught .NET errors (receive timeout, connection reset, truncated reply) produce localized stderr. An empty reply and a refused connection are handled cleanly. The crash can also happen at install, where it turns the run into an execution error with exit 30.",
+     "evidence": "result.json simctl-1 verification: 'an empty reply (FIN after a crash) yields ... exit 1 with no stderr, so ContactError; and a refused connection gives exit 3 with ASCII JSON. The failing path is therefore narrower than \"any error\"'. The finding's title: 'at install it turns the run into an execution error'; actual: 'exit code is 30, before any navigation'.",
+     "fix": "`isaac_py.ps1` 遇到未捕获的 .NET 错误时(例如 Isaac 主循环卡住超过 75 s 导致读超时、连接被重置、回复被截断),stderr 是中文(GBK);客户端按严格 UTF-8 解码,抛出的 UnicodeDecodeError 不属于 ContactError,没有被捕获(空回复和连接被拒绝不走这条路径)。发生在安装接触监视时,运行判为执行错误(退出码 30);发生在收尾取接触数据时,后面的停录制、停 Nav2、写 result.json 都会被跳过。"
+    },
+    {
+     "id": "s16-7",
+     "quote": "Codex 审查队列判断\"撞上额度上限\"时搜索整份输出,而输出里含有被审脚本的原文,正常完成的审查会被误判",
+     "problem": "Overgeneralised. A normally completed review is misjudged only when a file Codex reads contains the limit text, for example the queue scripts themselves in round1c-c. Round1c-b completed normally and the old code judged it correctly.",
+     "evidence": "shell-1 trigger: 'Any queued round in which Codex reads a file that contains \"hit your usage limit\" ... round1c-c (codex-prompt-round1c-c.md:17 puts scripts/windows/run_codex_review.ps1 in scope)'. docs/review/codex-queue.log 07:12:31: 'item=2026-09-29-d0/round1c-b attempt=1 exit=0 report=True usage_limit=False'. My run of the old Select-String test on codex-round1c-b-stderr.txt gives old_limit=False.",
+     "fix": "Codex 审查队列判断\"撞上额度上限\"时搜索整份输出,而输出里含有被审文件的原文;被审文件本身含有这类字样时(例如 D0 round1c-c 要审的 `run_codex_review.ps1`),正常完成的审查会被误判为撞上限并重跑,重试时刻也可能取自被引用的文字"
+    },
+    {
+     "id": "s16-8",
+     "quote": "D0–D5 当前的全部代码和文档,分 7 个维度",
+     "problem": "Overstated scope. The docs dimension explicitly left out the D0-era parts of docs/setup.md and of this overview. It read only the header, §0–§3, §9–§15 and the appendix. The critic read only §14–15 of the overview and the D1–D5 part of setup.md. So not all documentation was reviewed.",
+     "evidence": "result.json dimensions[docs].coverage: 'docs/technical-overview.md (header, §0–§3, §9–§15, appendix)' and 'NOT VERIFIED: ... The D0-era parts of setup and overview (known and queued)'. critic.coverage (d): 'technical-overview §14-15 and setup.md D1-D5'. Head reviewed: 7fe517e.",
+     "fix": "D0–D5 的全部代码(提交 7fe517e)和 D1–D5 相关文档,分 7 个维度(D0 时期的 docs/setup.md 与本文 §4–§8 未纳入)"
+    },
+    {
+     "id": "s16-9",
+     "quote": "每个维度的发现再由一个复核代理用固定输入复现、尝试推翻",
+     "problem": "Overstated. Not every finding was reproduced with fixed inputs: 7 of the 81 were checked only statically, by reading code or docs. That includes the one refuted finding.",
+     "evidence": "result.json verification.reproduced: True 74, False 7. The seven are simctl-7 ('Code evidence only'), simctl-9 (refuted; docs read), shell-3/shell-4/shell-6 ('Static only'), critic-4 ('Documentation check, not executed') and critic-5 ('Not executed').",
+     "fix": "每个维度的发现再由一个复核代理尝试推翻:81 条中 74 条用固定输入复现,另 7 条只做了代码或文档核对"
+    },
+    {
+     "id": "s16-10",
+     "quote": "两路审查的报告和复核记录在 `docs/review/` 和修复分支的提交说明里",
+     "problem": "Misleading. The Claude multi-agent review's findings and verification records (result.json, verify-*) are not in docs/review/ on any branch. They exist only in the session scratchpad, and the fix commits cite them by id only. The Codex round1c-a/b reports sit in D:\\RoboSim-Eval\\docs\\review but are untracked, and they are absent from fix/review-round1.",
+     "evidence": "`git ls-files docs/review` at f74af95 lists no Claude review file and no codex-round1c-* file. `git status --short docs/review` in D:\\RoboSim-Eval shows '?? docs/review/2026-09-29-d0/codex-round1c-a-report.md', '?? ...codex-round1c-b-report.md'. The review output is at scratchpad/review-wf/result.json. Commit messages only cite ids ('review finding shell-1', 'docs-1, docs-6, critic-8').",
+     "fix": "Codex 的报告和状态文件在主工作区的 `docs/review/2026-09-29-d0/`(尚未提交);Claude 多代理审查的发现与复核记录目前只保存在会话临时目录,修复分支的提交说明按编号(如 shell-1、docs-3)引用它们。"
+    },
+    {
+     "id": "s16-11",
+     "quote": "7 个新测试,修复前全部失败",
+     "problem": "Undercount. c132a68 adds 8 new test cases in 6 test functions, and the suite goes from 128 to 136. All 8 fail before the fix: 7 as assertion failures and 1 because the test module cannot import the new integrity_gap.",
+     "evidence": "`git show c132a68 -- tests`: five new functions in test_analyze_attempt.py (one parametrised x3 = 7 cases) plus test_integrity_gap_needs_messages_inside_the_window in test_evaluator.py. Scratch run (factcheck/s16): 7fe517e 128 passed; 7fe517e code + c132a68 tests gives '7 failed, 109 passed' plus an ImportError collecting test_evaluator.py (integrity_gap); f74af95 from WSL ~ gives 136 passed. The commit message says 'Seven ... all red before; 136 passed'.",
+     "fix": "8 个新测试用例(6 个测试函数,其中一个参数化为 3 例),修复前全部失败(7 例断言失败,1 例因 `integrity_gap` 尚不存在而无法导入);修复后全部 136 个测试通过"
+    },
+    {
+     "id": "s16-12",
+     "quote": "用新代码在内存里重算 32 次真实运行,离线分析的结论没有一处变化(`artifacts/review-2026-09-30/regress-analyzer-c132a68.txt`)",
+     "problem": "Conflicts with the cited file and with §16.5. The file compares the new analyzer with the stored record, and its last line reports one changed run (the D2 interrupt demo). §16.5 describes that same difference. The intended claim is that the fix changes nothing. That holds, because the pre-fix analyzer also gives 'completed' for that run, but the cited file does not show it as written.",
+     "evidence": "regress-analyzer-c132a68.txt: 'd2/runs/normal-20260930-004634  CHANGED {'execution_status': ('interrupted', 'completed')}' and 'runs with a changed analyzer verdict: 1'. regress_analyzer.py compares against res['analyzer'] or the top-level keys. My check on a scratch copy of that run: the 7fe517e analyzer gives execution_status 'completed' and the f74af95 analyzer gives 'completed'.",
+     "fix": "用新代码在内存里重算 32 次真实运行:与原记录比只有 D2 中断演示的 execution_status 不同(原记录顶层存的是运行器的 interrupted,修复前的离线分析同样给 completed),修复没有改变任何一次运行的离线分析结论(`artifacts/review-2026-09-30/regress-analyzer-c132a68.txt`)"
+    },
+    {
+     "id": "s16-13",
+     "quote": "现在它们只能声明导航结果的预期,所以\"检测到了碰撞\"\"检测到了断流\"反而判成 fail 和 inconclusive。加入安全和数据两项预期之后,这两个情形重跑时应判 pass。",
+     "problem": "Misleading and unsupported for collision. The recorded collision run failed for two reasons: the detected contact, and the outcome being timeout instead of the declared 'reached'. The planned change adds expect_safety: fail but keeps expect_outcome: reached, and the new evaluator still fails on an outcome mismatch. A rerun that times out on the box again would still be judged fail. Only dropout is expected to turn to pass.",
+     "evidence": "artifacts/d3/runs/collision-20260930-011323/result.json: task_outcome 'timeout'; verdict_reasons.fail = ['4 contact(s) with non-ground objects ...', 'outcome timeout differs from the scenario expectation reached']. impl/config configs/baseline.yaml collision: 'expect_outcome: reached' + 'expect_safety: fail'. impl/core evaluator.py:313-315 still appends 'outcome ... differs from the scenario expectation'. doctor_config-10 verification: 'collision, low box hit, run ended by wall cap (as in D3) -> timeout/fail/complete/fail'.",
+     "fix": "现在它们只能声明导航结果的预期:dropout 抓到断流后判 inconclusive;collision 抓到了轮子与箱子的接触而判 fail,但它这次同时因为超时(timeout)与声明的 reached 不符而判 fail。加入安全和数据两项预期之后,dropout 重跑时若只出现断流应判 pass;collision 只有撞箱后仍到达目标才会判 pass,若再次超时,除非同时修改它的导航结果预期,否则仍判 fail。"
+    },
+    {
+     "id": "s16-14",
+     "quote": "判定规则的方向不变,都是收紧:未测量不当成安全,缺数据不当成完整,原因不明时用 unknown。",
+     "problem": "Contradicts the preceding bullet. The fault-injection change is not only a tightening: a working injection moves from fail or inconclusive to pass, while an ineffective injection moves from pass to fail. So '都是收紧' does not describe every planned rule change.",
+     "evidence": "Same section: '加入安全和数据两项预期之后,这两个情形重跑时应判 pass'. doctor_config-10: an ineffective injection currently gives pass, and a working one gives fail/inconclusive. impl/core 66020c8: 'fault injection scenarios can expect safety fail or data incomplete'.",
+     "fix": "判定规则的方向不变:未测量不当成安全,缺数据不当成完整,原因不明时用 unknown。除故障注入情形改为按声明的安全、数据预期判定(注入生效时由 fail/inconclusive 变为 pass,注入无效时由 pass 变为 fail)之外,其余改动都是收紧。"
+    }
+   ],
+   "checked": "Section 16 of docs/technical-overview.md at f74af95 (lines 459-510), sentence by sentence.\n\nVerified correct, not reported:\n- Codex chunk counts: 4+1+2+2+1+1 = 11, matching the 11 items in the codex-queue.log item list.\n- Codex reports: round1c-a has 5 findings (3 Major); round1c-b has 9 (7 Major).\n- round1c-b used 74,234 tokens. The usage-limit pattern supports \"one chunk per window of about 5 h\" (03:38 → a; 07:06 → b; next retry 12:09).\n- The --sandbox read-only flag (run_codex_review.ps1:23) and the git show <frozen commit> prompts.\n- Queue pid 35156 is alive and sleeping until 12:09 with the remaining 9 items.\n- Claude review: 81 findings, 80 confirmed (12 Major, 68 Minor), 1 refuted (simctl-9); 7 dimensions plus a critic.\n- Every Major in 16.2 maps to a confirmed Major: eval-1, runner-1, runner-2, shell-2, docs-2, critic-1, doctor_config-2, simctl-1, report_batch-3, report_batch-4, shell-1, docs-1. Exceptions are reported in s16-2 and s16-3.\n- A5 quotes match plan lines 144 and 170.\n- Commits: c132a68 content matches its message. 7fe517e is on feature/d5-demo. 156c31a gives 11 cases (6+3+2). I checked it against the real stderr files: success rounds a/b give usage_limit=False; round1c-c attempt1, round1b and round1 give True.\n- 94be232 file list matches its row. The test suite passes from WSL ~ (136 passed on the f74af95 snapshot).\n- 16.4: all 80 confirmed findings are accounted for, 64 in the cluster files plus 16 fixed by c132a68/7fe517e/156c31a/94be232. Each planned change maps to a cluster finding or a Codex-b item that the impl branches already cite: map path search (2a7b44c), fault expectations (66020c8/config), decode (5aa523a), --foreground and pty.\n- 16.5: 32 runs with a rosbag and result.json. No 'D3 in-window missing'. The D2 difference also appears with the pre-fix analyzer; I checked this on a scratch copy.\n\nScratch files: C:\\Users\\Administrator\\AppData\\Local\\Temp\\claude\\d--RoboSim-Eval\\59900d3e-5384-418b-8374-e6a8773582da\\scratchpad\\factcheck\\s16\\. I mistakenly wrote one file to the scratchpad root first and moved it there. Nothing in any repo or worktree was modified, and no process was signalled."
+  },
+  "verdicts": [
+   {
+    "id": "s16-1",
+    "verdict": "confirmed",
+    "reasoning": "I tried to refute this and could not. result.json runner-1 verification (v1_sendgoal.py) shows case 1, an interrupt during SEND_GOAL, ending with 'exit 20' and case 2, accept_timeout, ending with 'exit 30'. The reviewer's harness gives the same: Case A 'runner exit: 20 ... cancel requests: 0', Case B 'runner exit: 30'. runner-3 (internal error after acceptance) gives 'runner exit: 30'. So the sentence's single exit code 30 is wrong for the interrupt case. The rest of the sentence holds. batch.py:61-62 at f74af95 aborts only on rc == 31, and the batch's own stop flag is set only by a signal to the batch (the runner runs with start_new_session=True), so the batch continues in all three cases. No cancel is sent and no stop is confirmed (runner-1 and runner-3 repros: 'cancel requests: 0', 'stop confirmed: False'). The exit-20 case is worse than it looks: README.md:43 documents 20 as '被 Ctrl-C 中断(已取消目标并收尾)', which is false on this path.",
+    "fix": "在发目标阶段被中断、或等接受超时时,运行器已经发出的目标不会被取消,也不确认停车;目标已接受后出现内部错误时也一样。被中断时退出码是 20(README 把 20 写成\"已取消目标并收尾\",在这条路径上并不成立),另两种情况退出码是 30;三种情况批量都会继续跑(批量只在退出码 31 时中止)。"
+   },
+   {
+    "id": "s16-2",
+    "verdict": "confirmed",
+    "reasoning": "result.json shows runner-3 going from Major to verification confirmed/Minor ('I downgrade to Minor because the trigger is an edge case'). runner-4 also goes from Major to confirmed/Minor ('It is an edge case ... hence Minor'). Both sit inside the first bullet under '确认后仍为 Major': the internal-error-after-acceptance case, and '收尾的任何一步抛异常...都会被跳过'. The 12 verified Majors are eval-1, runner-1, runner-2, simctl-1, doctor_config-2, report_batch-3, report_batch-4, shell-1, shell-2, docs-1, docs-2 and critic-1 (Counter: confirmed/Major 12, confirmed/Minor 68, refuted 1). So the header overstates two of the items listed under it. The D0 Codex bullet has the same problem (see s16-3).",
+    "fix": "第一条只保留 runner-1 的内容(见 s16-1 的改写),末尾加:\"同类但复核后降为 Minor 的还有两条:目标已接受后出现内部错误时同样不取消目标、不确认停车,退出码 30;收尾某一步抛异常时,其后的停录制、停 Nav2、写 result.json 会被跳过。\""
+   },
+   {
+    "id": "s16-3",
+    "verdict": "confirmed",
+    "reasoning": "codex-round1c-b-report.md labels items 1-7 Major and 8-9 Minor. Those are Codex's own ratings, and the report classes several as '有代码依据的问题,未实施误杀复现' or '未启动替代地图验证'. No verification record for Codex round1c-b exists in review-wf/ (cluster-shell.json holds only Claude items: shell-3/4/5/6/9/10 and critic-5) or in docs/review/. The impl/shell commits (e.g. 8aff44c, 6d3014c) cite codex-b-1..9 as fixed but re-rate nothing. They are also work in progress, outside the fix branch. Claude's own review covered three of the same problems, and verification rated all three Minor: shell-3 (SID signalling without an ownership check), shell-4 (re-running record_d0 in the same dir loses track), and shell-5 (stop_nav2 refuses leftovers after the launch exits). So '确认后仍为 Major' does not hold for this bullet.",
+    "fix": "**D0 的常驻进程脚本**(Codex 报告;以下 7 条是 Codex 自评的 Major,尚未逐条复核;其中按会话号发信号、同一目录重复启动录制、launch 异常退出后的残留三条,Claude 审查也发现了,复核后评为 Minor):停止录制只凭历史会话号发信号,没有核对归属;……(其余不变)"
+   },
+   {
+    "id": "s16-4",
+    "verdict": "confirmed",
+    "reasoning": "git grep at 7fe517e, 94be232 and f74af95 finds '只会让它取消目标' only in docs/setup.md:81, never in README. README.md:43 says '20 = 被 Ctrl-C 中断(已取消目标并收尾)' instead. run_batch.sh:16 is 'timeout -s INT -k 1200 14400 python3 -m robosim_eval.batch', so it wraps the batch, not the runner, which batch.py then starts with start_new_session=True. The finding itself holds (runner-2, shell-2, report_batch-3 and docs-2 are all confirmed Major). But all four reproductions used a Linux pty with ^C written to the master. runner-2 says 'I did not test from a real Windows console', and the docs dimension lists 'A real Windows-console Ctrl-C through wsl.exe' as NOT VERIFIED. The flat claim '终端的 Ctrl-C 送不到运行器' should carry that caveat.",
+    "fix": "`run_scenario.sh` 用 `timeout` 包住运行器,`run_batch.sh` 用 `timeout` 包住批量进程,都没有加 `--foreground`。`timeout` 会把自己和子进程放进新的进程组;在伪终端上复现,终端的 Ctrl-C 既送不到运行器,也送不到批量(真实 Windows 控制台经 wsl.exe 的路径未测)。docs/setup.md 写的\"Ctrl-C 只会让它取消目标并照常收尾\"和 README 写的\"20 = 被 Ctrl-C 中断(已取消目标并收尾)\"都从没按终端方式验证过。"
+   },
+   {
+    "id": "s16-5",
+    "verdict": "confirmed",
+    "reasoning": "The requirement is RoboSim-Eval-Plan-and-Setup-ZH(1).md:170, inside the A5 section (lines 138-181): '任务开始时必须验证起点和目标位于允许区域'. At f74af95, send_goal.sh:29-37 loads carter_warehouse_navigation.yaml and exits 3 on 'pose check FAILED'. The document itself describes that check in §4 (line 126, '核对目标在地图空闲区'), in §5.3 (line 167), and in the §16.2 D0 bullet ('发目标时的地图空闲检查'). So the unscoped '没有实现' contradicts the document. The gap is real for the D2+ runner, which checks only the reset against the spawn (runner.py:254-255, check_reset) and sends the goal directly with send_goal_async at runner.py:344, never through send_goal.sh. The doctor_config-2 verifier's claim that 'a grep ... finds no ... free-cell or map check for the goal anywhere' is itself wrong about send_goal.sh. The D0 check also covers only the goal, not the start.",
+    "fix": "**D2 起的运行器没有实现 A5 的\"任务开始时验证起点和目标位于允许区域\"**:运行器只用真值核对机器人回到了配置的出生点,从不对照地图检查起点和目标。D0 的 `send_goal.sh` 只检查目标所在像素是否空闲,不检查起点,运行器也不调用它。预设不可达情形也只看配置里的标签,没有核对离线证据。"
+   },
+   {
+    "id": "s16-6",
+    "verdict": "confirmed",
+    "reasoning": "The simctl-1 verification narrows the trigger. Only uncaught .NET errors in isaac_py.ps1 produce localized (GBK, outcp=936) stderr: a ReceiveTimeout when the Kit loop is blocked for more than 75 s, an RST, or a truncated reply that makes ConvertFrom-Json throw. 'an empty reply (FIN after a crash) yields ... exit 1 with no stderr, so ContactError; and a refused connection gives exit 3 with ASCII JSON. The failing path is therefore narrower than \"any error\"'. So '一出错...stderr 就是中文' overgeneralizes. The finding's title and actual field also show a second effect the sentence omits: at install the UnicodeDecodeError reaches run()'s except and the run becomes 'internal error', exit 30, before any navigation. The teardown effect stated in the document is correct.",
+    "fix": "`isaac_py.ps1` 遇到未捕获的 .NET 错误时(例如 Isaac 主循环卡住超过 75 s 导致读超时、连接被重置、回复被截断),stderr 是中文(GBK);客户端按严格 UTF-8 解码,抛出的 UnicodeDecodeError 不属于 ContactError,没有被捕获(空回复和连接被拒绝不走这条路径)。发生在安装接触监视时,这次运行直接判为执行错误(退出码 30);发生在收尾取接触数据时,后面的停录制、停 Nav2、写 result.json 都会被跳过。"
+   },
+   {
+    "id": "s16-7",
+    "verdict": "confirmed",
+    "reasoning": "The old detection is `Select-String -Path $stderr -Pattern 'hit your usage limit' -Quiet` (7fe517e run_codex_review_queue.ps1:74 and run_codex_review.ps1:23). It misjudges a round only when the transcript quotes that text, i.e. when Codex reads a file that contains it. grep -c 'usage limit' on codex-round1c-a-stderr.txt and codex-round1c-b-stderr.txt both give 0. The queue log records both normal completions correctly: 03:42:10 round1c-a 'exit=0 report=True usage_limit=False', and 07:12:31 round1c-b 'exit=0 report=True usage_limit=False'. shell-1's trigger names round1c-c, whose scope includes run_codex_review.ps1 with the literal on line 25. So '正常完成的审查会被误判' is overgeneralized, and '被审脚本的原文' should say the files Codex reads.",
+    "fix": "Codex 审查队列判断\"撞上额度上限\"时搜索整份输出,而输出里含有 Codex 读过的文件原文;被审文件本身含有这句提示时(例如 D0 round1c-c 要审的 `run_codex_review.ps1`),正常完成的审查会被误判为撞上限而反复重跑,重试时刻也可能取自被引用的文字;"
+   },
+   {
+    "id": "s16-8",
+    "verdict": "confirmed",
+    "reasoning": "result.json head is 7fe517e. The docs dimension coverage reads technical-overview only for 'header, §0–§3, §9–§15, appendix' and lists under NOT VERIFIED 'The D0-era parts of setup and overview (known and queued)'. The critic read 'technical-overview §14-15 and setup.md D1-D5'. Other dimensions touched only single sections (eval §5.4, report_batch §6). So '全部...文档' overstates the scope. The code coverage claim is defensible, since the critic swept the files nobody else covered. The checker's wording 'D1–D5 相关文档' is itself too narrow: the docs dimension read AGENTS.md, README, demo.md, defect-record.md and setup.md in full.",
+    "fix": "D0–D5 的全部代码(提交 7fe517e)和主要文档,分 7 个维度(本文 §4–§8 和 docs/setup.md 中 D0 时期的内容没有系统核对)"
+   },
+   {
+    "id": "s16-9",
+    "verdict": "confirmed",
+    "reasoning": "Counting result.json: 81 findings, 74 with verification.reproduced true and 7 false. The 7 are simctl-7 ('Code evidence only'), simctl-9 (the refuted one: 'Read docs/technical-overview.md:388 and isaac_py.ps1 header'), shell-3 ('Static only'), shell-4 ('Static only'), shell-6 ('Static'), critic-4 and critic-5 (not executed). So not every finding was reproduced with fixed inputs.",
+    "fix": "每个维度的发现再由一个复核代理尝试推翻:81 条中 74 条用固定输入复现,另 7 条只做了代码或文档核对"
+   },
+   {
+    "id": "s16-10",
+    "verdict": "confirmed",
+    "reasoning": "At f74af95, `git ls-files docs/review` lists no Claude review output and no codex-round1c-* file. In D:\\RoboSim-Eval, `git status --short docs/review` shows the Codex round1c-a/b reports, status and stderr files, the queue log and the lock, all untracked ('??'). The Claude review findings and verification records (result.json, verify-*/) exist only in scratchpad/review-wf/. The fix commits cite them by id with a short description ('review finding shell-1', 'docs-1, docs-6, critic-8') and contain no verification record. So the Codex reports are on disk under docs/review/ in the main workspace, uncommitted, and the Claude records are in neither place the sentence names.",
+    "fix": "Codex 的报告、状态文件和队列日志在主工作区的 `docs/review/`(2026-09-29-d0 目录,尚未提交);Claude 多代理审查的发现与复核记录目前只保存在会话临时目录,修复分支的提交说明按编号(如 shell-1、docs-3)引用它们。"
+   },
+   {
+    "id": "s16-11",
+    "verdict": "confirmed",
+    "reasoning": "`git show c132a68 -- tests` adds five functions to test_analyze_attempt.py. One is parametrized three times, so they make 7 cases. It also adds test_integrity_gap_needs_messages_inside_the_window to test_evaluator.py, for 8 cases in 6 functions. I exported the trees to factcheck/adv16 and ran them in WSL with PYTHONDONTWRITEBYTECODE=1 and -p no:cacheprovider. 7fe517e gives '128 passed'; f74af95 gives '136 passed'. 7fe517e code with the c132a68 tests gives '7 failed, 109 passed, 1 error': the 7 analyzer cases fail, and test_evaluator.py hits 'ImportError: cannot import name integrity_gap'. The '7' follows the commit message and leaves out the evaluator test.",
+    "fix": "8 个新测试用例(6 个测试函数,其中一个参数化为 3 例),修复前全部失败(7 例断言失败,1 例因 `integrity_gap` 尚不存在而无法导入);修复后全部 136 个测试通过"
+   },
+   {
+    "id": "s16-12",
+    "verdict": "confirmed",
+    "reasoning": "The cited file artifacts/review-2026-09-30/regress-analyzer-c132a68.txt at f74af95 contains 'd2/runs/normal-20260930-004634 CHANGED {'execution_status': ('interrupted', 'completed')}' and ends 'runs with a changed analyzer verdict: 1'. regress_analyzer.py compares against res['analyzer'] or the top-level keys, and for that run the top level holds the runner's 'interrupted'. So '没有一处变化' contradicts its own evidence file and §16.5's '唯一的差别'. The intended claim is still true. That run's result.json has execution_status_analyzer = 'completed', so the pre-fix analyzer already gave completed and the fix changed nothing.",
+    "fix": "用新代码在内存里重算 32 次真实运行,修复没有改变任何一次运行的离线分析结论;对照文件里唯一标为 CHANGED 的 D2 中断演示,是因为原记录顶层存的是运行器的 interrupted,而当时的离线分析(result.json 的 execution_status_analyzer)同样是 completed(`artifacts/review-2026-09-30/regress-analyzer-c132a68.txt`)"
+   },
+   {
+    "id": "s16-13",
+    "verdict": "confirmed",
+    "reasoning": "artifacts/d3/runs/collision-20260930-011323/result.json has task_outcome 'timeout' and verdict_reasons.fail ['4 contact(s) with non-ground objects ...', 'outcome timeout differs from the scenario expectation reached']. So the collision run failed for two reasons, not just '检测到了碰撞'. The planned change (impl/config configs/baseline.yaml collision) adds 'expect_safety: fail' but keeps 'expect_outcome: reached'. The impl/core evaluator.py:314-315 still appends 'outcome ... differs from the scenario expectation', and a pass requires outcome == scenario_expect (line 323). doctor_config-10 verification: 'collision, low box hit, run ended by wall cap (as in D3) -> timeout/fail/complete/fail'. So a collision rerun that times out again still fails. The dropout part holds: the recorded run was reached/pass/incomplete/inconclusive with only the gap reason.",
+    "fix": "现在它们只能声明导航结果的预期:dropout 抓到断流后判 inconclusive;collision 抓到轮子与低箱的接触而判 fail,但这次同时因为超时(timeout)与声明的 reached 不符而判 fail。加入安全和数据两项预期之后,dropout 重跑时若只出现断流应判 pass;collision 只有撞箱后仍到达目标才会判 pass,若再次超时,除非同时改它的导航结果预期,否则仍判 fail。"
+   },
+   {
+    "id": "s16-14",
+    "verdict": "confirmed",
+    "reasoning": "The preceding bullet in the same §16.5 says that after the change the two fault-injection scenarios '重跑时应判 pass', i.e. verdicts move from fail/inconclusive to pass. doctor_config-10 and impl/core evaluator.py:303-306 show the other direction too: an ineffective injection moves from pass to fail. So the planned rule changes are not all tightening, and '都是收紧' contradicts the line above it. The three listed principles (未测量不当成安全, 缺数据不当成完整, 原因不明用 unknown) are themselves accurate.",
+    "fix": "判定规则的方向不变:未测量不当成安全,缺数据不当成完整,原因不明时用 unknown。除故障注入情形改为按声明的安全、数据预期判定(注入生效时由 fail/inconclusive 变为 pass,注入无效时由 pass 变为 fail)之外,其余改动都是收紧。"
+   }
+  ]
+ },
+ {
+  "part": "rest",
+  "found": {
+   "issues": [
+    {
+     "id": "rest-1",
+     "quote": "**评测工具自身的缺陷**:共四个,都有复现、修复和同条件复跑(`docs/defect-record.md`):",
+     "problem": "This contradicts §16. The review confirmed 80 problems in the same tool, 12 of them Major, and most are still being fixed. Saying there are four defects in total is now false. Only the four entries in defect-record.md went through reproduce → fix → rerun.",
+     "evidence": "review-wf/result.json: 81 items, 80 confirmed (12 Major, 68 Minor). Only 17 items are outside the cluster-*.json assignments (fixed or refuted). Examples: runner-1, runner-2, critic-1 and simctl-1 are Major, confirmed, and not fixed on f74af95. The document's own §16.2 and §16.4 list them as open.",
+     "fix": "**开发中发现并记录的评测工具缺陷**:四个,都有复现、修复和同条件复跑(`docs/defect-record.md`);审查另外确认的问题见 §16,大部分还在修:"
+    },
+    {
+     "id": "rest-2",
+     "quote": "评测工具自身的四个缺陷都已复现、修复、同条件复跑。",
+     "problem": "The §0 key-results line reads as if the tool has exactly four defects and all are fixed. The same §0 bullet then says the review confirmed 80 problems and only part are fixed, so the summary contradicts itself and §16.",
+     "evidence": "Same as rest-1: result.json has 80 confirmed findings. The fix commits on fix/review-round1 (c132a68, 156c31a, 94be232) cover only part of them, and the rest are assigned to the impl/* branches (cluster-*.json).",
+     "fix": "开发中发现的四个评测工具缺陷都已复现、修复、同条件复跑;审查另外确认的问题见 §16。"
+    },
+    {
+     "id": "rest-3",
+     "quote": "判定规则有固定输入测试和改坏检查;评测工具自身的四个缺陷都有复现、修复和同条件复跑。",
+     "problem": "This sits in §13 under the heading '有证据支持的'. The phrase '四个缺陷' implies the tool has only four defects, which contradicts §16 (80 confirmed, 12 Major, mostly unfixed). Presented as a supported claim, it overstates.",
+     "evidence": "result.json counts (80 confirmed / 12 Major). §16.2 and §16.4 of the same document.",
+     "fix": "判定规则有固定输入测试和改坏检查;开发中发现的四个缺陷有复现、修复和同条件复跑(审查另外确认的问题还没修完,见 §16)。"
+    },
+    {
+     "id": "rest-4",
+     "quote": "退出码:0 pass、10 fail、11 inconclusive、20 被中断(已取消并收尾)、30 运行出错、31 取消或停车没能确认(批量据此中止)。",
+     "problem": "The exit-code list contradicts the gap described just before it in the same paragraph and in §16.2. (a) An interrupt during SEND_GOAL also exits 20, but no cancel is sent and stop is not confirmed, so '20 = 已取消并收尾' is false on that path. (b) An accept timeout or an internal error after acceptance leaves stop unconfirmed and exits 30, not 31, and the batch continues. So '31 = 取消或停车没能确认' does not cover every unconfirmed stop. (c) If a teardown step raises, the process exits 1 and writes no result.json, and that code is not listed.",
+     "evidence": "runner.py:559-564 (_exit_code returns 20 for any execution_status 'interrupted'). runner.py:346-354 (the interrupt or accept timeout in SEND_GOAL returns before the goal handle is read, and there is no cancel). runner.py:173-180 (an exception becomes fsm.fail, so exit 30 with abort_batch False). Review runner-1 verification reasoning: 'Exit 20 is documented as 已取消目标并收尾 (README:41, technical-overview:408), which is false here'. runner-3 repro: 'runner exit: 30 ... cancel requests: 0; stop confirmed: False'. runner-4: 'one failing step skips stop_record, stop_nav2 and result.json, and the process exits 1'.",
+     "fix": "退出码:0 pass、10 fail、11 inconclusive、20 被中断、30 运行出错、31 已发出的取消或停车确认超时(批量据此中止)。按现在的代码,20 不保证已取消目标(发目标阶段被中断也返回 20);等接受超时或接受后内部错误返回 30,批量继续;收尾某步抛异常时进程以 1 退出、不写 result.json(§16.2)。"
+    },
+    {
+     "id": "rest-5",
+     "quote": "在发目标阶段被中断、或目标已接受后出现内部错误时,收尾不会取消已接受的目标,也不确认停车;收尾的某一步抛出异常会跳过后面的步骤。",
+     "problem": "This leaves out the accept-timeout case, which §16.2 lists ('等接受超时') and which the review reproduced. In the SEND_GOAL cases the runner never reads the goal handle. The goal is only 'accepted' because Nav2 accepts within milliseconds. The sentence is less complete than §16.2.",
+     "evidence": "runner.py:351-354 (on accept_timeout, fsm.timeout returns False and there is no cancel). Review runner-1 repro case 2: \"reason 'accept_timeout'; goals sent 1; goal response already received [True]; handle stored False; cancels []; ... exit 30\". Doc §16.2: '在发目标阶段被中断、等接受超时,或目标已接受后出现内部错误时'.",
+     "fix": "在发目标阶段被中断或等接受超时(Nav2 通常几毫秒内就已接受目标,但运行器没读取目标句柄)、或目标接受后出现内部错误时,收尾不取消目标,也不确认停车;收尾的某一步抛出异常会跳过后面的步骤。"
+    },
+    {
+     "id": "rest-6",
+     "quote": "unreachable(ABORTED 或被拒绝,情形预先标为不可达并附离线地图证据,真值没到,数据完整)",
+     "problem": "This describes a check the code does not do, and it contradicts §16.2 ('预设不可达情形也只看配置里的标签,没有核对离线证据'). The evaluator tests only the boolean preset_unreachable. The evidence text is never read. A missing ground truth also counts as 'not reached', so '真值没到' is not required either.",
+     "evidence": "evaluator.py:151-154: `reached = err is not None and err <= x.tolerance_m; if x.preset_unreachable and not reached and data_complete: outcome = \"unreachable\"`. EvalInputs has no evidence field (evaluator.py:39-61). config.py:90/213 stores evidence as an optional string. Review docs-5, eval-7 and doctor_config-2 cite technical-overview §14.4 by name. The eval-8 repro gives 'REJECTED, gt None: unreachable/pass'.",
+     "fix": "unreachable(ABORTED 或被拒绝,情形在配置里标为预设不可达,没有真值证明已到达,数据完整;配置里的离线地图证据目前只是说明文字,代码不核对,缺真值也会判不可达,见 §16.2)"
+    },
+    {
+     "id": "rest-7",
+     "quote": "**不可达的依据**:不可达情形的证据来自离线地图分析,不是在仿真里证明的。",
+     "problem": "This is misleading and conflicts with §16.2. The verdict does not rest on the offline analysis at all. It uses only the preset_unreachable label. §10 says confirmed review problems are kept in §16, yet this line still describes the evidence as the basis of the verdict.",
+     "evidence": "configs/baseline.yaml unreachable scenario: `evidence:` is a free-text string. evaluator.py:151-154 never reads it. Doc §16.2: '预设不可达情形也只看配置里的标签,没有核对离线证据'.",
+     "fix": "**不可达的依据**:不可达情形在配置里附有离线地图分析的说明,但判定只看\"预设不可达\"标签,不核对这份证据(§16.2);不可达也没有在仿真里证明过。"
+    },
+    {
+     "id": "rest-8",
+     "quote": "Codex 独立只读审查第 1 轮因账户额度中止,没有意见,尚待重跑。",
+     "problem": "This is stale and contradicts §0, §10 and §16.1. Round 1 was rerun (round1b) and aborted again. The scope was then split into 4 chunks, and two of them (round1c-a and round1c-b) have returned reports with 14 findings, 5 of which are already fixed in c132a68.",
+     "evidence": "docs/review/2026-09-29-d0/REVIEW.md:10 (round1b 'exit 1, 102,685 tokens, usage limit') and :12 (split into round1c-a..d). D:\\RoboSim-Eval\\docs\\review\\codex-queue.log: '03:42:10 item=2026-09-29-d0/round1c-a attempt=1 exit=0 report=True' and '07:12:31 item=2026-09-29-d0/round1c-b attempt=1 exit=0 report=True'. The reports list 5 findings (3 Major) and 9 findings (7 Major).",
+     "fix": "Codex 独立只读审查第 1 轮和重跑(round1b)都因账户额度中止、没有意见;之后同一范围拆成 4 个分片,已出 2 份报告(14 条发现,评测逻辑的 5 条已在 `c132a68` 修复),其余在排队,见 §16。"
+    },
+    {
+     "id": "rest-9",
+     "quote": "独立审查交给另一个 AI 工具 Codex,以只读方式进行;D0 第 1 轮因账户额度用完而中止,D0–D5 的分片审查在排队,都还没有完成。",
+     "problem": "This is stale compared with §16.1. The chunked review is no longer only queued: 2 of 11 chunks have reported. Round 1b also aborted.",
+     "evidence": "codex-queue.log (round1c-a report 03:42, round1c-b report 07:12; round1c-c hit the usage limit at 07:12, and the queue sleeps until 12:09). REVIEW.md:9-10 (round1 and round1b both aborted). Doc §16.1: '已出 2 份报告'.",
+     "fix": "独立审查交给另一个 AI 工具 Codex,以只读方式进行;D0 第 1 轮及重跑都因账户额度用完而中止,改为 11 个分片后已出 2 份报告(D0 的两个分片),其余在排队,整体还没有完成(§16.1)。"
+    },
+    {
+     "id": "rest-10",
+     "quote": "在真实 Isaac 上重跑受影响的情形(normal、cancel、unreachable、collision、dropout,以及终端 Ctrl-C)",
+     "problem": "The list is inconsistent with the changes planned in §16.4. timeout is affected ('取消和超时的结论也要求停车确认'). bypass is affected ('生成障碍物后读回核对位置'). The start/goal allowed-area check, the teardown safety net and the single-instance lock apply to every scenario, including normal_slow. The batch Ctrl-C path also needs a real check.",
+     "evidence": "configs/baseline.yaml scenarios: normal, normal_slow, bypass, unreachable, cancel, dropout, timeout, collision. Doc §16.4 '运行器与判定' row lists 取消和超时要求停车确认, 生成障碍物后读回核对位置 and 按地图检查起点和目标. The '报告与批量' row: 批量能被终端 Ctrl-C 中断.",
+     "fix": "在真实 Isaac 上重跑全部预设情形(normal、normal_slow、bypass、unreachable、cancel、timeout、dropout、collision),并用终端 Ctrl-C 分别中断一次单次运行和一次批量"
+    },
+    {
+     "id": "rest-11",
+     "quote": "启停、记录、评测脚本如实报告退出码,评测规则有固定输入测试和改坏检查;",
+     "problem": "The first half contradicts §16.2, which lists the Codex D0 findings. stop_record.sh can return 0 when a recorder exited abnormally. The pipes keep only the upstream exit code, so a transcriber failure is lost. The runner transcript always records action_client_exit=0.",
+     "evidence": "codex-round1c-b-report.md #2 (stop_record.sh 41-44, 63-67: .exit contents are only printed) and #3 (record_d0.sh:55 and send_goal.sh:79 keep only PIPESTATUS[0]). The same code is unchanged at f74af95 (stop_record.sh:40-44). runner.py:469 `self.transcript.end(0)` (review runner-10).",
+     "fix": "启停、记录、评测脚本都给出有文档的退出码(Codex 审查发现停止录制和管道在部分故障下仍会返回 0,正在修,§16.2),评测规则有固定输入测试和改坏检查;"
+    },
+    {
+     "id": "rest-12",
+     "quote": "等所有会话都结束后才复制 bag,避免复制到写了一半的文件。",
+     "problem": "This contradicts §16.2 ('进程登记失败时仍可能复制正在写的 bag'). When a recorder's PID registration fails (recorded as MISSING), `pgrep -s MISSING` fails, the session counts as not alive, and the bag is copied anyway. Only RC=3 blocks the copy.",
+     "evidence": "stop_record.sh at f74af95, lines 24 and 48-50: alive_any treats a pgrep error as 'not alive'. `if [[ $RC -eq 3 ]]` is the only branch that skips the copy. codex-round1c-b-report.md #5.",
+     "fix": "等登记在册的会话都结束后才复制 bag;某个记录器的进程登记失败时,目前仍可能复制正在写的 bag(§16.2,正在修)。"
+    },
+    {
+     "id": "rest-13",
+     "quote": "\"基于现成机器人和 Nav2,做了仿真任务运行、数据记录、异常处理与可复跑评测\":运行前诊断、复位并用真值核对、状态机、取消与停车确认、分项判定、接触检测、批量复跑和报告都已实现,并在真实 Isaac 上跑过(§15)。",
+     "problem": "It overstates to list '异常处理' and '取消与停车确认' as supported claims without qualification. §16.2 shows several paths where a goal is neither canceled nor confirmed stopped, a teardown that is not exception-safe, an uncaught UnicodeDecodeError, and a terminal Ctrl-C that has no effect. Review docs-1 flags the same unqualified capability claim in README:3.",
+     "evidence": "Doc §16.2 (收尾不完整, 终端 Ctrl-C 无效, 接触客户端在中文系统上会崩). result.json runner-1, runner-2, simctl-1 (Major, confirmed). docs-1 cites the README:3 claim.",
+     "fix": "\"基于现成机器人和 Nav2,做了仿真任务运行、数据记录、异常处理与可复跑评测\":运行前诊断、复位并用真值核对、状态机、取消与停车确认、分项判定、接触检测、批量复跑和报告都已实现,主要路径在真实 Isaac 上跑过(§15);异常处理与取消/停车确认还有审查确认的缺口,正在修(§16.2)。"
+    },
+    {
+     "id": "rest-14",
+     "quote": "**证据约定**:文中的数字都来自仓库里的记录。",
+     "problem": "This no longer holds for the review numbers in §0 and §16: 14 findings (3+7 Major), 80/12/68/81, and about 74,000 tokens. The Codex round1c reports and stderr are untracked files in the D:\\RoboSim-Eval working tree. The Claude multi-agent review record exists only in the session scratchpad. Neither is in the repository at f74af95.",
+     "evidence": "`git -C D:/RoboSim-Eval status --short` shows '?? docs/review/2026-09-29-d0/codex-round1c-a-report.md', '?? ...codex-round1c-b-report.md', '?? ...-stderr.txt' and '?? docs/review/codex-queue.log'. `git ls-tree -r f74af95 docs/review` has no round1c report and no Claude review file. The Claude review is only at scratchpad/review-wf/result.json.",
+     "fix": "**证据约定**:文中的数字都来自仓库里的记录;例外是 §0 与 §16 的审查统计,Codex 分片报告和 Claude 多代理审查记录尚未提交(前者在主工作区未跟踪,后者在仓库外),提交后补上路径。(Alternatively, commit those files and cite them.)"
+    },
+    {
+     "id": "rest-15",
+     "quote": "按 README 从新终端操作:场景未加载时 doctor 退出 11;normal pass(真值 0.049 m);cancel pass;",
+     "problem": "This overclaims in the way review finding docs-9 describes. 94be232 corrected docs/plan.md but not this row. Only README step 2 was executed, with a simulated fresh start: Isaac was not restarted, and an empty stage was loaded. Steps 1 and 3 were not run as written. cancel is not a README step. The README text followed at 02:11 had not been committed yet.",
+     "evidence": "artifacts/d5/commands.md rows 02:10–02:11 (`sim.sh load .../empty_stage.usda`, '等同于 Isaac 刚启动'), 02:11:06, 02:11:21 and 02:13:43 (cancel run separately). README.md step 2 has only doctor.sh and `run_scenario.sh normal`. README was first committed at 5966d95, 02:35:43. docs/plan.md:19 at f74af95: 'README 第 2 步的两条命令在新的 PowerShell 里逐字执行通过(用空场景模拟…;第 1 步和第 3 步没有按原文执行)'. result.json docs-9 confirmed.",
+     "fix": "在新的 PowerShell 里逐字执行 README 第 2 步(Isaac 没有重启,用加载空场景模拟\"刚启动、场景未加载\"):doctor 退出 11;normal pass(真值 0.049 m);另跑 cancel pass;README 第 1、3 步没有照原文执行;"
+    },
+    {
+     "id": "rest-16",
+     "quote": "给出每次的复位误差、Nav2 恢复次数,以及地图上的真值轨迹。",
+     "problem": "The report does not plot ground truth. It plots the spawn-plus-ideal-odometry source (sim_state_odom_plus_spawn). This contradicts §6 and the glossary definition of 真值. It is a confirmed review finding and is still uncorrected at f74af95.",
+     "evidence": "report.py:134-143: `_trajectory` keeps rows whose source starts with 'sim_state_odom_plus_spawn'. Doc §6 table and glossary ('真值:从 Isaac 物理引擎直接读出的机器人位姿'). result.json report_batch-10 is confirmed Minor and cites technical-overview line 428.",
+     "fix": "给出每次的复位误差、Nav2 恢复次数,以及地图上的轨迹(出生位姿 + 理想里程计,不依赖 AMCL,与真值相差约 0.1 mm)。"
+    },
+    {
+     "id": "rest-17",
+     "quote": "D0–D5 六个交付都已实现,并在真实 Isaac 上验证过",
+     "problem": "Without qualification this overstates relative to §16.2, which says an explicit A5 requirement (verifying at task start that the start and goal lie in the allowed area) is not implemented, and that the documented terminal Ctrl-C interrupt never worked from the documented entry.",
+     "evidence": "Doc §16.2 ('A5 的\"任务开始时验证起点和目标位于允许区域\"没有实现'; '终端 Ctrl-C 无效'). result.json doctor_config-2 and runner-2 (Major, confirmed).",
+     "fix": "D0–D5 六个交付的主要功能都已实现,主要路径在真实 Isaac 上跑过(审查发现一项 A5 要求未实现和若干缺口,见 §16)"
+    },
+    {
+     "id": "rest-18",
+     "quote": "D3 起在 Isaac 内做 PhysX 接触检测,\"没测到\"与\"没碰撞\"分开;",
+     "problem": "This holds for the verdict (safety_status unknown) but not for the report. §16.2 says the collision column shows 0 for runs with no measurement (report_batch-4, Major). Lost contact events also still allow a safety pass (runner-9 / simctl-2).",
+     "evidence": "report.py:89/109 (collisions = len(disallowed_contacts), which is [] when not measured). Doc §16.2 '报告:接触没有实测的运行,碰撞列也显示 0'. result.json report_batch-4 (confirmed Major, 'has happened for real twice').",
+     "fix": "D3 起在 Isaac 内做 PhysX 接触检测,判定里\"没测到\"与\"没碰撞\"分开(批量报告的碰撞列还没区分,见 §16.2);"
+    },
+    {
+     "id": "rest-19",
+     "quote": "另外,在终端里按 Ctrl-C 经 `run_scenario.sh` 到不了运行器(`timeout` 把运行器放进了后台进程组),D2 的中断演示是由脚本直接给运行器进程发 SIGINT 完成的。",
+     "problem": "The first clause is stated as an observed fact. The review reproduced it only on a WSL pty with a stand-in runner, and did not test it from a real Windows console. §15 says the terminal path was never tested. The sentence also leaves out run_batch.sh, which has the same problem. The second clause is correct: interrupt_demo2.sh ran the runner directly and sent `kill -INT \"$PID\"`.",
+     "evidence": "result.json runner-2 verification: 'my pty emulates how wsl.exe relays a Windows console ... I did not test from a real Windows console'. docs-2 and report_batch-3 note the same residual assumption. run_scenario.sh:20 and run_batch.sh:16 have no --foreground. scratchpad/interrupt_demo2.sh:8,15.",
+     "fix": "另外,`run_scenario.sh` 和 `run_batch.sh` 用不带 `--foreground` 的 `timeout` 启动 Python,运行器不在终端的前台进程组里;审查在 WSL 伪终端上用替身进程复现了终端 Ctrl-C 送不到运行器(真实 Windows 控制台里还没按过)。D2 的中断演示是由脚本直接给运行器进程发 SIGINT 完成的。"
+    },
+    {
+     "id": "rest-20",
+     "quote": "必需流(`/clock`、odom、Isaac 的 odom→base_link)在\"接受目标到到达判定\"的窗口里没有消息、断流超过 2 s 墙钟、时间戳倒退、复位后仿真时钟倒退,任一项都判 incomplete",
+     "problem": "The window is described as always running from goal acceptance to the arrival check. When the bag lacks ACCEPTED or ends early, both window ends come from the bag itself (first odom, last message), so data can still be judged complete. That is the open Major eval-1, which §16.2 lists. §14.4 gives no caveat or cross-reference.",
+     "evidence": "analyze_attempt.py:307-308 at f74af95: `lo = t_accept if t_accept is not None else (odom[0][0] if odom else 0)`; `hi = t_arr if t_arr is not None else (t_last or lo)`. Doc §16.2 '数据覆盖只看 bag 自己'. result.json eval-1 (confirmed Major).",
+     "fix": "…任一项都判 incomplete(\"窗口里没有消息\"这一条是审查后加的,修复分支 `c132a68`;bag 缺\"已接受\"状态或提前结束时,窗口两端退回 bag 自身的首尾,这个缺口见 §16.2)"
+    },
+    {
+     "id": "rest-21",
+     "quote": "用新代码在内存里重算 32 次真实运行,离线分析的结论没有一处变化",
+     "problem": "This is inconsistent with the cited evidence file and with §16.5. The output reports one changed verdict (the D2 interrupt demo's execution_status goes from interrupted to completed), and §16.5 itself calls this '唯一的差别'. (This is a §16-internal inconsistency; listed here because it is a cross-section contradiction.)",
+     "evidence": "artifacts/review-2026-09-30/regress-analyzer-c132a68.txt: 'd2/runs/normal-20260930-004634  CHANGED {'execution_status': ('interrupted', 'completed')}' and the last line 'runs with a changed analyzer verdict: 1'. Doc §16.5: '唯一的差别是 D2 的中断演示'.",
+     "fix": "用新代码在内存里重算 32 次真实运行,31 次与原记录完全一致;唯一的差别是 D2 中断演示的 execution_status(原记录存的是运行器状态,见 §16.5)"
+    },
+    {
+     "id": "rest-22",
+     "quote": "README 写的\"Ctrl-C 只会让它取消目标并照常收尾\"从没按终端方式验证过。",
+     "problem": "The quotation is misattributed. That text is in docs/setup.md:81. README says '20 = 被 Ctrl-C 中断(已取消目标并收尾)' (README.md:43). This is §16-internal but conflicts with the sources.",
+     "evidence": "`grep -n Ctrl-C README.md docs/setup.md` at f74af95 gives README.md:43 '20 = 被 Ctrl-C 中断(已取消目标并收尾)' and docs/setup.md:81 'Ctrl-C 只会让它取消目标…'.",
+     "fix": "README 写的\"20 = 被 Ctrl-C 中断(已取消目标并收尾)\"和 setup.md 写的\"Ctrl-C 只会让它取消目标并照常收尾\"都从没按终端方式验证过。"
+    },
+    {
+     "id": "rest-23",
+     "quote": "下面是确认后仍为 Major 的问题,按影响归类。",
+     "problem": "This is inconsistent with §0 and §16.1 ('12 条 Major'). The list also includes findings that verification downgraded to Minor: runner-3 (internal error after acceptance) and runner-4 (teardown not exception-safe) inside '收尾不完整', and eval-7/docs-5 (preset unreachable only checks the label). It also includes the Codex round1c-b items, which the Claude verification never rated.",
+     "evidence": "result.json: runner-3 and runner-4 are 'Major -> confirmed/Minor'. eval-7 and docs-5 are Minor. The 12 confirmed Majors are eval-1, runner-1, runner-2, simctl-1, doctor_config-2, report_batch-3, report_batch-4, shell-1, shell-2, docs-1, docs-2 and critic-1.",
+     "fix": "下面是 12 条确认后仍为 Major 的问题,以及与它们同类的几条 Minor 和 Codex 报告的 Major,按影响归类。"
+    },
+    {
+     "id": "rest-24",
+     "quote": "用 ROS 2 命令行 action 客户端发一个 NavigateToPose,客户端外面套着 `timeout -s INT 330`,即 330 s 现实时间的兜底上限。",
+     "problem": "This passage was not changed in f74af95, but the review confirmed the claim is false. Without -k, timeout only sends SIGINT and then waits indefinitely. The CLI client can block forever in its cancel wait or result loop, so 330 s is not a hard upper bound.",
+     "evidence": "send_goal.sh:76 at f74af95 (`timeout -s INT 330 ros2 action send_goal ...`, no -k). result.json shell-6 (confirmed Minor): 'Without -k, timeout waits for ever, so send_goal.sh blocks indefinitely'.",
+     "fix": "用 ROS 2 命令行 action 客户端发一个 NavigateToPose,客户端外面套着 `timeout -s INT 330`:330 s 现实时间后发 SIGINT;没有 `-k`,服务器不响应时客户端可能一直等下去(审查 shell-6,正在修)。"
+    }
+   ],
+   "checked": "Diffed 94be232..f74af95 and read the full technical-overview.md at f74af95. Checked every changed passage (the header, §0, §9, §10, §12, §13, the §14.3 table row and paragraph, the §14.4 data rule, the §15 D2 row) against the sources, then read the whole document for contradictions with §16.\n\nConfirmed correct:\n- Codex: 11 chunks (queue log items), 2 reports with 5 (3 Major) and 9 (7 Major) findings, 14 in total. Round1c-b used 74,234 tokens.\n- Claude review: 81 items (7 dimensions plus the critic), 80 confirmed (12 Major, 68 Minor), 1 refuted (simctl-9). Every confirmed item is either fixed in c132a68, 156c31a or 94be232, or assigned to one of the five cluster files.\n- impl/core, impl/sim, impl/config, impl/report and impl/shell all exist and branch from 156c31a. Fix commits are not in feature/d5-demo (merge-base 7fe517e).\n- Test counts: pytest collects 128 at 7fe517e and 136 at f74af95, and all 136 pass in a scratch copy. Mutation checks 7/7 (d1 ledger) and 8/8 (d3 ledger). Fake-node tests 6/6 and 10/10 on ROS domain 42. D0's test_analyze_attempt.py had 14 tests (21 now).\n- The D2 interrupt demo (scratchpad interrupt_demo2.sh) started the runner directly and sent `kill -INT` to its PID. The run's result.json has execution interrupted and outcome canceled.\n- run_scenario.sh and run_batch.sh use timeout without --foreground. The runner catches SIGINT and SIGTERM.\n- The §14.4 window rule is backed by evaluator.integrity_gap, added in c132a68.\n\nNot verified: I did not press Ctrl-C in a real Windows console, and I did not touch Isaac, ROS domain 0 or port 8226. The only scratch files are the git-archive copies under scratchpad/factcheck."
+  },
+  "verdicts": [
+   {
+    "id": "rest-1",
+    "verdict": "confirmed",
+    "reasoning": "'共四个' is a claim about the total. result.json has 81 items: 80 confirmed (12 Major, 68 Minor) and 1 refuted. Of these, 64 are assigned to the impl/* clusters, so they are unfixed at f74af95. Examples: runner-1, runner-2, simctl-1 and critic-1 are all confirmed Major. The document's own §0 and §16.2 list these problems as tool defects. docs/defect-record.md:3 describes its four entries more narrowly, as defects '在真实 Isaac 运行中暴露' that went through reproduce, fix and rerun. The count and the qualifier both need to change.",
+    "fix": "**开发中暴露的评测工具缺陷**:四个,都在真实 Isaac 运行中出现,都有复现、修复和同条件复跑(`docs/defect-record.md`);审查另外确认的问题见 §16,大部分还在修:"
+   },
+   {
+    "id": "rest-2",
+    "verdict": "confirmed",
+    "reasoning": "This is the same total-count reading as rest-1. The phrase '评测工具自身的四个缺陷' names four as the tool's defects. The preceding bullet in §0 (line 10) says the review confirmed 80 problems and only part are fixed. Only c132a68, 156c31a and 94be232 contain fixes, and the rest sit in cluster-*.json assigned to impl/*.",
+    "fix": "开发中在真实运行里暴露的四个评测工具缺陷都已复现、修复、同条件复跑;审查另外确认的问题见 §16。"
+   },
+   {
+    "id": "rest-3",
+    "verdict": "confirmed",
+    "reasoning": "This sits in §13 under '有证据支持的', with the same definite '四个缺陷' wording. It is inconsistent with §16.1 and §16.2 (80 confirmed, 12 Major, most still being fixed) and with §13's own third 'cannot say' bullet ('审查确认的问题也还没修完').",
+    "fix": "判定规则有固定输入测试和改坏检查;开发中暴露的四个评测工具缺陷都有复现、修复和同条件复跑(审查另外确认的问题还没修完,见 §16)。"
+   },
+   {
+    "id": "rest-4",
+    "verdict": "confirmed",
+    "reasoning": "At f74af95, runner.py:559-564 returns 20 for any execution_status 'interrupted'. In _send_goal (346-350) an interrupt returns before fut.result() is read, and no cancel is sent. runner_fsm.interrupt only moves to CANCELING from EXECUTING. So '20 = 已取消并收尾' is false on the SEND_GOAL path, which the same paragraph describes one sentence earlier. abort_batch, and therefore exit 31, is set only for cancel_timeout and stop_timeout (runner_fsm.py:45 and 123). accept_timeout and fsm.fail (internal error) exit 30 with the stop unconfirmed and the batch continuing, so '31 = 取消或停车没能确认' does not cover every unconfirmed stop. runner-4 (confirmed; repro shows the exception escaping run() and no result.json) means an exception in _teardown propagates out of main(), so the process exits 1, which is not listed. The docstring also lists exit 2 for usage or config errors (runner.py:12, main 575-587), and that code is missing from the list.",
+    "fix": "退出码:0 pass、10 fail、11 inconclusive、20 被中断、30 运行出错、31 取消或停车确认超时(批量据此中止)、2 参数或配置错误。按现在的代码,20 不保证已取消目标(发目标阶段被中断也返回 20);等接受超时或接受后出现内部错误时返回 30,停车没有确认,批量也不中止;收尾某一步抛异常时进程以 1 退出,不写 result.json(§16.2,正在修)。"
+   },
+   {
+    "id": "rest-5",
+    "verdict": "confirmed",
+    "reasoning": "The two cases the sentence names are real: runner-1 case 1 and runner-3 are both confirmed. It leaves out accept_timeout, though. runner.py:351-354 calls fsm.timeout and returns without reading the handle or cancelling. runner-1 verification case 2 shows 'goal response already received [True]; handle stored False; cancels []; exit 30'. §16.2, which this sentence cites, does list '等接受超时'. This is an omission, not a false statement, so the severity is low. The fix aligns the sentence with §16.2.",
+    "fix": "在发目标阶段被中断、等接受超时,或目标已接受后出现内部错误时,收尾不会取消已发出的目标(Nav2 通常几毫秒内就接受了,但运行器没有读取目标句柄),也不确认停车;收尾的某一步抛出异常会跳过后面的步骤。"
+   },
+   {
+    "id": "rest-6",
+    "verdict": "confirmed",
+    "reasoning": "evaluator.py:151-154 at f74af95 reads 'reached = err is not None and err <= x.tolerance_m; if x.preset_unreachable and not reached and data_complete: outcome = \"unreachable\"'. EvalInputs (38-61) has no evidence field. config.py:90/213 stores evidence as an optional string and never validates it. Evidence is therefore not a condition, and missing ground truth (err None) also counts as 'not reached'. eval-8 verification shows 'REJECTED, gt None: unreachable/pass'. docs-5, eval-7 and doctor_config-2 all cite §14.4 by name. §16.2 and the §16.4 plan ('缺真值时不判不可达') confirm that this is the current behaviour.",
+    "fix": "unreachable(ABORTED 或被拒绝,情形在配置里标为预设不可达,没有真值证明已到达,数据完整;配置里附的离线地图证据只是说明文字,代码不核对,缺真值时也会判不可达,见 §16.2)"
+   },
+   {
+    "id": "rest-7",
+    "verdict": "refuted",
+    "reasoning": "This is a design-limitation statement in §10, and it is accurate. The unreachable scenario's label, and so the basis for calling it unreachable, comes from the offline map analysis (baseline.yaml:95 evidence: 'offline map analysis 2026-09-30 …'). The runs themselves only show Nav2 ABORTED 208; they do not prove unreachability in simulation. The sentence does not claim the code checks the evidence text. That gap is a separate review finding, stated in §16.2 ('只看配置里的标签,没有核对离线证据'), and §10's lead sentence says review problems are listed in §16. The sentence is neither false nor inconsistent. At most, a cross-reference could be added.",
+    "fix": "(可不改;如要加引用)**不可达的依据**:不可达情形的证据来自离线地图分析,不是在仿真里证明的;判定目前只看配置里的预设标签,不核对这份证据(§16.2)。"
+   },
+   {
+    "id": "rest-8",
+    "verdict": "confirmed",
+    "reasoning": "'尚待重跑' is stale. REVIEW.md:10 at f74af95 records that round 1 was already rerun (round1b, 23:21, exit 1, 102,685 tokens, usage limit). REVIEW.md:12 records the split into round1c-a..d. D:\\RoboSim-Eval\\docs\\review\\codex-queue.log shows '03:42:10 item=2026-09-29-d0/round1c-a attempt=1 exit=0 report=True' and '07:12:31 item=2026-09-29-d0/round1c-b attempt=1 exit=0 report=True'. The reports contain 5 findings (3 Major) and 9 findings (7 Major). The c132a68 message covers the five round1c-a findings. The bullet sits under '以下各条是 D0 时的验证', but '尚待重跑' is present-tense and contradicts §0, §10 and §16.1.",
+    "fix": "Codex 独立只读审查第 1 轮和重跑(round1b)都因账户额度中止、没有意见;之后同一范围拆成 4 个分片,已出 2 份报告(共 14 条发现,评测逻辑的 5 条已在修复分支 `c132a68` 修复),其余分片在排队,见 §16。"
+   },
+   {
+    "id": "rest-9",
+    "verdict": "confirmed",
+    "reasoning": "f74af95 did not change line 109, and it is stale against §16.1 and the queue log: 2 of the 11 chunks (D0 round1c-a and round1c-b) have returned reports. 'D0 第 1 轮…中止' is true, but it leaves out that round1b also aborted (REVIEW.md:10). The overall claim that the review is not complete remains true.",
+    "fix": "独立审查交给另一个 AI 工具 Codex,以只读方式进行;D0 第 1 轮和重跑都因账户额度用完而中止,之后改成 11 个分片,已出 2 份报告(都是 D0 的分片),其余在排队,整体还没有完成(§16.1)。"
+   },
+   {
+    "id": "rest-10",
+    "verdict": "confirmed",
+    "reasoning": "Two planned §16.4 changes in the '运行器与判定' row affect scenarios the list leaves out. '取消和超时的结论也要求停车确认' affects timeout, and '生成障碍物后读回核对位置' affects bypass. '按 NVIDIA 地图检查起点和目标', the teardown safety net and the single-instance lock run in every scenario, including normal_slow. All 8 scenarios are in configs/baseline.yaml:77-116. The '报告与批量' row adds '批量能被终端 Ctrl-C 中断', so the terminal Ctrl-C check has to cover the batch as well.",
+    "fix": "在真实 Isaac 上重跑全部预设情形(normal、normal_slow、bypass、unreachable、cancel、timeout、dropout、collision),并从终端按 Ctrl-C 分别中断一次单次运行和一次批量"
+   },
+   {
+    "id": "rest-11",
+    "verdict": "confirmed",
+    "reasoning": "stop_record.sh at f74af95 (lines 40-45) only prints each recorder's .exit contents, and RC ignores them. This file has no change since the reviewed 19203e0 (empty diff). record_d0.sh:55 and send_goal.sh:79 keep only PIPESTATUS[0], so a transcriber failure is not recorded anywhere. These are Codex round1c-b #2 and #3 (Major), and §16.2 of the same document lists them. The runner also writes transcript.end(0) unconditionally (runner.py:469, runner-10 confirmed). Stated without qualification in the highlights, '如实报告退出码' overstates.",
+    "fix": "启停、记录、评测脚本记录各进程的真实退出码,评测规则有固定输入测试和改坏检查(Codex 审查发现停止录制脚本不按记录器退出码判失败、管道只保留上游退出码,正在修,§16.2);"
+   },
+   {
+    "id": "rest-12",
+    "verdict": "confirmed",
+    "reasoning": "record_d0.sh:37-43 at f74af95 writes 'name MISSING' when a session id is not registered within 5 s. In stop_record.sh:24 and 28, `pgrep -s MISSING` fails, so alive_any treats that session as not alive and never signals it. Line 48 skips the copy only when RC is 3, so a missing .exit (RC 4) still copies the bag. Codex round1c-b #5 reproduced the mis-classification. The document's §16.2 says '进程登记失败时仍可能复制正在写的 bag', which contradicts the unqualified §5.2 sentence. The case is an edge one: record_d0.sh itself exits 1 when any session is MISSING.",
+    "fix": "等登记在册的会话都结束后才复制 bag,避免复制到写了一半的文件;某个记录器的会话号没登记上时,这层保护不成立,目前仍可能复制正在写的 bag(§16.2,正在修)。"
+   },
+   {
+    "id": "rest-13",
+    "verdict": "confirmed",
+    "reasoning": "The listed features are implemented and were exercised on real Isaac: the D3 cancel and timeout runs pass with stop confirmation. But §13 files this under '有证据支持的' without qualification. §16.2 lists confirmed gaps in exactly the named features. Some paths leave a goal neither cancelled nor confirmed stopped (runner-1, Major). Teardown is not exception-safe (runner-4, simctl-1 Major). Terminal Ctrl-C does not work (runner-2, Major). The plan (RoboSim-Eval-Plan-and-Setup-ZH(1).md:463) also says '只有完成对应交付后才说\"做了\"', and §13's own 'cannot say' list includes '已交付'. The overstatement is mild, but it should be qualified.",
+    "fix": "\"基于现成机器人和 Nav2,做了仿真任务运行、数据记录、异常处理与可复跑评测\":运行前诊断、复位并用真值核对、状态机、取消与停车确认、分项判定、接触检测、批量复跑和报告都已实现,主要路径在真实 Isaac 上跑过(§15);异常收尾和取消/停车确认还有审查确认的缺口,正在修(§16.2)。"
+   },
+   {
+    "id": "rest-14",
+    "verdict": "confirmed",
+    "reasoning": "`git -C D:/RoboSim-Eval status --short` lists docs/review/2026-09-29-d0/codex-round1c-a-report.md, codex-round1c-b-report.md, their -stderr.txt files (the 74,234 tokens figure is in round1c-b-stderr.txt:1132) and codex-queue.log as untracked (??). `git ls-tree -r f74af95 docs/review` contains no round1c report and no Claude review record. The Claude multi-agent review counts (81/80/12/68) exist only in scratchpad/review-wf/result.json, outside the repository, and in the f74af95 commit message itself, which is self-referential. §16.1's '报告和复核记录在 docs/review/…' therefore does not hold at f74af95 either.",
+    "fix": "**证据约定**:除 §0 和 §16 的审查统计外,文中的数字都来自仓库里的记录;Codex 分片报告目前是主工作区 `docs/review/2026-09-29-d0/` 下尚未提交的文件,Claude 多代理审查的记录在仓库外,提交后补上路径。"
+   },
+   {
+    "id": "rest-15",
+    "verdict": "confirmed",
+    "reasoning": "artifacts/d5/commands.md shows the following. At 02:10-02:11 an empty stage was loaded with `sim.sh stop` / `sim.sh load …/empty_stage.usda` ('等同于 Isaac 刚启动'), so Isaac was not restarted. At 02:11:06 and 02:11:21 the two README step-2 commands ran. cancel (02:13:43) was a separate command and is not a README step (README.md:32-39 has only doctor.sh and run_scenario.sh normal). README step 1 and step 3 (run_batch.sh --out …/demo) were not run as written. README.md was first committed at 5966d95 (02:35:43), after these runs. docs/plan.md:19 at f74af95 was already corrected to 'README 第 2 步的两条命令…逐字执行通过(…第 1 步和第 3 步没有按原文执行)'. docs-9 is confirmed.",
+    "fix": "在新的 PowerShell 里逐字执行 README 第 2 步的两条命令(Isaac 没有重启,用加载空场景模拟\"刚启动、场景未加载\";第 1、3 步没有按原文执行):doctor 退出 11;normal pass(真值 0.049 m);另在同一终端跑 cancel,pass;参数改动的预测与复跑见 `docs/demo.md`"
+   },
+   {
+    "id": "rest-16",
+    "verdict": "confirmed",
+    "reasoning": "report.py:134-143 at f74af95 (_trajectory) keeps only trajectory.csv rows whose source starts with 'sim_state_odom_plus_spawn'. The docstring at 147 says 'AMCL-independent trajectory'. The glossary defines 真值 as the pose read from the physics engine (sim_control), and §6 says the spawn-plus-odometry source '不是单独的仿真真值 topic'. report_batch-10 is confirmed Minor and is still in cluster-report.json, so it is unfixed.",
+    "fix": "给出每次的复位误差、Nav2 恢复次数,以及地图上的轨迹(出生位姿 + 理想里程计,不依赖 AMCL;与真值相差约 0.1 mm)。"
+   },
+   {
+    "id": "rest-17",
+    "verdict": "confirmed",
+    "reasoning": "The same bullet discloses review status, but '都已实现' contradicts §16.2's 'A5 的\"任务开始时验证起点和目标位于允许区域\"没有实现'. That is doctor_config-2, confirmed Major. The requirements file (line 170) says '任务开始时必须验证起点和目标位于允许区域'. The documented terminal Ctrl-C path was also never verified and does not work (runner-2/docs-2, Major). The overstatement is mild and is fixed by scoping the claim and pointing to §16.",
+    "fix": "D0–D5 六个交付的主要功能都已实现,并在真实 Isaac 上跑过:环境接通(D0)、运行前诊断(D1)、单次运行器(D2)、分项判定与接触检测(D3)、批量复跑与 HTML 报告(D4)、README 与三个演示(D5);审查发现其中一项 A5 要求(任务开始时核对起点和目标在允许区域)没有实现,另有若干缺口,见 §16。"
+   },
+   {
+    "id": "rest-18",
+    "verdict": "confirmed",
+    "reasoning": "This holds for the verdict: evaluator.py:164-166 gives safety unknown when contacts are not measured. It does not hold for the report. report.py:89 sets collisions=len(disallowed_contacts or []), which is 0 for unmeasured runs, and line 109 sums them. report_batch-4 is confirmed Major, 'has happened for real twice' (d3 runs-diagnosis, d5 defect3-before), and §16.2 lists it. The §0 highlight reads as covering the tool as a whole. Lost contact events also still allow safety pass (runner-9, Minor).",
+    "fix": "D3 起在 Isaac 内做 PhysX 接触检测,判定里\"没测到\"与\"没碰撞\"分开(批量报告的碰撞列还没区分,见 §16.2);"
+   },
+   {
+    "id": "rest-19",
+    "verdict": "refuted",
+    "reasoning": "The first clause is supported by concrete evidence, not merely asserted. run_scenario.sh:20 at f74af95 is `timeout -s INT -k 120 1500 python3 …`, with no --foreground. Two independent pty reproductions show the runner in timeout's own process group, not the tty foreground group ('pgid=8149 … tty_foreground_pgrp=8143 / runner signals: none'). With --foreground the signal arrives ('SIGINT at 1.00 s'). runner-2, docs-2 and shell-2 are all confirmed Major. The only remaining assumption is that wsl.exe relays a console Ctrl-C to the Linux pty as ^C, which is standard WSL behaviour. This does not conflict with §15's '没有测过': §15 means the project never exercised the path in a real run. run_batch.sh is out of scope for §14.3, which covers the single runner, and §16.2 covers it. The second clause is correct (interrupt_demo2.sh: `kill -INT \"$PID\"`).",
+    "fix": "(可不改;如要写明证据范围)另外,`run_scenario.sh` 用不带 `--foreground` 的 `timeout` 启动运行器,运行器不在终端的前台进程组里,终端按 Ctrl-C 到不了运行器(审查在 WSL 伪终端上复现);D2 的中断演示是由脚本直接给运行器进程发 SIGINT 完成的。"
+   },
+   {
+    "id": "rest-20",
+    "verdict": "confirmed",
+    "reasoning": "analyze_attempt.py:307-308 at f74af95 reads `lo = t_accept if t_accept is not None else (odom[0][0] if odom else 0)` and `hi = t_arr if t_arr is not None else (t_last or lo)`. When ACCEPTED is missing, the window is not accept..arrival, and a truncated bag has no gap at its own end. Runner._evaluate reads only data_integrity and drops the analyzer's coverage flags. eval-1 is confirmed Major, and its repro gives D3 'complete'/'pass' for a truncated bag and for a missing ACCEPTED. §16.2 ('数据覆盖只看 bag 自己') states the gap, but §14.4 has no caveat or cross-reference.",
+    "fix": "…任一项都判 incomplete(\"窗口里没有消息\"这一条是审查后加的,修复分支 `c132a68`);窗口两端都取自 bag,bag 缺\"目标已接受\"状态或提前结束时,没录到的部分不检查,这个缺口见 §16.2;AMCL 的 map→odom 只作参考,断流只记警告。"
+   },
+   {
+    "id": "rest-21",
+    "verdict": "confirmed",
+    "reasoning": "The cited file artifacts/review-2026-09-30/regress-analyzer-c132a68.txt has 'd2/runs/normal-20260930-004634  CHANGED {'execution_status': ('interrupted', 'completed')}' and ends with 'runs with a changed analyzer verdict: 1'. §16.5 itself says '唯一的差别是 D2 的中断演示'. The difference is not caused by the fix. That run's result.json has no 'analyzer' key (verified: 'analyzer' in d → False, top-level execution_status interrupted), so the script compared against the runner's status. Even so, '没有一处变化' contradicts the evidence file it cites and §16.5.",
+    "fix": "用新代码在内存里重算 32 次真实运行,31 次与原记录一致;唯一的差别是 D2 中断演示的 execution_status,原记录存的是运行器的 interrupted,不是离线分析的结论(§16.5,`artifacts/review-2026-09-30/regress-analyzer-c132a68.txt`)"
+   },
+   {
+    "id": "rest-22",
+    "verdict": "confirmed",
+    "reasoning": "`git show f74af95:README.md | grep -n Ctrl-C` returns only line 43: '20 = 被 Ctrl-C 中断(已取消目标并收尾)'. The quoted text 'Ctrl-C 只会让它取消目标并照常收尾' is at docs/setup.md:81, so the quote is misattributed to README.",
+    "fix": "README 写的\"20 = 被 Ctrl-C 中断(已取消目标并收尾)\"和 setup.md 写的\"Ctrl-C 只会让它取消目标并照常收尾\"都从没按终端方式验证过。"
+   },
+   {
+    "id": "rest-23",
+    "verdict": "confirmed",
+    "reasoning": "The 12 confirmed Majors in result.json are eval-1, runner-1, runner-2, simctl-1, doctor_config-2, report_batch-3, report_batch-4, shell-1, shell-2, docs-1, docs-2 and critic-1. §16.2 also includes items that verification rated Minor. From runner-3 (Major→Minor) it takes '目标已接受后出现内部错误'. From runner-4 (Major→Minor) it takes '收尾的任何一步抛异常'. The evidence half of the unreachable point comes from eval-7/docs-5 (Minor), although doctor_config-2's title covers it partly. The seven 'D0 的常驻进程脚本' items are Codex's own Major ratings, which no Claude verification pass checked, and the document says Codex items are verified one by one before fixing. So '确认后仍为 Major' is inaccurate for part of the list.",
+    "fix": "下面是审查确认的主要问题,按影响归类:12 条确认后仍为 Major 的都在其中,另有几条同类的 Minor,以及 Codex 报告评为 Major、尚待逐条核实的 D0 脚本问题。"
+   },
+   {
+    "id": "rest-24",
+    "verdict": "confirmed",
+    "reasoning": "send_goal.sh:76 at f74af95 is `timeout -s INT 330 ros2 action send_goal …`, with no -k and no -t. shell-6 (confirmed Minor, static) cites ros2action send_goal.py:147-170, where the SIGINT handler calls spin_until_future_complete(cancel_future) with no timeout, and 189-196, the result loop with no limit when -t is absent. When the server is unresponsive the script can block indefinitely, so '330 s 现实时间的兜底上限' overstates. With a responsive server it ends shortly after 330 s with 124, as §5.3 says. f74af95 did not change this passage. shell-6 is in cluster-shell.json, so it is unfixed.",
+    "fix": "用 ROS 2 命令行 action 客户端发一个 NavigateToPose,客户端外面套着 `timeout -s INT 330`:330 s 现实时间后发 SIGINT,客户端取消目标后退出;没有加 `-k`,导航服务器不再响应时客户端可能一直等下去,所以这不是硬上限(审查 shell-6,正在修)。"
+   }
+  ]
+ }
+]
