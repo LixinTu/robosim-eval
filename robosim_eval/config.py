@@ -90,6 +90,7 @@ class Scenario:
     evidence: str = ""
     inject: Mapping[str, float] = field(default_factory=dict)
     timeouts: Mapping[str, float] = field(default_factory=dict)
+    nav2_params: Mapping[str, Any] = field(default_factory=dict)  # D5: dotted Nav2 param path -> new scalar value
 
 
 @dataclass(frozen=True)
@@ -197,6 +198,10 @@ def _load_scenarios(raw: Optional[Mapping[str, Any]]) -> Dict[str, Scenario]:
         timeouts = {str(k): _positive(f"scenarios.{name}.timeouts", str(k), v) for k, v in (sc.get("timeouts") or {}).items()}
         if set(timeouts) - _LIMIT_KEYS:
             raise ValueError(f"scenarios.{name}.timeouts: unknown key(s) {sorted(set(timeouts) - _LIMIT_KEYS)}")
+        nav2_params = dict(sc.get("nav2_params") or {})
+        for k, v in nav2_params.items():
+            if not isinstance(v, (bool, int, float, str)) or not str(k).count("."):
+                raise ValueError(f"scenarios.{name}.nav2_params.{k}: need a dotted parameter path and a scalar value")
         expect_outcome = str(sc.get("expect_outcome", "reached"))
         if expect_outcome not in ("reached", "unreachable", "canceled", "timeout"):
             raise ValueError(f"scenarios.{name}.expect_outcome: {expect_outcome!r} is not an A5 task outcome")
@@ -205,7 +210,8 @@ def _load_scenarios(raw: Optional[Mapping[str, Any]]) -> Dict[str, Scenario]:
                                                           float(_require(goal, "yaw", f"scenarios.{name}.goal"))),
                                    obstacles=tuple(obstacles), expect=str(sc.get("expect", "")),
                                    expect_outcome=expect_outcome, preset_unreachable=bool(sc.get("preset_unreachable", False)),
-                                   evidence=str(sc.get("evidence", "")), inject=inject, timeouts=timeouts)
+                                   evidence=str(sc.get("evidence", "")), inject=inject, timeouts=timeouts,
+                                   nav2_params={str(k): v for k, v in nav2_params.items()})
     return scenarios
 
 

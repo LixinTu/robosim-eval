@@ -152,3 +152,34 @@ scenarios:
 """
     with pytest.raises(ValueError, match="inject"):
         load_config(write(tmp_path, text))
+
+
+def test_scenario_nav2_param_change_is_read_as_a_mapping(tmp_path: Path):
+    text = GOOD + """
+scenarios:
+  s1:
+    goal: {x: 0.0, y: 0.0, yaw: 0.0}
+    nav2_params: {controller_server.ros__parameters.FollowPath.max_vel_x: 0.4}
+"""
+    sc = load_config(write(tmp_path, text)).scenarios["s1"]
+    assert dict(sc.nav2_params) == {"controller_server.ros__parameters.FollowPath.max_vel_x": 0.4}
+
+
+def test_scenario_nav2_param_change_must_be_scalar(tmp_path: Path):
+    text = GOOD + """
+scenarios:
+  s1:
+    goal: {x: 0.0, y: 0.0, yaw: 0.0}
+    nav2_params: {controller_server.ros__parameters.FollowPath: {max_vel_x: 0.4}}
+"""
+    with pytest.raises(ValueError, match="nav2_params"):
+        load_config(write(tmp_path, text))
+
+
+def test_baseline_d5_slow_scenario_differs_from_normal_only_by_the_declared_change():
+    sc = load_config(BASELINE).scenarios
+    slow, normal = sc["normal_slow"], sc["normal"]
+    assert dict(slow.nav2_params) == {"controller_server.ros__parameters.FollowPath.max_vel_x": 0.4}
+    assert not normal.nav2_params
+    assert (slow.goal, slow.obstacles, slow.expect_outcome, dict(slow.inject)) == \
+        (normal.goal, normal.obstacles, normal.expect_outcome, dict(normal.inject))

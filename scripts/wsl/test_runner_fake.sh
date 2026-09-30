@@ -5,11 +5,12 @@
 # (NavigateToPose action server) in different modes, then `robosim_eval.runner --no-sim --no-nav2 --no-record
 # --no-analyze` with tests/ros_fake/runner_fake.yaml (short timeouts). Checks the runner exit code, the execution
 # status and the terminal/timeout facts in result.json for: succeed, abort, nav timeout, reject, interrupt (SIGINT),
-# cancel ignored, robot never at rest, no action server. Fakes are stopped only through their own session ids.
+# cancel ignored, robot never at rest, no action server, and (D5) a declared Nav2 parameter change found in effect or
+# not in effect on a fake controller_server. Fakes are stopped only through their own session ids.
 # Exit: 0 all cases as expected; 1 at least one differs; 2 setup failure.
 set -uo pipefail
 OUT="${1:?out dir}"
-REPO=/mnt/d/RoboSim-Eval
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # the checkout this script is in
 mkdir -p "$OUT" || exit 2
 exec > >(tee "$OUT/summary.txt") 2>&1
 set +u
@@ -42,12 +43,12 @@ check() {  # check <case> <expected exit> <expected execution_status> <jq-like p
   local dir="$OUT/$case" t0 rc
   mkdir -p "$dir"
   t0=$(date +%s)
-  python3 -m robosim_eval.runner --scenario fake --config "$CFG" --out "$dir" --no-sim --no-nav2 --no-record \
+  python3 -m robosim_eval.runner --scenario "${SCEN:-fake}" --config "$CFG" --out "$dir" --no-sim --no-nav2 --no-record \
     --no-analyze > "$dir/runner.txt" 2>&1 &
   local pid=$!
   if [[ -n "$sigint" ]]; then sleep "$sigint"; kill -INT "$pid" 2>/dev/null; fi
   wait "$pid"; rc=$?
-  local res; res=$(ls "$dir"/fake-*/result.json 2>/dev/null | head -1)
+  local res; res=$(ls "$dir"/"${SCEN:-fake}"-*/result.json 2>/dev/null | head -1)
   local got_exec; got_exec=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["execution_status"])' "$res" 2>/dev/null)
   local extra_ok=1
   if [[ -n "$expr" ]]; then
@@ -92,6 +93,14 @@ check never_at_rest 31 error 'r["runner"]["abort_batch"] and "stop_timeout" in r
 stop_all
 start isaac tests/ros_fake/fake_isaac.py --duration 600; sleep 1.5
 check no_server 30 error '"ready_timeout" in r["runner"]["errors"]'
+stop_all
+start isaac tests/ros_fake/fake_isaac.py --duration 600; sleep 1.5
+start nav2-param-ok tests/ros_fake/fake_nav2.py --mode succeed --duration 2 --param FollowPath.max_vel_x=0.4
+SCEN=fake_slow check param_in_effect 11 completed 'r["runner"]["nav2_params"]["changes"][0]["in_effect"] == 0.4 and r["runner"]["terminal"]["name"] == "SUCCEEDED"'
+stop_all
+start isaac tests/ros_fake/fake_isaac.py --duration 600; sleep 1.5
+start nav2-param-bad tests/ros_fake/fake_nav2.py --mode succeed --duration 2 --param FollowPath.max_vel_x=0.8
+SCEN=fake_slow check param_not_in_effect 30 error 'any("not in effect" in e for e in r["runner"]["errors"]) and "goal_id" not in r["runner"]'
 stop_all
 echo "=== result: $([[ $FAILS -eq 0 ]] && echo PASS || echo "FAIL ($FAILS)") ==="
 [[ $FAILS -eq 0 ]]

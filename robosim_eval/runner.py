@@ -30,7 +30,8 @@ from typing import Any, Dict, List, Optional, Sequence
 from robosim_eval import contacts as contact_client
 from robosim_eval.config import BaselineConfig, Scenario, load_config
 from robosim_eval.evaluator import ContactPolicy, EvalInputs, evaluate_run
-from robosim_eval.run_io import EventLog, Transcript, to_plain, write_manifest, write_resolved_config
+from robosim_eval.nav2_params import write_params
+from robosim_eval.run_io import VENDOR_PKG, EventLog, Transcript, to_plain, write_manifest, write_resolved_config
 from robosim_eval.runner_fsm import RunStateMachine, State, StopStillTracker, append_sample, doctor_retry
 
 REPO = Path(__file__).resolve().parents[1]
@@ -94,6 +95,21 @@ class RunNode:
 
     def spin(self, seconds: float = 0.05) -> None:
         self.rclpy.spin_once(self.node, timeout_sec=seconds)
+
+    def get_param(self, node_name: str, name: str, timeout: float = 5.0) -> Any:
+        """Current value of one parameter of a running node (GetParameters service); None when unavailable."""
+        from rcl_interfaces.srv import GetParameters
+        from rclpy.parameter import parameter_value_to_python
+        cli = self.node.create_client(GetParameters, f"/{node_name}/get_parameters")
+        try:
+            if not cli.wait_for_service(timeout_sec=timeout):
+                return None
+            fut = cli.call_async(GetParameters.Request(names=[name]))
+            self.rclpy.spin_until_future_complete(self.node, fut, timeout_sec=timeout)
+            values = fut.result().values if fut.done() and fut.result() is not None else []
+            return parameter_value_to_python(values[0]) if values else None
+        finally:
+            self.node.destroy_client(cli)
 
     def lifecycle_active(self, timeout: float = 1.0) -> List[str]:
         """Names of the Nav2 lifecycle nodes that are not (yet) active."""
@@ -167,10 +183,21 @@ class Runner:
 
     # ---- PREPARE -------------------------------------------------------------------------------------------------
     def _prepare(self) -> bool:
+        params_error = None
+        if self.scenario.nav2_params:  # D5: declared change, derived from the vendor file; checked once Nav2 is up
+            try:
+                self.facts["nav2_params"] = write_params(VENDOR_PKG / "params" / "carter_navigation_params.yaml",
+                                                         self.run_dir, self.scenario.nav2_params)
+            except (OSError, ValueError) as exc:
+                params_error = f"nav2 params: {exc}"
         write_manifest(self.run_dir, self.run_dir.name, self.scenario.name, self.opts.config,
                        {"options": {k: getattr(self.opts, k) for k in ("no_sim", "no_nav2", "no_record", "no_analyze",
-                                                                        "no_contacts")}})
+                                                                        "no_contacts")},
+                        "nav2_params_effective": self.facts.get("nav2_params")})
         write_resolved_config(self.run_dir, self.cfg, self.scenario, vars(self.opts))
+        if params_error:
+            self.fsm.fail(params_error, *self.now())
+            return False
         if not self.opts.no_sim:
             if not self._reset_sim():
                 return False
@@ -251,7 +278,8 @@ class Runner:
         t0 = time.monotonic()
         self.rn.clock_backward = 0  # the reset is behind us; from here a backward /clock is a data problem
         if not self.opts.no_nav2:
-            rc = script("start_nav2.sh", [str(self.run_dir)], self.run_dir / "start_nav2.txt", 90)
+            extra = [f"params_file:={self.facts['nav2_params']['file']}"] if "nav2_params" in self.facts else []
+            rc = script("start_nav2.sh", [str(self.run_dir), *extra], self.run_dir / "start_nav2.txt", 90)
             self.facts["exit_codes"]["start_nav2"] = rc
             self.ev.write("start_nav2", exit_code=rc)
             if rc != 0:
@@ -274,6 +302,14 @@ class Runner:
                 self.fsm.timeout(to, *self.now())
                 return False
             time.sleep(0.5)
+        if "nav2_params" in self.facts:  # the declared change must be what the running node actually uses
+            for ch in self.facts["nav2_params"]["changes"]:
+                ch["in_effect"] = self.rn.get_param(ch["node"], ch["param"])
+            self.ev.write("nav2_params_checked", changes=self.facts["nav2_params"]["changes"])
+            wrong = [c for c in self.facts["nav2_params"]["changes"] if c["in_effect"] != c["new"]]
+            if wrong:
+                self.fsm.fail(f"declared Nav2 parameter not in effect: {wrong}", *self.now())
+                return False
         self.facts["nav2_ready_wall_s"] = round(time.monotonic() - t0, 2)
         self.go(State.SEND_GOAL, f"nav2 ready after {self.facts['nav2_ready_wall_s']} s")
         return True

@@ -7,6 +7,8 @@ Run in WSL with the ROS environment sourced, on the isolated ROS_DOMAIN_ID used 
   never          accept and keep running until the client cancels (cancel is accepted -> CANCELED)
   reject         reject the goal
   ignore-cancel  accept, never finish, and reject every cancel request
+  --param NAME=VALUE (repeatable) also runs a node named controller_server with that float parameter declared, for
+  the runner's check that a declared Nav2 parameter change is in effect (D5)
 """
 from __future__ import annotations
 
@@ -61,11 +63,18 @@ def main() -> None:
     p.add_argument("--mode", required=True, choices=["succeed", "abort", "never", "reject", "ignore-cancel"])
     p.add_argument("--duration", type=float, default=2.0)
     p.add_argument("--lifetime", type=float, default=90.0)
+    p.add_argument("--param", action="append", default=[])
     a = p.parse_args()
     rclpy.init()
     node = FakeNav2(a.mode, a.duration)
     ex = MultiThreadedExecutor()
     ex.add_node(node)
+    if a.param:
+        controller = Node("controller_server")
+        for item in a.param:
+            name, value = item.split("=", 1)
+            controller.declare_parameter(name, float(value))
+        ex.add_node(controller)
     end = time.monotonic() + a.lifetime
     try:
         while rclpy.ok() and time.monotonic() < end:
