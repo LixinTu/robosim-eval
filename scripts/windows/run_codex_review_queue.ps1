@@ -1,7 +1,7 @@
 # run_codex_review_queue.ps1 - RoboSim Eval: run several read-only Codex review rounds in order, waiting out the
 # account usage limit between attempts. Meant to be started detached, e.g.:
 #   Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',
-#     'D:\RoboSim-Eval\scripts\windows\run_codex_review_queue.ps1','-Rounds','round1c-a,round1c-b','-NotBefore','2026-09-30 03:38'
+#     'D:\RoboSim-Eval\scripts\windows\run_codex_review_queue.ps1','-Rounds','round1c-a,round1c-b','-NotBefore','2026-09-30T03:38'
 # For each round in order: skip it when codex-<round>-report.md already exists; otherwise run run_codex_review.ps1.
 # A failed attempt keeps its files as codex-<round>-attemptN-{status,stderr,stdout}.txt. When the failure is the usage
 # limit, the "try again at <time>" in stderr is parsed and the queue sleeps until 3 minutes after it (30 minutes when the
@@ -15,6 +15,8 @@ param(
     [string]$NotBefore = ''
 )
 $ErrorActionPreference = 'Stop'
+# Start-Process joins -ArgumentList items with spaces without quoting them: pass -NotBefore without spaces (ISO form
+# 2026-09-30T03:38); a value containing a space is split and parameter binding fails before anything is logged.
 $log = Join-Path $Dir 'codex-queue.log'
 $lock = Join-Path $Dir 'codex-queue.lock'
 $runner = Join-Path $PSScriptRoot 'run_codex_review.ps1'
