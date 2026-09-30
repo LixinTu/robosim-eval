@@ -1,0 +1,928 @@
+{
+ "base": "dbf67ce",
+ "head": "6365dcb",
+ "files": [
+  {
+   "path": ".gitignore",
+   "status": "M",
+   "added": "5",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "AGENTS.md",
+   "status": "A",
+   "added": "82",
+   "deleted": "0",
+   "kind": "docs"
+  },
+  {
+   "path": "CLAUDE.md",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "docs"
+  },
+  {
+   "path": "artifacts/README.md",
+   "status": "A",
+   "added": "28",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0a/commands.md",
+   "status": "A",
+   "added": "14",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0a/windows-probe.txt",
+   "status": "A",
+   "added": "382",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0a/wsl-probe-clean.txt",
+   "status": "A",
+   "added": "217",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0a/wsl-probe-login.txt",
+   "status": "A",
+   "added": "217",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/check-ros-install.txt",
+   "status": "A",
+   "added": "42",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/commands.md",
+   "status": "A",
+   "added": "21",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/install-jazzy.exit",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/install-jazzy.log",
+   "status": "A",
+   "added": "9185",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/listener-dds.log",
+   "status": "A",
+   "added": "12",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/listener-default.log",
+   "status": "A",
+   "added": "12",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/rviz-default.log",
+   "status": "A",
+   "added": "4",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/setup-workspace.exit",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/setup-workspace.log",
+   "status": "A",
+   "added": "326",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/talker-dds.log",
+   "status": "A",
+   "added": "14",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/talker-default.log",
+   "status": "A",
+   "added": "14",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/test-rviz.txt",
+   "status": "A",
+   "added": "10",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/test-talker-listener-dds.txt",
+   "status": "A",
+   "added": "8",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0b/test-talker-listener-default.txt",
+   "status": "A",
+   "added": "7",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/bridge-check-01-after-launch.txt",
+   "status": "A",
+   "added": "52",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/bridge-check-02-after-play.txt",
+   "status": "A",
+   "added": "63",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/clock-continuity-01.txt",
+   "status": "A",
+   "added": "9",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/clock-pause-test-01.txt",
+   "status": "A",
+   "added": "95",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/clock-pause-test-02.txt",
+   "status": "A",
+   "added": "2218",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/commands.md",
+   "status": "A",
+   "added": "36",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/diag-01.txt",
+   "status": "A",
+   "added": "50",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/diag-01/diag.txt",
+   "status": "A",
+   "added": "47",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/firewall-rule-created-19-53.png",
+   "status": "A",
+   "added": "-",
+   "deleted": "-",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/kit-udp-endpoints-01.txt",
+   "status": "A",
+   "added": "129",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-01-before-play.txt",
+   "status": "A",
+   "added": "42",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-01-before-play/00-discovery.txt",
+   "status": "A",
+   "added": "16",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-01-before-play/01-clock.txt",
+   "status": "A",
+   "added": "10",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-01-before-play/02-tf.txt",
+   "status": "A",
+   "added": "9",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-02-after-play.txt",
+   "status": "A",
+   "added": "42",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-02-after-play/00-discovery.txt",
+   "status": "A",
+   "added": "16",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-02-after-play/01-clock.txt",
+   "status": "A",
+   "added": "10",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-02-after-play/02-tf.txt",
+   "status": "A",
+   "added": "9",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-03-after-firewall.txt",
+   "status": "A",
+   "added": "142",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-03-after-firewall/00-discovery.txt",
+   "status": "A",
+   "added": "25",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-03-after-firewall/01-clock.txt",
+   "status": "A",
+   "added": "8",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-03-after-firewall/02-tf.txt",
+   "status": "A",
+   "added": "9",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-03-after-firewall/topic_chassis_odom.txt",
+   "status": "A",
+   "added": "33",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-03-after-firewall/topic_cmd_vel.txt",
+   "status": "A",
+   "added": "33",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-03-after-firewall/topic_tf.txt",
+   "status": "A",
+   "added": "33",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-04-playing.txt",
+   "status": "A",
+   "added": "332",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-04-playing/00-discovery.txt",
+   "status": "A",
+   "added": "30",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-04-playing/01-clock.txt",
+   "status": "A",
+   "added": "28",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-04-playing/02-tf.txt",
+   "status": "A",
+   "added": "49",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-04-playing/topic_chassis_odom.txt",
+   "status": "A",
+   "added": "77",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-04-playing/topic_cmd_vel.txt",
+   "status": "A",
+   "added": "33",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-04-playing/topic_front_3d_lidar_lidar_points.txt",
+   "status": "A",
+   "added": "55",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0c/probe-04-playing/topic_tf.txt",
+   "status": "A",
+   "added": "47",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/commands.md",
+   "status": "A",
+   "added": "53",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/action_status.txt",
+   "status": "A",
+   "added": "50",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/amcl_pose.txt",
+   "status": "A",
+   "added": "8",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/bag-info.txt",
+   "status": "A",
+   "added": "21",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/bag-path.txt",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/bag.log",
+   "status": "A",
+   "added": "25",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/cmd_vel.txt",
+   "status": "A",
+   "added": "540",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/goal-202437.txt",
+   "status": "A",
+   "added": "61961",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/odom.txt",
+   "status": "A",
+   "added": "4743",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/record.meta",
+   "status": "A",
+   "added": "2",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/record.pids",
+   "status": "A",
+   "added": "6",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/result.json",
+   "status": "A",
+   "added": "136",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/tf_map_base.txt",
+   "status": "A",
+   "added": "11",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/attempt-01/trajectory.csv",
+   "status": "A",
+   "added": "5118",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/map-overview.txt",
+   "status": "A",
+   "added": "46",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/nav2-launch.log",
+   "status": "A",
+   "added": "525",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/nav2-launch.meta",
+   "status": "A",
+   "added": "6",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/ready-201532.txt",
+   "status": "A",
+   "added": "465",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/ready-check-01.txt",
+   "status": "A",
+   "added": "468",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/rviz-before-goal-2018.png",
+   "status": "A",
+   "added": "-",
+   "deleted": "-",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-01/usd-inspection.txt",
+   "status": "A",
+   "added": "70",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/nav2-launch.log",
+   "status": "A",
+   "added": "354",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/nav2-launch.meta",
+   "status": "A",
+   "added": "6",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/nav2.exit",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/action_status.exit",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/action_status.txt",
+   "status": "A",
+   "added": "0",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/amcl_pose.exit",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/amcl_pose.txt",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/bag-info.txt",
+   "status": "A",
+   "added": "21",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/bag-path.txt",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/bag.exit",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/bag.log",
+   "status": "A",
+   "added": "24",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/cmd_vel.exit",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/cmd_vel.txt",
+   "status": "A",
+   "added": "0",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/odom.exit",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/odom.txt",
+   "status": "A",
+   "added": "277",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/record.meta",
+   "status": "A",
+   "added": "8",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/record.pids",
+   "status": "A",
+   "added": "6",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/tf_map_base.exit",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-02-stoptest/record-test/tf_map_base.txt",
+   "status": "A",
+   "added": "350",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-03-stoptest/nav2-launch.log",
+   "status": "A",
+   "added": "356",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-03-stoptest/nav2-launch.meta",
+   "status": "A",
+   "added": "6",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-03-stoptest/nav2.exit",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-04-stoptest/nav2-launch.log",
+   "status": "A",
+   "added": "499",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-04-stoptest/nav2-launch.meta",
+   "status": "A",
+   "added": "6",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "artifacts/d0d/run-04-stoptest/nav2.exit",
+   "status": "A",
+   "added": "1",
+   "deleted": "0",
+   "kind": "evidence"
+  },
+  {
+   "path": "configs/network/fastdds.xml",
+   "status": "A",
+   "added": "43",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "docs/environment.md",
+   "status": "A",
+   "added": "77",
+   "deleted": "0",
+   "kind": "docs"
+  },
+  {
+   "path": "docs/harness-sources.md",
+   "status": "A",
+   "added": "64",
+   "deleted": "0",
+   "kind": "docs"
+  },
+  {
+   "path": "docs/plan.md",
+   "status": "A",
+   "added": "150",
+   "deleted": "0",
+   "kind": "docs"
+  },
+  {
+   "path": "docs/setup.md",
+   "status": "A",
+   "added": "62",
+   "deleted": "0",
+   "kind": "docs"
+  },
+  {
+   "path": "scripts/windows/allow_wsl_to_isaac_firewall.ps1",
+   "status": "A",
+   "added": "36",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/windows/check_isaac_bridge.ps1",
+   "status": "A",
+   "added": "43",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/windows/inspect_usd.py",
+   "status": "A",
+   "added": "48",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/windows/probe_env.ps1",
+   "status": "A",
+   "added": "57",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/windows/start_isaac_ros2.ps1",
+   "status": "A",
+   "added": "34",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/analyze_attempt.py",
+   "status": "A",
+   "added": "290",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/analyze_attempt.sh",
+   "status": "A",
+   "added": "9",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/check_nav2_ready.sh",
+   "status": "A",
+   "added": "40",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/check_ros_install.sh",
+   "status": "A",
+   "added": "42",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/dds_env.sh",
+   "status": "A",
+   "added": "16",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/diag_discovery.sh",
+   "status": "A",
+   "added": "62",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/install_ros2_jazzy.sh",
+   "status": "A",
+   "added": "98",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/map_overview.sh",
+   "status": "A",
+   "added": "58",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/probe_env.sh",
+   "status": "A",
+   "added": "56",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/probe_topics.sh",
+   "status": "A",
+   "added": "59",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/record_d0.sh",
+   "status": "A",
+   "added": "65",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/ros_env.sh",
+   "status": "A",
+   "added": "33",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/send_goal.sh",
+   "status": "A",
+   "added": "70",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/setup_workspace.sh",
+   "status": "A",
+   "added": "77",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/start_nav2.sh",
+   "status": "A",
+   "added": "51",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/stop_nav2.sh",
+   "status": "A",
+   "added": "55",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/stop_record.sh",
+   "status": "A",
+   "added": "43",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/test_rviz.sh",
+   "status": "A",
+   "added": "30",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/test_talker_listener.sh",
+   "status": "A",
+   "added": "39",
+   "deleted": "0",
+   "kind": "code/config"
+  },
+  {
+   "path": "scripts/wsl/watch_clock.sh",
+   "status": "A",
+   "added": "32",
+   "deleted": "0",
+   "kind": "code/config"
+  }
+ ],
+ "untracked_at_snapshot": [
+  "?? docs/review/2026-09-29-d0/artifacts-diffstat.txt",
+  "?? docs/review/2026-09-29-d0/range.txt",
+  "?? docs/review/2026-09-29-d0/task.diff"
+ ]
+}
