@@ -42,7 +42,9 @@ RC=0
 fail() { local c=$1; shift; echo "FAIL($c): $*"; [[ $RC -eq 0 ]] && RC=$c; return 0; }
 meta_value() { sed -n -E "s/^(.* )?$1=([^ ]*).*/\2/p" "$ATT/record.meta" 2>/dev/null | tail -1; }
 stat_field() { sed -E 's/^.*\) //' "$PROC/$1/stat" 2>/dev/null | awk -v f="$2" '{print $f}'; }   # 4 session, 20 start
-has_token() { [[ -n "$TOKEN" ]] && tr '\0' '\n' < "$PROC/$1/environ" 2>/dev/null | grep -qxF "ROBOSIM_OWNER_TOKEN=$TOKEN"; }
+# grep reads the NUL-separated /proc files itself (-z): in a `tr | grep -q` pipeline under pipefail, tr dies of SIGPIPE
+# when grep stops at an early match, and our own process would look foreign (finding shell-rev-1).
+has_token() { [[ -n "$TOKEN" ]] && grep -qzxF "ROBOSIM_OWNER_TOKEN=$TOKEN" "$PROC/$1/environ" 2>/dev/null; }
 BOOT=$(meta_value boot_id); TOKEN=$(meta_value token)
 PREV_STOP=$(grep -m1 '^record stop ' "$ATT/record.meta" 2>/dev/null)   # an earlier stop_record.sh run on this attempt
 NAMES=(); SIDS=(); STARTS=(); KINDS=()
@@ -57,7 +59,7 @@ own_leader() {
   local i=$1 sid=${SIDS[$1]}
   [[ -n "$BOOT" && "$(cat "$PROC/sys/kernel/random/boot_id" 2>/dev/null)" == "$BOOT" ]] || return 1
   [[ "${STARTS[$i]}" =~ ^[0-9]+$ && "$(stat_field "$sid" 20)" == "${STARTS[$i]}" ]] || return 1
-  tr '\0' ' ' < "$PROC/$sid/cmdline" 2>/dev/null | grep -qF "$ATT/${NAMES[$i]}.exit" || return 1
+  grep -qzF "$ATT/${NAMES[$i]}.exit" "$PROC/$sid/cmdline" 2>/dev/null || return 1
   has_token "$sid"
 }
 # classify <i>: STATE[i] = own (ours, running) | gone (nothing left) | foreign (the id now belongs to other processes, so

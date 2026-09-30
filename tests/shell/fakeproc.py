@@ -197,6 +197,20 @@ def cmd_mk(args: List[str]) -> int:
     return 0
 
 
+def cmd_pad(args: List[str]) -> int:
+    """pad <pid> <environ|cmdline> <n>: append n NUL-terminated filler entries of about 1 KiB, each holding a newline.
+
+    The existing entries (the ownership token, the exit file) stay first, and the file grows past a pipe buffer (64 KiB)
+    plus a reader's first read, so a reader that stops at the first match cannot have consumed it all by then.
+    """
+    pid, name, count = int(args[0]), args[1], int(args[2])
+    assert name in ("environ", "cmdline"), f"fake pad supports environ and cmdline, got {name}"
+    filler = b"".join(b"ROBOSIM_PAD_%05d=%s\n%s\0" % (i, b"x" * 500, b"y" * 500) for i in range(count))
+    with open(root() / str(pid) / name, "ab") as f:
+        f.write(filler)
+    return 0
+
+
 def spawn_recorder(me: int, argv: List[str]) -> int:
     """setsid stub for record_d0.sh: nohup bash -c SCRIPT PIDFILE EXITFILE [STAMPFILE] timeout -s INT MAX cmd..."""
     k = argv.index("-c")
@@ -254,6 +268,8 @@ def main(argv: List[str]) -> int:
         return cmd_kill(args)
     if cmd == "mk":
         return cmd_mk(args)
+    if cmd == "pad":
+        return cmd_pad(args)
     if cmd == "spawn":
         me, rest = int(args[0]), args[1:]
         mode = os.environ.get("FAKE_SPAWN", "")

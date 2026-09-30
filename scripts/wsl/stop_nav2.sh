@@ -38,7 +38,9 @@ WRAP=$(cat "$RUN_DIR/nav2.pid")
 alive() { pgrep -s "$WRAP" >/dev/null 2>&1; [[ $? -ne 1 ]]; }   # a failed query counts as alive
 stat_field() { sed -E 's/^.*\) //' "$PROC/$1/stat" 2>/dev/null | awk -v f="$2" '{print $f}'; }   # 4 session, 20 start
 meta_value() { sed -n -E "s/^(.* )?$1=([^ ]*).*/\2/p" "$META" 2>/dev/null | tail -1; }
-has_token() { [[ -n "$TOKEN" ]] && tr '\0' '\n' < "$PROC/$1/environ" 2>/dev/null | grep -qxF "ROBOSIM_OWNER_TOKEN=$TOKEN"; }
+# grep reads the NUL-separated /proc files itself (-z): in a `tr | grep -q` pipeline under pipefail, tr dies of SIGPIPE
+# when grep stops at an early match, and our own launch would be refused (finding shell-rev-1).
+has_token() { [[ -n "$TOKEN" ]] && grep -qzxF "ROBOSIM_OWNER_TOKEN=$TOKEN" "$PROC/$1/environ" 2>/dev/null; }
 launch_exit() { local v; v=$(tr -d '[:space:]' < "$RUN_DIR/nav2.exit" 2>/dev/null); if [[ "$v" =~ ^[0-9]+$ ]]; then echo "$v"; else echo unknown; fi; }
 TOKEN=$(meta_value token)
 
@@ -62,7 +64,7 @@ if [[ "$(cat "$PROC/sys/kernel/random/boot_id" 2>/dev/null)" != "$(meta_value bo
 elif [[ -d "$PROC/$WRAP" ]]; then
   if [[ "$(stat_field "$WRAP" 20)" != "$(meta_value wrapper_starttime)" ]]; then
     WHY="start time of process $WRAP differs from the recorded wrapper start time"
-  elif ! tr '\0' ' ' < "$PROC/$WRAP/cmdline" 2>/dev/null | grep -qF "$RUN_DIR/nav2.exit"; then
+  elif ! grep -qzF "$RUN_DIR/nav2.exit" "$PROC/$WRAP/cmdline" 2>/dev/null; then
     WHY="process $WRAP is not this run dir's wrapper (command line does not reference $RUN_DIR/nav2.exit)"
   elif [[ -n "$TOKEN" ]] && ! has_token "$WRAP"; then
     WHY="process $WRAP does not carry this launch's ownership token"

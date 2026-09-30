@@ -30,8 +30,8 @@ check "1: boot_id recorded" "$(cat "$ROBOSIM_PROC_ROOT/sys/kernel/random/boot_id
 TOKEN=$(meta_of token)
 check "1: ownership token recorded" yes "$([[ -n "$TOKEN" ]] && echo yes || echo no)"
 ok=0; while read -r name sid start kind; do
-  tr '\0' '\n' < "$ROBOSIM_PROC_ROOT/$sid/environ" | grep -qxF "ROBOSIM_OWNER_TOKEN=$TOKEN" && \
-  tr '\0' ' ' < "$ROBOSIM_PROC_ROOT/$sid/cmdline" | grep -qF "$A/$name.exit" && ok=$((ok + 1))
+  grep -qzxF "ROBOSIM_OWNER_TOKEN=$TOKEN" "$ROBOSIM_PROC_ROOT/$sid/environ" && \
+  grep -qzF "$A/$name.exit" "$ROBOSIM_PROC_ROOT/$sid/cmdline" && ok=$((ok + 1))
 done < "$A/record.pids"
 check "1: each wrapper carries the token and names its exit file" 6 "$ok"
 check "1: no signal sent while starting" 0 "$(grep -c . "$T/signals.log")"

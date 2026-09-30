@@ -205,4 +205,28 @@ rm -rf "$ROBOSIM_PROC_ROOT"/5100001 "$ROBOSIM_PROC_ROOT"/5200001
 mkproc 5100001 4000000 3999999 1000 "{\"argv\": [\"setsid\", \"nohup\", \"bash\", \"-c\", \"wrapper\", \"$A/pid-bag\", \"$A/bag.exit\"], \"env\": {\"ROBOSIM_OWNER_TOKEN\": \"$TOKEN\"}, \"dies_on\": [\"INT\"]}"
 stop
 check_grep "I: the pre-setsid wrapper gets the signal directly" '^kill INT 5100001' "$T/signals.log"
+
+# J. environments and command lines longer than a pipe buffer, with the token and the exit file near the start (a real
+#    recorder environment is about 7 KiB): still proven ours (shell-rev-1: a `tr | grep -q` check under pipefail
+#    failed when grep stopped at the first match and tr died of SIGPIPE).
+t_new stop_record.sh; cd "$T" || exit 1; baginfo
+attempt "$T/att"; six_sessions
+for p in 5100001 5100002 5100003 5100004 5100005 5100006; do pad_proc "$p" environ 1024; done
+stop
+check "J1: large wrapper environments -> own sessions stopped, exit 0" 0 "$RC"
+check "J1: SIGINT sent to all six sessions" 6 "$(grep -c '^pkill INT session' "$T/signals.log")"
+check "J1: bag copied" yes "$(copied)"
+t_new stop_record.sh; cd "$T" || exit 1; baginfo
+attempt "$T/att"; six_sessions
+pad_proc 5100001 cmdline 1024
+stop
+check "J2: a large wrapper command line -> exit 0" 0 "$RC"
+check_grep "J2: the bag session is signalled" '^pkill INT session 5100001' "$T/signals.log"
+t_new stop_record.sh; cd "$T" || exit 1; baginfo
+attempt "$T/att"; six_sessions
+rm -rf "$ROBOSIM_PROC_ROOT"/5100002
+pad_proc 5200002 environ 1024; pad_proc 5200003 environ 1024
+stop
+check_grep "J3: leftovers with large environments are ours and signalled" '^pkill INT session 5100002' "$T/signals.log"
+check_no_grep "J3: not refused" 'odom .*not signalled' "$T/out.txt"
 t_done

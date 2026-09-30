@@ -85,6 +85,23 @@ fresh; launch_run "$T/run"; sed -i 's/ token=[^ ]*//' "$RUN/nav2-launch.meta"
 stopnav
 check "H: tokenless meta, matching wrapper -> exit 0" 0 "$RC"
 
+# L. environments and a command line longer than a pipe buffer, token and exit file near the start: still this run's
+#    launch (shell-rev-1: a `tr | grep -q` check under pipefail failed when tr died of SIGPIPE).
+fresh; launch_run "$T/run"; pad_proc "$W" environ 1024
+stopnav
+check "L1: a large wrapper environment -> accepted, exit 0" 0 "$RC"
+check_grep "L1: SIGINT went to the launch process" "^kill INT $L\$" "$T/signals.log"
+fresh; launch_run "$T/run"; pad_proc "$W" cmdline 1024
+stopnav
+check "L2: a large wrapper command line -> accepted, exit 0" 0 "$RC"
+fresh; launch_run "$T/run"
+rm -rf "$ROBOSIM_PROC_ROOT/$L" "$ROBOSIM_PROC_ROOT/$W" "$ROBOSIM_PROC_ROOT/$N"; echo 137 > "$RUN/nav2.exit"
+mkproc "$N" "$W" 1 1005 "{\"argv\": [\"controller_server\"], \"env\": {\"ROBOSIM_OWNER_TOKEN\": \"$TOKEN\"}, \"dies_on\": [\"INT\"]}"
+pad_proc "$N" environ 1024
+stopnav
+check "L3: leftovers with a large environment are this launch's -> exit 0" 0 "$RC"
+check_grep "L3: SIGINT to the session" "^pkill INT session $W" "$T/signals.log"
+
 # S. start_nav2.sh records the token (inherited by the launch) and stop_nav2.sh accepts that launch.
 t_new start_nav2.sh stop_nav2.sh; cd "$T" || exit 1; : > "$T/ros2/nodes"
 mkdir -p "$T/prefix/share/carter_navigation/maps"
@@ -95,7 +112,7 @@ check "S: start_nav2 -> exit 0" 0 $?
 tok=$(sed -n -E 's/^(.* )?token=([^ ]*).*/\2/p' "$T/srun/nav2-launch.meta" | tail -1)
 check "S: token recorded" yes "$([[ -n "$tok" ]] && echo yes || echo no)"
 lp=$(sed -n -E 's/^(.* )?launch_pid=([^ ]*).*/\2/p' "$T/srun/nav2-launch.meta" | tail -1)
-check "S: the launch carries the token" yes "$(tr '\0' '\n' < "$ROBOSIM_PROC_ROOT/$lp/environ" | grep -qxF "ROBOSIM_OWNER_TOKEN=$tok" && echo yes || echo no)"
+check "S: the launch carries the token" yes "$(grep -qzxF "ROBOSIM_OWNER_TOKEN=$tok" "$ROBOSIM_PROC_ROOT/$lp/environ" && echo yes || echo no)"
 check_grep "S: launch start time recorded" 'launch_starttime=[0-9]+' "$T/srun/nav2-launch.meta"
 RUN="$T/srun"; stopnav
 check "S: stop_nav2 accepts start_nav2's launch -> exit 0" 0 "$RC"

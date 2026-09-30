@@ -93,6 +93,8 @@ EOF
 
 # mkproc <pid> <sid> <ppid> <start> <json spec>: add a fake process (see fakeproc.py for the spec keys).
 mkproc() { "$REAL_PY" "$FAKEPROC" mk "$@"; }
+# pad_proc <pid> <environ|cmdline> <n>: grow a fake process's environ or command line by n KiB of trailing filler.
+pad_proc() { "$REAL_PY" "$FAKEPROC" pad "$@"; }
 alive_fake() { [[ -d "$ROBOSIM_PROC_ROOT/$1" ]]; }
 fake_clear() { rm -rf "$ROBOSIM_PROC_ROOT"/[0-9]*; }   # every fake process gone (as after a clean stop)
 
