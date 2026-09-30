@@ -1,0 +1,39 @@
+{
+  "scenarios": [
+    "normal",
+    "normal_slow"
+  ],
+  "repeats": 2,
+  "attempts": [
+    {
+      "index": 0,
+      "scenario": "normal",
+      "repeat": 1,
+      "exit": 0,
+      "wall_s": 124.3
+    },
+    {
+      "index": 1,
+      "scenario": "normal_slow",
+      "repeat": 1,
+      "exit": 11,
+      "wall_s": 162.2
+    },
+    {
+      "index": 2,
+      "scenario": "normal",
+      "repeat": 2,
+      "exit": 0,
+      "wall_s": 128.3
+    },
+    {
+      "index": 3,
+      "scenario": "normal_slow",
+      "repeat": 2,
+      "exit": 0,
+      "wall_s": 163.1
+    }
+  ],
+  "stopped_by": null,
+  "status": 0
+}

@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/d5/fake-02/cancel_ignored/fake-20260930-022931
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d5/fake-02/cancel_ignored/fake-20260930-022931", "exit": 31, "execution_status": "error", "task_outcome": "timeout", "validation_status": "fail", "errors": ["cancel_timeout"]}

@@ -1,0 +1,8 @@
+record start 2026-09-30T02:31:48-07:00 attempt=/mnt/d/RoboSim-Eval/artifacts/d5/defect4-after/cancel-20260930-023111 max=480s bag=/home/administrator/robosim_bags/cancel-20260930-023111-20260930-023148
+record stop 2026-09-30T02:32:22-07:00
+  bag            session 2605    exit=0
+  odom           session 2614    exit=2
+  amcl_pose      session 2624    exit=2
+  cmd_vel        session 2647    exit=2
+  action_status  session 2655    exit=2
+  tf_map_base    session 2676    exit=0

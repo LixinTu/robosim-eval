@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/d5/fake-01/param_in_effect/fake_slow-20260930-020924
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d5/fake-01/param_in_effect/fake_slow-20260930-020924", "exit": 11, "execution_status": "completed", "task_outcome": "unknown", "validation_status": "inconclusive", "errors": []}

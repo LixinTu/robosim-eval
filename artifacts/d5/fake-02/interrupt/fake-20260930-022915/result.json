@@ -1,0 +1,169 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "canceled",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "inconclusive",
+  "analyzer": {
+    "execution_status": null,
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "inconclusive",
+    "verdict_reasons": null,
+    "arrival_check": null
+  },
+  "execution_status": "interrupted",
+  "verdict_reasons": {
+    "fail": [],
+    "inconclusive": [
+      "data incomplete: clock: no data; odom: no data; tf_odom_base: no data",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')",
+      "run interrupted by the operator"
+    ],
+    "warnings": [
+      "informational stream tf_map_odom: no data"
+    ]
+  },
+  "evaluator": {
+    "execution_status": "interrupted",
+    "task_outcome": "canceled",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "inconclusive",
+    "fail_reasons": [],
+    "inconclusive_reasons": [
+      "data incomplete: clock: no data; odom: no data; tf_odom_base: no data",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')",
+      "run interrupted by the operator"
+    ],
+    "warnings": [
+      "informational stream tf_map_odom: no data"
+    ],
+    "arrival_error_m": null,
+    "disallowed_contacts": []
+  },
+  "evaluator_inputs": {
+    "scenario_expect": "reached",
+    "preset_unreachable": false,
+    "tolerance_m": 0.5,
+    "goal": [
+      1.0,
+      0.0
+    ],
+    "execution_status": "interrupted",
+    "runner_errors": [],
+    "accepted": true,
+    "rejected": false,
+    "terminal_status": 5,
+    "error_code": 0,
+    "cancel_requested": true,
+    "cancel_reason": "interrupt",
+    "timeout_reason": null,
+    "stop_confirmed": true,
+    "gt_at_stop": null,
+    "contacts_measured": false,
+    "contacts": [],
+    "required_gaps": {
+      "clock": null,
+      "odom": null,
+      "tf_odom_base": null
+    },
+    "required_backward": {
+      "clock": 0,
+      "odom": 0,
+      "tf_odom_base": 0
+    },
+    "informational_gaps": {
+      "tf_map_odom": null
+    },
+    "dropout_threshold_wall_s": 2.0,
+    "clock_backward_jumps": 0
+  },
+  "runner": {
+    "run_id": "fake-20260930-022915",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 107374.415502653,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 107380.115345628,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 107380.116260371,
+        "t_sim": 2.939811416,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 107380.149508734,
+        "t_sim": 3.019817266,
+        "reason": "goal accepted 209f7faf86b04d468472a60773f91470"
+      },
+      {
+        "state": "CANCELING",
+        "t_wall": 107382.660295965,
+        "t_sim": 4.011835738,
+        "reason": "interrupt (SIGINT)"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 107382.761905369,
+        "t_sim": 4.059841468,
+        "reason": "terminal status CANCELED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 107385.266190414,
+        "t_sim": 5.067817996,
+        "reason": "robot at rest (stop-still confirmed at sim 5.068)"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 107385.266933865,
+        "t_sim": 5.067817996,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": "SIGINT",
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "injections": [],
+    "contacts": {
+      "installed": false,
+      "measured": false,
+      "error": null
+    },
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0,
+    "goal_id": "209f7faf86b04d468472a60773f91470",
+    "accept_sim": 3.019817266,
+    "terminal_sim": 4.059841468,
+    "terminal": {
+      "status": 5,
+      "name": "CANCELED",
+      "error_code": 0,
+      "error_msg": "",
+      "feedback_count": 26,
+      "last_feedback": {
+        "distance_remaining": 0.0,
+        "recoveries": 0
+      }
+    },
+    "stop_confirmed_sim": 5.067915052
+  }
+}

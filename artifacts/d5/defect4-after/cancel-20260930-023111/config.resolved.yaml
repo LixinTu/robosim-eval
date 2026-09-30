@@ -1,0 +1,112 @@
+scenario:
+  name: cancel
+  goal:
+    x: 0.0
+    y: -1.0
+    yaw: 0.0
+  obstacles: []
+  expect: CANCELED, robot confirmed at rest within the stop deadline
+  expect_outcome: canceled
+  preset_unreachable: false
+  evidence: ''
+  inject:
+    cancel_after_sim_s: 5.0
+  timeouts: {}
+  nav2_params: {}
+run:
+  frame: map
+  units:
+    length: m
+    angle: rad
+  position_tolerance_m: 0.5
+  heading_assessed: false
+  stop_linear_mps: 0.05
+  stop_angular_radps: 0.1
+  stop_hold_sim_s: 1.0
+  stop_max_gap_sim_s: 0.25
+  limits:
+    ready_wall_s: 60.0
+    accept_wall_s: 10.0
+    nav_sim_s: 120.0
+    nav_wall_s: 300.0
+    cancel_wall_s: 10.0
+    stop_wall_s: 10.0
+  dropout_wall_s: 2.0
+  contact_filter: ignore contacts between robot bodies and with the two ground collision
+    planes; any other contact of a robot body is a collision
+  record_cap_s: 480.0
+  contact_robot_root: /World/Nova_Carter_ROS
+  contact_ignore_prefixes:
+  - /World/warehouse_with_forklifts/GroundPlane/
+  - /World/warehouse_with_forklifts/Warehouse_Empty_small_realtime/GroundPlane/
+  required_streams:
+  - clock
+  - odom
+  - tf_odom_base
+  informational_streams:
+  - tf_map_odom
+sim:
+  world_uri: https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.1/Isaac/Samples/ROS2/Scenario/carter_warehouse_navigation.usd
+  robot_entity: /World/Nova_Carter_ROS/chassis_link
+  spawn:
+    x: -6.0
+    y: -1.0
+    yaw: 3.141592653589793
+  reset_position_m: 0.05
+  reset_yaw_rad: 0.05
+  reset_speed: 0.02
+  obstacle_usd: D:/RoboSim-Eval/configs/assets/box_1m.usda
+  obstacle_assets:
+    box_1m: D:/RoboSim-Eval/configs/assets/box_1m.usda
+    low_box: D:/RoboSim-Eval/configs/assets/low_box.usda
+topics:
+  clock:
+    name: /clock
+    msg_type: rosgraph_msgs/msg/Clock
+    parent: null
+    child: null
+  odom:
+    name: /chassis/odom
+    msg_type: nav_msgs/msg/Odometry
+    parent: null
+    child: null
+  tf:
+    name: /tf
+    msg_type: tf2_msgs/msg/TFMessage
+    parent: odom
+    child: base_link
+  lidar:
+    name: /front_3d_lidar/lidar_points
+    msg_type: sensor_msgs/msg/PointCloud2
+    parent: null
+    child: null
+doctor:
+  discovery_timeout_s: 5.0
+  window_s: 5.0
+  thresholds:
+    clock_stall_s: 2.0
+    min_sim_progress_s: 0.2
+    streams:
+      odom:
+        min_rate_hz: 8.0
+        max_age_s: 2.0
+      tf:
+        min_rate_hz: 8.0
+        max_age_s: 2.0
+      lidar:
+        min_rate_hz: 1.0
+        max_age_s: 2.5
+env:
+  rmw: rmw_fastrtps_cpp
+  domain_id: '0'
+  ros_distro: jazzy
+  require_dds_profile: true
+runner_options:
+  scenario: cancel
+  config: /mnt/d/RoboSim-Eval/configs/baseline.yaml
+  out: /mnt/d/RoboSim-Eval/artifacts/d5/defect4-after
+  no_sim: false
+  no_nav2: false
+  no_record: false
+  no_analyze: false
+  no_contacts: false

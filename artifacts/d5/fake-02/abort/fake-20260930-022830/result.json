@@ -1,0 +1,165 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "fail",
+  "analyzer": {
+    "execution_status": null,
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "inconclusive",
+    "verdict_reasons": null,
+    "arrival_check": null
+  },
+  "execution_status": "completed",
+  "verdict_reasons": {
+    "fail": [
+      "Nav2 ABORTED (error_code 208) where the scenario expects the goal to be reached; cause not established, kept as unknown"
+    ],
+    "inconclusive": [
+      "data incomplete: clock: no data; odom: no data; tf_odom_base: no data",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [
+      "informational stream tf_map_odom: no data"
+    ]
+  },
+  "evaluator": {
+    "execution_status": "completed",
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "fail",
+    "fail_reasons": [
+      "Nav2 ABORTED (error_code 208) where the scenario expects the goal to be reached; cause not established, kept as unknown"
+    ],
+    "inconclusive_reasons": [
+      "data incomplete: clock: no data; odom: no data; tf_odom_base: no data",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [
+      "informational stream tf_map_odom: no data"
+    ],
+    "arrival_error_m": null,
+    "disallowed_contacts": []
+  },
+  "evaluator_inputs": {
+    "scenario_expect": "reached",
+    "preset_unreachable": false,
+    "tolerance_m": 0.5,
+    "goal": [
+      1.0,
+      0.0
+    ],
+    "execution_status": "completed",
+    "runner_errors": [],
+    "accepted": true,
+    "rejected": false,
+    "terminal_status": 6,
+    "error_code": 208,
+    "cancel_requested": false,
+    "cancel_reason": null,
+    "timeout_reason": null,
+    "stop_confirmed": true,
+    "gt_at_stop": null,
+    "contacts_measured": false,
+    "contacts": [],
+    "required_gaps": {
+      "clock": null,
+      "odom": null,
+      "tf_odom_base": null
+    },
+    "required_backward": {
+      "clock": 0,
+      "odom": 0,
+      "tf_odom_base": 0
+    },
+    "informational_gaps": {
+      "tf_map_odom": null
+    },
+    "dropout_threshold_wall_s": 2.0,
+    "clock_backward_jumps": 0
+  },
+  "runner": {
+    "run_id": "fake-20260930-022830",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 107331.764987385,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 107337.431976573,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 107337.432871242,
+        "t_sim": 2.927341275,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 107337.469289517,
+        "t_sim": 3.007324749,
+        "reason": "goal accepted 205ac3e30bf84a3c9ae2ef46f0ba5b5f"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 107339.481333388,
+        "t_sim": 3.8073620210000003,
+        "reason": "terminal status ABORTED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 107341.98634037,
+        "t_sim": 4.81534295,
+        "reason": "robot at rest (stop-still confirmed at sim 4.815)"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 107341.987915579,
+        "t_sim": 4.81534295,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "injections": [],
+    "contacts": {
+      "installed": false,
+      "measured": false,
+      "error": null
+    },
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0,
+    "goal_id": "205ac3e30bf84a3c9ae2ef46f0ba5b5f",
+    "accept_sim": 3.007324749,
+    "terminal_sim": 3.8073620210000003,
+    "terminal": {
+      "status": 6,
+      "name": "ABORTED",
+      "error_code": 208,
+      "error_msg": "fake: no valid path",
+      "feedback_count": 21,
+      "last_feedback": {
+        "distance_remaining": 0.0,
+        "recoveries": 0
+      }
+    },
+    "stop_confirmed_sim": 4.815439802
+  }
+}

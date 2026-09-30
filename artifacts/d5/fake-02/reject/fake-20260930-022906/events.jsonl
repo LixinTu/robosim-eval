@@ -1,0 +1,8 @@
+{"t_mono": 107365.281002, "wall": "2026-09-30T02:29:06.611-07:00", "t_sim": null, "event": "state", "state": "PREPARE", "reason": "run started", "fsm_t_mono": 107365.280983463, "fsm_t_sim": null}
+{"t_mono": 107370.85434, "wall": "2026-09-30T02:29:12.184-07:00", "t_sim": null, "event": "doctor", "attempt": 1, "exit_code": 0}
+{"t_mono": 107370.854591, "wall": "2026-09-30T02:29:12.184-07:00", "t_sim": null, "event": "state", "state": "WAIT_READY", "reason": "prepared", "fsm_t_mono": 107370.854569204, "fsm_t_sim": null}
+{"t_mono": 107370.855298, "wall": "2026-09-30T02:29:12.185-07:00", "t_sim": 2.863764002, "event": "state", "state": "SEND_GOAL", "reason": "nav2 ready after 0.0 s", "fsm_t_mono": 107370.855290368, "fsm_t_sim": 2.863764002}
+{"t_mono": 107370.896908, "wall": "2026-09-30T02:29:12.227-07:00", "t_sim": 2.959792367, "event": "clock_refreshed", "ok": true}
+{"t_mono": 107370.898786, "wall": "2026-09-30T02:29:12.228-07:00", "t_sim": 2.959792367, "event": "goal_sent", "x": 1.0, "y": 0.0, "yaw": 0.0, "frame": "map"}
+{"t_mono": 107370.901055, "wall": "2026-09-30T02:29:12.231-07:00", "t_sim": 2.959792367, "event": "state", "state": "TEARDOWN", "reason": "goal rejected", "fsm_t_mono": 107370.90103834, "fsm_t_sim": 2.959792367}
+{"t_mono": 107370.902335, "wall": "2026-09-30T02:29:12.232-07:00", "t_sim": 2.959792367, "event": "state", "state": "DONE", "reason": "teardown finished", "fsm_t_mono": 107370.902322366, "fsm_t_sim": 2.959792367}

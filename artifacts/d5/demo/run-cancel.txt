@@ -1,0 +1,2 @@
+﻿run dir: /mnt/d/RoboSim-Eval/artifacts/d5/demo/runs/cancel-20260930-021343
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d5/demo/runs/cancel-20260930-021343", "exit": 0, "execution_status": "completed", "task_outcome": "canceled", "validation_status": "pass", "errors": []}

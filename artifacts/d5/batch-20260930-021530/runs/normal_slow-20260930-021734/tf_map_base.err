@@ -1,0 +1,7 @@
+[INFO] [1790759888.938769933] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1790759890.000636956] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1790759891.200651615] [tf2_echo]: Waiting for transform map ->  base_link: Lookup would require extrapolation at time 7.750000, but only time 8.700000 is in the buffer, when looking up transform from frame [base_link] to frame [map]
+[INFO] [1790759892.200674788] [tf2_echo]: Waiting for transform map ->  base_link: Lookup would require extrapolation into the past.  Requested time 8.016667 but the earliest data is at time 8.700000, when looking up transform from frame [base_link] to frame [map]
+[INFO] [1790759893.200681361] [tf2_echo]: Waiting for transform map ->  base_link: Lookup would require extrapolation into the past.  Requested time 8.300000 but the earliest data is at time 8.700000, when looking up transform from frame [base_link] to frame [map]
+[INFO] [1790759894.400674261] [tf2_echo]: Waiting for transform map ->  base_link: Lookup would require extrapolation into the past.  Requested time 8.650000 but the earliest data is at time 8.700000, when looking up transform from frame [base_link] to frame [map]
+[INFO] [1790759992.708118542] [rclcpp]: signal_handler(SIGINT/SIGTERM)

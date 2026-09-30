@@ -1,0 +1,46 @@
+{
+  "normal": {
+    "attempts": 2,
+    "validation": {
+      "pass": 2
+    },
+    "outcome": {
+      "reached": 2
+    },
+    "safety": {
+      "pass": 2
+    },
+    "data": {
+      "complete": 2
+    },
+    "mean_accept_to_result_sim_s_success_only": 15.49,
+    "mean_basis": "reached runs only (2 of 2)",
+    "max_arrival_error_m": 0.2980343045749254,
+    "collisions": 0,
+    "runs_with_nav2_recoveries": 0,
+    "max_reset_error_m": 6.961822509765625e-05
+  },
+  "normal_slow": {
+    "attempts": 2,
+    "validation": {
+      "inconclusive": 1,
+      "pass": 1
+    },
+    "outcome": {
+      "reached": 2
+    },
+    "safety": {
+      "pass": 2
+    },
+    "data": {
+      "incomplete": 1,
+      "complete": 1
+    },
+    "mean_accept_to_result_sim_s_success_only": 24.08,
+    "mean_basis": "reached runs only (2 of 2)",
+    "max_arrival_error_m": 0.1729189247685122,
+    "collisions": 0,
+    "runs_with_nav2_recoveries": 2,
+    "max_reset_error_m": 6.961822509765625e-05
+  }
+}

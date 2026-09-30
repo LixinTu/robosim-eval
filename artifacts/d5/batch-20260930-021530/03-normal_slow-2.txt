@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/d5/batch-20260930-021530/runs/normal_slow-20260930-022225
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/d5/batch-20260930-021530/runs/normal_slow-20260930-022225", "exit": 0, "execution_status": "completed", "task_outcome": "reached", "validation_status": "pass", "errors": []}
