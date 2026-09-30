@@ -390,3 +390,34 @@ def test_client_run_as_a_file_still_runs_its_main_flow(ps_results, name, expecte
     rc, stdout, stderr = ps_results[f"file:{name}"]
     assert rc == expected, (rc, contacts._decode(stdout), contacts._decode(stderr)[-600:])
     assert _json_status_line(stdout)["status"] == "error" and stdout.isascii()
+
+
+# ---- contract C6: the client and the Kit file come from the checkout contacts.py is in ---------------------------------
+
+@pytest.mark.parametrize("wsl, win", [
+    ("/mnt/d/RoboSim-Eval/scripts/windows/isaac_py.ps1", r"D:\RoboSim-Eval\scripts\windows\isaac_py.ps1"),
+    ("/mnt/c/Users/A B/wt/robosim_eval/kit/contact_monitor.py", r"C:\Users\A B\wt\robosim_eval\kit\contact_monitor.py"),
+    ("/mnt/c", "C:\\"),
+    ("/home/user/RoboSim-Eval/x.py", None),
+    ("/mnt/wsl/x.py", None),
+    ("/mnt", None),
+])
+def test_windows_path_of_a_wsl_path(wsl, win):
+    assert contacts.windows_path(Path(wsl)) == win
+
+
+@windows_only
+def test_client_and_kit_file_are_the_ones_of_this_checkout(tmp_path, monkeypatch):
+    argv_log = _stub(tmp_path, monkeypatch, stdout=_envelope(INSTALLED))
+    contacts.install()
+    argv = argv_log.read_text(encoding="utf-8").splitlines()
+    assert argv[argv.index("-File") + 1] == _winpath(REPO / "scripts" / "windows" / "isaac_py.ps1")
+    assert argv[argv.index("-CodeFile") + 1] == _winpath(REPO / "robosim_eval" / "kit" / "contact_monitor.py")
+    assert argv[argv.index("-Call") + 1] == "robosim_contacts_install()"
+
+
+def test_checkout_outside_a_windows_drive_is_a_contact_error(tmp_path, monkeypatch):
+    _stub(tmp_path, monkeypatch, stdout=_envelope(INSTALLED))
+    monkeypatch.setattr(contacts, "CLIENT", None)
+    with pytest.raises(ContactError, match="Windows drive"):
+        contacts.install()

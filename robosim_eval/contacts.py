@@ -12,13 +12,25 @@ from __future__ import annotations
 
 import json
 import subprocess
-from typing import Any, Dict, List, Tuple
+from pathlib import Path, PurePosixPath
+from typing import Any, Dict, List, Optional, Tuple
 
+__all__ = ["ContactError", "install", "fetch", "found_pairs", "windows_path"]
+
+
+def windows_path(path: PurePosixPath) -> Optional[str]:
+    """Windows form of a WSL path on a Windows drive (/mnt/d/x -> D:\\x); None for any other path."""
+    parts = path.parts
+    if len(parts) < 3 or parts[:2] != ("/", "mnt") or len(parts[2]) != 1 or not parts[2].isalpha():
+        return None
+    return parts[2].upper() + ":\\" + "\\".join(parts[3:])
+
+
+REPO = Path(__file__).resolve().parents[1]
 POWERSHELL = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
-CLIENT = r"D:\RoboSim-Eval\scripts\windows\isaac_py.ps1"
-KIT_FILE = r"D:\RoboSim-Eval\robosim_eval\kit\contact_monitor.py"
-
-__all__ = ["ContactError", "install", "fetch", "found_pairs"]
+# the client and the Kit file of the checkout this module is in (D:\RoboSim-Eval\... for the main checkout)
+CLIENT = windows_path(REPO / "scripts" / "windows" / "isaac_py.ps1")
+KIT_FILE = windows_path(REPO / "robosim_eval" / "kit" / "contact_monitor.py")
 
 
 class ContactError(RuntimeError):
@@ -43,6 +55,9 @@ def _decode(data: bytes) -> str:
 
 
 def _call(expr: str, timeout: float = 90.0) -> Dict[str, Any]:
+    if CLIENT is None or KIT_FILE is None:
+        raise ContactError(f"the checkout {REPO} is not on a Windows drive (/mnt/<drive>/...), so the Windows client "
+                           f"cannot run its isaac_py.ps1")
     try:
         proc = subprocess.run([POWERSHELL, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", CLIENT,
                                "-CodeFile", KIT_FILE, "-Call", expr], capture_output=True, timeout=timeout)
