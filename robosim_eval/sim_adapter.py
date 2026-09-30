@@ -29,7 +29,12 @@ ALREADY_IN_TARGET_STATE = 101
 
 
 class SimControlError(RuntimeError):
-    """A sim_control service was unavailable, timed out, or returned a non-OK result."""
+    """A sim_control service was unavailable, timed out, or returned a non-OK result. `code` is the
+    simulation_interfaces Result code when the service answered with one (e.g. 2 RESULT_NOT_FOUND), else None."""
+
+    def __init__(self, message: str, code: Optional[int] = None) -> None:
+        super().__init__(message)
+        self.code: Optional[int] = code
 
 
 class SimAdapter:
@@ -55,7 +60,7 @@ class SimAdapter:
     @staticmethod
     def _require_ok(name: str, result, extra_ok: Sequence[int] = ()) -> None:
         if result.result != RESULT_OK and result.result not in extra_ok:
-            raise SimControlError(f"{name}: result {result.result} {result.error_message!r}")
+            raise SimControlError(f"{name}: result {result.result} {result.error_message!r}", code=result.result)
 
     def get_state(self) -> str:
         from simulation_interfaces.srv import GetSimulationState
