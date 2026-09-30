@@ -198,6 +198,27 @@ def test_batch_record_is_on_disk_before_each_attempt(tmp_path: Path, monkeypatch
     assert rc == 0 and seen["state"] == "running" and seen["notes"] == ["running", "pending"]
 
 
+class GoneTerminal:
+    """stdout of a batch whose terminal window was closed: every write fails with EIO."""
+
+    def write(self, _text: str) -> int:
+        raise OSError(5, "Input/output error")
+
+    def flush(self) -> None:
+        raise OSError(5, "Input/output error")
+
+
+def test_attempt_is_recorded_before_it_is_echoed_to_the_terminal(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr(sys, "stdout", GoneTerminal())
+    monkeypatch.setattr(sys, "stderr", GoneTerminal())
+    with pytest.raises(OSError):
+        run_batch(tmp_path, monkeypatch, FakeRunner({"rc": 31}), scenarios="normal,bypass", repeats=1)
+    (bdir,) = tmp_path.glob("batch-*")
+    rec = json.loads((bdir / "batch.json").read_text(encoding="utf-8"))
+    assert rec["attempts"][0]["exit"] == 31 and "note" not in rec["attempts"][0]
+    assert rec["abort_index"] == 0 and "runner exit 31" in rec["abort_reason"]
+
+
 def test_report_that_cannot_be_written_is_an_error_exit(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(batch, "report_main", lambda argv: 2)
     rc, rec, _bdir = run_batch(tmp_path, monkeypatch, FakeRunner({"rc": 0}), scenarios="normal", repeats=1)

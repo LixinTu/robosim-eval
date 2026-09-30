@@ -11,7 +11,7 @@
 # batch.json then still says "running"; the attempt in progress is not killed and finishes its own close-out).
 # Exit: the batch's (0 all attempts ran; 31 aborted by an unconfirmed stop or a runner that did not close out;
 #       20 interrupted or capped; 2 usage/config error; 30 report not written); 2 when the environment scripts failed;
-#       137 killed 1 h after the cap.
+#       137 killed 1 h after the cap or a Ctrl-C.
 set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # the checkout this script is in
 set +u

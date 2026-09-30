@@ -162,15 +162,16 @@ def _run(scenarios: List[str], repeats: int, config: Path, batch_dir: Path, runs
         run_dir = _run_dir_from_log(log)
         att.pop("note")
         att.update(exit=rc, wall_s=round(time.time() - t0, 1), run_dir=str(run_dir) if run_dir else None)
-        print(json.dumps(att), flush=True)
         abort, why = close_out_problem(rc, run_dir)
         if abort:
             status = abort
             rec.update(abort_index=i, abort_reason=f"attempt {i} ({sc}, repeat {rep}): {why}")
-            print(f"batch aborted: {rec['abort_reason']}", file=sys.stderr, flush=True)
         elif rc == 20 and not stop["why"]:
             stop.update(why="runner exit 20", at=round(time.time() - t_start, 1))
-        _write_record(record_path, rec)
+        _write_record(record_path, rec)   # before any echo: a closed terminal makes the echo fail with EIO
+        print(json.dumps(att), flush=True)
+        if abort:
+            print(f"batch aborted: {rec['abort_reason']}", file=sys.stderr, flush=True)
     if stop["why"] and status == 0:
         status = 20
     rec.update(status=status, state={0: "completed", 20: "interrupted"}.get(status, "aborted"),
