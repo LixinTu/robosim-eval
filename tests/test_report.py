@@ -8,20 +8,23 @@ from robosim_eval.report import load_runs, render_html, summarize
 
 
 def make_run(root: Path, run_id: str, scenario: str, validation: str, outcome: str, safety="pass", data="complete",
-             accept_to_result_sim=15.0, arrival=0.26, reasons=(), reset_error=0.001):
+             accept_to_result_sim=15.0, arrival=0.26, reasons=(), reset_error=0.001, commit="abc123", recoveries=0):
     d = root / run_id
     d.mkdir(parents=True)
     result = {
         "execution_status": "completed", "task_outcome": outcome, "safety_status": safety, "data_status": data,
         "validation_status": validation, "verdict_reasons": {"fail": list(reasons), "inconclusive": [], "warnings": []},
         "timing": {"accept_to_result_sim_s": accept_to_result_sim, "accept_to_result_wall_s": accept_to_result_sim * 3},
-        "nav2_raw": {"terminal_status_name": "SUCCEEDED" if outcome == "reached" else "ABORTED", "error_code": 0},
+        "nav2_raw": {"terminal_status_name": "SUCCEEDED" if outcome == "reached" else "ABORTED", "error_code": 0,
+                     "recoveries": recoveries},
         "evaluator": {"arrival_error_m": arrival, "disallowed_contacts": []},
         "runner": {"scenario": scenario, "run_id": run_id, "nav2_ready_wall_s": 13.5,
                    "ground_truth": {"after_reset": {"x": -6.0 + reset_error, "y": -1.0, "yaw": 3.14159}}},
     }
+    (d / "events.jsonl").write_text(json.dumps({"event": "reset_check", "ok": True, "position_error_m": reset_error,
+                                                "yaw_error_rad": 0.0}) + "\n", encoding="utf-8")
     (d / "result.json").write_text(json.dumps(result), encoding="utf-8")
-    (d / "manifest.json").write_text(json.dumps({"run_id": run_id, "git": {"commit": "abc123", "dirty_tracked_files": False},
+    (d / "manifest.json").write_text(json.dumps({"run_id": run_id, "git": {"commit": commit, "dirty_tracked_files": False},
                                                  "versions": {"isaac_sim": "6.1.0", "navigation2": "1.3.13"}}),
                                      encoding="utf-8")
     return d
@@ -74,3 +77,34 @@ def test_run_dirs_without_result_are_reported_not_dropped(tmp_path: Path):
     (tmp_path / "normal-broken").mkdir()
     runs = load_runs(tmp_path)
     assert len(runs) == 10 and any(r.run_id == "normal-broken" and r.validation == "missing" for r in runs)
+
+
+def test_counts_are_written_as_text_not_python_dicts(tmp_path: Path):
+    html = render_html(load_runs(batch(tmp_path)), title="t")
+    assert "pass 2, fail 1" in html and "{&#x27;" not in html and "{'" not in html
+
+
+def test_every_commit_in_the_batch_is_listed_with_its_run_count(tmp_path: Path):
+    batch(tmp_path)
+    make_run(tmp_path, "normal-9", "normal", "pass", "reached", commit="def456")
+    html = render_html(load_runs(tmp_path), title="t")
+    assert "abc123" in html and "def456" in html and "9 runs" in html and "1 run)" in html
+
+
+def test_nav2_recoveries_are_shown_per_run_and_counted_per_scenario(tmp_path: Path):
+    batch(tmp_path)
+    make_run(tmp_path, "normal-9", "normal", "pass", "reached", recoveries=5)
+    runs = load_runs(tmp_path)
+    assert summarize(runs)["normal"]["runs_with_nav2_recoveries"] == 1
+    assert "recoveries" in render_html(runs, title="t")
+
+
+def test_reset_error_comes_from_the_recorded_reset_check(tmp_path: Path):
+    make_run(tmp_path, "normal-0", "normal", "pass", "reached", reset_error=0.00007)
+    (run,) = load_runs(tmp_path)
+    assert run.reset_error_m == 0.00007
+
+
+def test_distance_column_is_labelled_as_final_distance_to_goal(tmp_path: Path):
+    html = render_html(load_runs(batch(tmp_path)), title="t")
+    assert "final distance to goal" in html

@@ -13,7 +13,6 @@ import base64
 import csv
 import html
 import json
-import math
 import statistics
 import sys
 from collections import Counter, OrderedDict
@@ -45,6 +44,7 @@ class RunRecord:
     reset_error_m: Optional[float]
     collisions: int
     manifest: Dict[str, Any] = field(default_factory=dict)
+    recoveries: Optional[int] = None
 
 
 def _load(path: Path) -> Optional[Dict[str, Any]]:
@@ -52,6 +52,19 @@ def _load(path: Path) -> Optional[Dict[str, Any]]:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
+
+
+def _reset_error(run_dir: Path) -> Optional[float]:
+    """Ground-truth distance to the spawn after the reset, as the runner recorded it (events.jsonl reset_check)."""
+    try:
+        with open(run_dir / "events.jsonl", encoding="utf-8") as f:
+            for line in f:
+                ev = json.loads(line)
+                if ev.get("event") == "reset_check":
+                    return ev.get("position_error_m")
+    except (OSError, ValueError):
+        return None
+    return None
 
 
 def load_runs(batch_dir: Path) -> List[RunRecord]:
@@ -65,8 +78,6 @@ def load_runs(batch_dir: Path) -> List[RunRecord]:
             continue
         vr = r.get("verdict_reasons") or {}
         ev, tm, nav = r.get("evaluator") or {}, r.get("timing") or {}, r.get("nav2_raw") or {}
-        after = ((r.get("runner") or {}).get("ground_truth") or {}).get("after_reset")
-        reset_err = math.hypot(after["x"] + 6.0, after["y"] + 1.0) if after else None
         runs.append(RunRecord(
             run_id=d.name, path=d, scenario=scenario, validation=r.get("validation_status", "missing"),
             outcome=r.get("task_outcome", "unknown"), safety=r.get("safety_status", "unknown"),
@@ -74,8 +85,8 @@ def load_runs(batch_dir: Path) -> List[RunRecord]:
             reasons=list(vr.get("fail", [])) + list(vr.get("inconclusive", [])), warnings=list(vr.get("warnings", [])),
             arrival_error_m=ev.get("arrival_error_m"), accept_to_result_sim_s=tm.get("accept_to_result_sim_s"),
             accept_to_result_wall_s=tm.get("accept_to_result_wall_s"), nav2_status=nav.get("terminal_status_name"),
-            nav2_error_code=nav.get("error_code"), reset_error_m=reset_err,
-            collisions=len(ev.get("disallowed_contacts") or []), manifest=m))
+            nav2_error_code=nav.get("error_code"), reset_error_m=_reset_error(d),
+            collisions=len(ev.get("disallowed_contacts") or []), manifest=m, recoveries=nav.get("recoveries")))
     return runs
 
 
@@ -96,9 +107,22 @@ def summarize(runs: List[RunRecord]) -> Dict[str, Dict[str, Any]]:
             "mean_basis": f"reached runs only ({len(reached)} of {len(rs)})",
             "max_arrival_error_m": max((r.arrival_error_m for r in rs if r.arrival_error_m is not None), default=None),
             "collisions": sum(r.collisions for r in rs),
+            "runs_with_nav2_recoveries": sum(1 for r in rs if r.recoveries),
             "max_reset_error_m": max((r.reset_error_m for r in rs if r.reset_error_m is not None), default=None),
         }
     return out
+
+
+def _counts(d: Dict[str, int]) -> str:
+    return html.escape(", ".join(f"{k} {v}" for k, v in d.items()))
+
+
+def _commits(runs: List[RunRecord]) -> str:
+    """Every (commit, dirty) pair in the batch with its run count; a batch can span commits."""
+    seen = Counter((r.manifest.get("git", {}).get("commit"), r.manifest.get("git", {}).get("dirty_tracked_files"))
+                   for r in runs)
+    return "; ".join(f"<code>{_fmt(c)}</code> (dirty tracked files: {_fmt(dirty)}; {n} run{'s' if n != 1 else ''})"
+                     for (c, dirty), n in seen.items())
 
 
 def _fmt(v: Any, nd: int = 3) -> str:
@@ -150,13 +174,14 @@ def _map_svg(runs: List[RunRecord]) -> str:
 def render_html(runs: List[RunRecord], title: str) -> str:
     s = summarize(runs)
     m = next((r.manifest for r in runs if r.manifest), {})
-    git, ver = m.get("git", {}), m.get("versions", {})
+    ver = m.get("versions", {})
     rows = []
     for name, st in s.items():
-        rows.append(f"<tr><th>{html.escape(name)}</th><td>{st['attempts']}</td><td>{_fmt(st['validation'])}</td>"
-                    f"<td>{_fmt(st['outcome'])}</td><td>{_fmt(st['safety'])}</td><td>{_fmt(st['data'])}</td>"
+        rows.append(f"<tr><th>{html.escape(name)}</th><td>{st['attempts']}</td><td>{_counts(st['validation'])}</td>"
+                    f"<td>{_counts(st['outcome'])}</td><td>{_counts(st['safety'])}</td><td>{_counts(st['data'])}</td>"
                     f"<td>{_fmt(st['mean_accept_to_result_sim_s_success_only'], 2)} s<br><small>{st['mean_basis']}"
                     f"</small></td><td>{_fmt(st['max_arrival_error_m'])} m</td><td>{st['collisions']}</td>"
+                    f"<td>{st['runs_with_nav2_recoveries']}</td>"
                     f"<td>{_fmt(st['max_reset_error_m'], 4)} m</td></tr>")
     detail = []
     for name in s:
@@ -166,6 +191,7 @@ def render_html(runs: List[RunRecord], title: str) -> str:
                           f"<td>{html.escape(r.validation)}</td><td>{html.escape(r.outcome)}</td><td>{html.escape(r.safety)}"
                           f"</td><td>{html.escape(r.data)}</td><td>{_fmt(r.nav2_status)} / {_fmt(r.nav2_error_code)}</td>"
                           f"<td>{_fmt(r.arrival_error_m)}</td><td>{_fmt(r.accept_to_result_sim_s, 2)}</td>"
+                          f"<td>{_fmt(r.recoveries)}</td>"
                           f"<td>{_fmt(r.reset_error_m, 4)}</td></tr>")
     failures = [f"<li><b>{html.escape(r.run_id)}</b> ({html.escape(r.validation)}): "
                 f"{html.escape('; '.join(r.reasons) or 'no reason recorded')}</li>"
@@ -178,17 +204,19 @@ tr.bad td{{background:#fbeaea}}tr.warn td{{background:#fff7e0}}small{{color:#555
 <h1>{html.escape(title)}</h1>
 <p class="note">Engineering trial of {len(runs)} attempts; not a navigation performance claim. Each scenario is reported as its own
 group; there is no merged success rate. Times are simulation seconds from goal acceptance to Nav2's result, averaged over
-reached runs only. Arrival error uses the sim_control ground truth. Every run starts with a sim_control reset whose
-ground-truth distance to the spawn is shown (reset evidence).</p>
-<p>Commit <code>{_fmt(git.get('commit'))}</code> (dirty tracked files: {_fmt(git.get('dirty_tracked_files'))}),
+reached runs only. The final distance to the goal uses the sim_control ground truth. Every run starts with a
+sim_control reset whose ground-truth distance to the spawn is shown (reset evidence).</p>
+<p>Commits: {_commits(runs)}.<br>
 Isaac Sim {_fmt(ver.get('isaac_sim'))}, Nav2 {_fmt(ver.get('navigation2'))}, ROS {_fmt(ver.get('ros_distro'))}.</p>
 <h2>Per scenario</h2><table><tr><th>scenario</th><th>attempts</th><th>validation</th><th>task outcome</th><th>safety</th>
-<th>data</th><th>mean time (success only)</th><th>max arrival error</th><th>collisions</th><th>max reset error</th></tr>
+<th>data</th><th>mean time (success only)</th><th>max final distance to goal (ground truth)</th><th>collisions</th>
+<th>runs with Nav2 recoveries</th><th>max reset error</th></tr>
 {''.join(rows)}</table>
 <h2>Trajectories</h2>{_map_svg(runs)}
 <h2>Failure and inconclusive cases</h2><ul>{''.join(failures) or '<li>none</li>'}</ul>
 <h2>All attempts</h2><table><tr><th>run</th><th>scenario</th><th>validation</th><th>outcome</th><th>safety</th><th>data</th>
-<th>Nav2 status / error</th><th>arrival error (m)</th><th>accept to result (sim s)</th><th>reset error (m)</th></tr>
+<th>Nav2 status / error</th><th>final distance to goal (m, ground truth)</th><th>accept to result (sim s)</th>
+<th>Nav2 recoveries</th><th>reset error (m)</th></tr>
 {''.join(detail)}</table></body></html>"""
 
 
