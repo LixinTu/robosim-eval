@@ -1,21 +1,69 @@
 #!/usr/bin/env bash
 # map_overview.sh — RoboSim Eval D0d: print a coarse ASCII overview of the static map with the robot's current
 # map-frame position (from TF map->base_link) and optional candidate points, to choose a reachable goal by eye.
-#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/map_overview.sh [<out_file>] [x,y ...]
+#   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/map_overview.sh [--nav2-run <run_dir> | --map <yaml>]
+#        [<out_file>] [x,y ...]
+# The map is the one Nav2 loaded: map_yaml in <run_dir>/nav2-launch.meta (start_nav2.sh), checked against the recorded
+# sha256; <run_dir> defaults to the out file's directory. --map names a map explicitly. Without either: exit 8.
 # Legend: '#' occupied, '.' free, '?' unknown, 'R' robot, digits = candidate points in argument order. Read-only.
-# Exit: the rendering step's status (0 = overview written).
+# Exit: 8 the map is unknown or changed since the launch (nothing rendered); otherwise the rendering step's status
+#       (0 = overview written).
 set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
+MAP_ARG=""; NAV2_RUN=""
+while [[ $# -gt 0 ]]; do case "$1" in
+  --map) MAP_ARG="${2:?--map needs a map yaml}"; shift 2;; --nav2-run) NAV2_RUN="${2:?--nav2-run needs a run dir}"; shift 2;;
+  *) break;; esac; done
 OUT="${1:-/dev/stdout}"; shift || true
+if [[ -z "$MAP_ARG" && -z "$NAV2_RUN" && "$OUT" != /dev/stdout && -f "$(dirname "$OUT")/nav2-launch.meta" ]]; then
+  NAV2_RUN="$(dirname "$OUT")"
+fi
 set +u
 # shellcheck disable=SC1091
 source "$REPO/scripts/wsl/ros_env.sh" --full || exit 2
 # shellcheck disable=SC1091
 source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
-SHARE=$(ros2 pkg prefix carter_navigation)/share/carter_navigation
+# The map to check against (finding codex-b-7): --map as given, otherwise the map_yaml that start_nav2.sh recorded in
+# nav2-launch.meta, verified by its sha256 (yaml and image) so a map changed since the launch is noticed.
+meta_value() { sed -n -E "s/^(.* )?$1=([^ ]*).*/\2/p" "$META" 2>/dev/null | tail -1; }
+MAP_SHA=""; IMG_SHA=""
+if [[ -n "$MAP_ARG" ]]; then
+  MAPYAML="$MAP_ARG"; MAP_FROM="--map"
+else
+  META="$NAV2_RUN/nav2-launch.meta"
+  if [[ -z "$NAV2_RUN" || ! -f "$META" ]]; then
+    echo "ERROR: cannot tell which map Nav2 loaded: ${NAV2_RUN:-the directory of the out file} has no nav2-launch.meta;"
+    echo "       pass --nav2-run <run_dir given to start_nav2.sh> or --map <map yaml>"; exit 8
+  fi
+  MAPYAML=$(meta_value map_yaml); MAP_SHA=$(meta_value map_sha256); IMG_SHA=$(meta_value map_image_sha256)
+  if [[ -z "$MAPYAML" || -z "$MAP_SHA" || -z "$IMG_SHA" ]]; then
+    echo "ERROR: $META records no map identity (written by an older start_nav2.sh); pass --map <map yaml>"; exit 8
+  fi
+  MAP_FROM="$META"
+fi
+echo "map: $MAPYAML (from $MAP_FROM)"
+python3 - "$MAPYAML" "$MAP_SHA" "$IMG_SHA" <<'PY' || exit 8
+import hashlib, os, sys
+import yaml
+path, want_yaml, want_image = sys.argv[1:4]
+def sha(p):
+    with open(p, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()
+try:
+    with open(path) as f:
+        image = os.path.join(os.path.dirname(path), yaml.safe_load(f)['image'])
+    got_yaml, got_image = sha(path), sha(image)
+except (OSError, yaml.YAMLError, KeyError, TypeError) as exc:
+    print(f"ERROR: map {path} cannot be read ({type(exc).__name__}: {exc})")
+    sys.exit(1)
+if want_yaml and (got_yaml, got_image) != (want_yaml, want_image):
+    print(f"ERROR: map {path} changed since Nav2 started: sha256 now yaml {got_yaml} image {got_image}, "
+          f"recorded yaml {want_yaml} image {want_image}")
+    sys.exit(1)
+PY
 ROBOT=$(timeout 6 ros2 run tf2_ros tf2_echo map base_link 2>/dev/null | grep -m1 'Translation' | sed -E 's/.*\[([^]]*)\].*/\1/')
-python3 - "$SHARE/maps/carter_warehouse_navigation.yaml" "${ROBOT:-}" "$@" > "$OUT" <<'PY'
+python3 - "$MAPYAML" "${ROBOT:-}" "$@" > "$OUT" <<'PY'
 import sys, os, yaml
 from PIL import Image
 mapyaml, robot = sys.argv[1], sys.argv[2]

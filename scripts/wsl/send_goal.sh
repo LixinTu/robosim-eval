@@ -2,21 +2,29 @@
 # send_goal.sh — RoboSim Eval D0d: check a map-frame pose against the static map, then (unless --check-only) send it as
 # ONE NavigateToPose goal through the CLI action client and keep the raw feedback/result (plan doc B6.4-5, A5).
 #   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/send_goal.sh <attempt_dir> <x> <y> <yaw_rad> [--check-only]
-#        [--action /navigate_to_pose] [--settle 6]
-# The map is read from the pinned carter_navigation share (yaml origin/resolution + png); a pose is "free" when the
-# map pixel value is above the free threshold. Also prints a small ASCII crop around the pose (#=occupied .=free ?=unknown).
+#        [--action /navigate_to_pose] [--settle 6] [--nav2-run <run_dir> | --map <map yaml>]
+# The map is the one Nav2 loaded for this run: map_yaml in <run_dir>/nav2-launch.meta (written by start_nav2.sh;
+# <run_dir> defaults to <attempt_dir> or, failing that, its parent), checked against the recorded sha256; --map names
+# a map explicitly (e.g. --check-only before Nav2 runs). A pose is "free" when the map pixel value is above the free
+# threshold. Also prints a small ASCII crop around the pose (#=occupied .=free ?=unknown).
 # Output: <attempt_dir>/goal-<timestamp>.txt: first line "send_goal start ... x= y= yaw=" (the goal actually sent, read
 # by analyze_attempt.py), then the wall-timestamped client output (feedback + result), last line with the client's real
 # exit code. Only the summary lines are printed to the terminal. After the result the script waits --settle seconds
 # (default 6, wall) so a running recorder also captures the robot coming to rest (stop-still window, plan doc A5).
 # Exit: 0 goal SUCCEEDED; 2 bad arguments; 3 pose not free on the map; 4 action server not found;
-#       5 goal finished but not SUCCEEDED (ABORTED/CANCELED/unknown); 6 goal rejected; other = action client exit code
+#       5 goal finished but not SUCCEEDED (ABORTED/CANCELED/unknown); 6 goal rejected; 8 the map Nav2 loaded is unknown
+#       or changed since the launch (nothing sent); other = action client exit code
 #       (e.g. 124 when the 330 s client timeout fired).
 set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 ATT="${1:?attempt dir}"; X="${2:?x}"; Y="${3:?y}"; YAW="${4:?yaw rad}"; shift 4
-CHECK_ONLY=no; ACTION=/navigate_to_pose; SETTLE=6
-while [[ $# -gt 0 ]]; do case "$1" in --check-only) CHECK_ONLY=yes;; --action) ACTION="$2"; shift;; --settle) SETTLE="$2"; shift;; *) echo "unknown arg $1"; exit 2;; esac; shift; done
+CHECK_ONLY=no; ACTION=/navigate_to_pose; SETTLE=6; MAP_ARG=""; NAV2_RUN=""
+while [[ $# -gt 0 ]]; do case "$1" in --check-only) CHECK_ONLY=yes;; --action) ACTION="$2"; shift;; --settle) SETTLE="$2"; shift;;
+  --map) MAP_ARG="${2:?--map needs a map yaml}"; shift;; --nav2-run) NAV2_RUN="${2:?--nav2-run needs a run dir}"; shift;;
+  *) echo "unknown arg $1"; exit 2;; esac; shift; done
+if [[ -z "$MAP_ARG" && -z "$NAV2_RUN" ]]; then
+  for d in "$ATT" "$(dirname "$ATT")"; do if [[ -f "$d/nav2-launch.meta" ]]; then NAV2_RUN="$d"; break; fi; done
+fi
 if ! python3 -c 'import sys, math; v = [float(a) for a in sys.argv[1:]]; sys.exit(0 if all(math.isfinite(x) for x in v) else 1)' "$X" "$Y" "$YAW" "$SETTLE"; then
   echo "ERROR: x, y, yaw (radians) and --settle must be finite numbers (got x=$X y=$Y yaw=$YAW settle=$SETTLE)"; exit 2
 fi
@@ -27,8 +35,44 @@ source "$REPO/scripts/wsl/ros_env.sh" --full || exit 2
 # shellcheck disable=SC1091
 source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
-SHARE=$(ros2 pkg prefix carter_navigation)/share/carter_navigation
-MAPYAML="$SHARE/maps/carter_warehouse_navigation.yaml"
+# The map to check against (finding codex-b-7): --map as given, otherwise the map_yaml that start_nav2.sh recorded in
+# nav2-launch.meta, verified by its sha256 (yaml and image) so a map changed since the launch is noticed.
+meta_value() { sed -n -E "s/^(.* )?$1=([^ ]*).*/\2/p" "$META" 2>/dev/null | tail -1; }
+MAP_SHA=""; IMG_SHA=""
+if [[ -n "$MAP_ARG" ]]; then
+  MAPYAML="$MAP_ARG"; MAP_FROM="--map"
+else
+  META="$NAV2_RUN/nav2-launch.meta"
+  if [[ -z "$NAV2_RUN" || ! -f "$META" ]]; then
+    echo "ERROR: cannot tell which map Nav2 loaded: ${NAV2_RUN:-$ATT (and its parent)} has no nav2-launch.meta;"
+    echo "       pass --nav2-run <run_dir given to start_nav2.sh> or --map <map yaml>"; exit 8
+  fi
+  MAPYAML=$(meta_value map_yaml); MAP_SHA=$(meta_value map_sha256); IMG_SHA=$(meta_value map_image_sha256)
+  if [[ -z "$MAPYAML" || -z "$MAP_SHA" || -z "$IMG_SHA" ]]; then
+    echo "ERROR: $META records no map identity (written by an older start_nav2.sh); pass --map <map yaml>"; exit 8
+  fi
+  MAP_FROM="$META"
+fi
+echo "map: $MAPYAML (from $MAP_FROM)"
+python3 - "$MAPYAML" "$MAP_SHA" "$IMG_SHA" <<'PY' || exit 8
+import hashlib, os, sys
+import yaml
+path, want_yaml, want_image = sys.argv[1:4]
+def sha(p):
+    with open(p, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()
+try:
+    with open(path) as f:
+        image = os.path.join(os.path.dirname(path), yaml.safe_load(f)['image'])
+    got_yaml, got_image = sha(path), sha(image)
+except (OSError, yaml.YAMLError, KeyError, TypeError) as exc:
+    print(f"ERROR: map {path} cannot be read ({type(exc).__name__}: {exc})")
+    sys.exit(1)
+if want_yaml and (got_yaml, got_image) != (want_yaml, want_image):
+    print(f"ERROR: map {path} changed since Nav2 started: sha256 now yaml {got_yaml} image {got_image}, "
+          f"recorded yaml {want_yaml} image {want_image}")
+    sys.exit(1)
+PY
 
 python3 - "$MAPYAML" "$X" "$Y" <<'PY' || { echo "pose check FAILED (see above)"; exit 3; }
 import sys, math, yaml, os
@@ -73,7 +117,7 @@ QZ=$(python3 -c 'import sys, math; print(math.sin(float(sys.argv[1]) / 2))' "$YA
 QW=$(python3 -c 'import sys, math; print(math.cos(float(sys.argv[1]) / 2))' "$YAW")
 GOAL="{pose: {header: {frame_id: map}, pose: {position: {x: $X, y: $Y, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: $QZ, w: $QW}}}}"
 OUT="$ATT/goal-$(date +%H%M%S).txt"
-echo "send_goal start $(date -Is) action=$ACTION frame=map x=$X y=$Y yaw=$YAW qz=$QZ qw=$QW sim_time_before=$(timeout 3 ros2 topic echo --once --field clock.sec /clock 2>/dev/null | tr -d '\n-')" > "$OUT"
+echo "send_goal start $(date -Is) action=$ACTION frame=map x=$X y=$Y yaw=$YAW qz=$QZ qw=$QW map=$MAPYAML sim_time_before=$(timeout 3 ros2 topic echo --once --field clock.sec /clock 2>/dev/null | tr -d '\n-')" > "$OUT"
 timeout -s INT 330 ros2 action send_goal "$ACTION" nav2_msgs/action/NavigateToPose "$GOAL" --feedback 2>&1 \
   | python3 -u -c 'import sys, datetime
 for line in sys.stdin: print(datetime.datetime.now().isoformat(timespec="milliseconds"), line.rstrip())' >> "$OUT"

@@ -9,7 +9,11 @@
 # to the session never kills it before it has recorded the exit code; the trap is reset for the launch itself.
 # Ownership record for stop_nav2.sh: boot_id, the wrapper's start time (/proc/<pid>/stat field 22) and its command line
 # (which contains this run dir's nav2.exit path) are written to nav2-launch.meta.
-# Exit: 0 started; 2 environment; 3 refused (already running or cannot check); 4 launch did not start.
+# Map record for send_goal.sh and map_overview.sh (finding codex-b-7): the map this launch loads (the launch file's
+# default, or the last map:= argument) is written to nav2-launch.meta as map_yaml= with the sha256 of its yaml and
+# image, so goals are checked against the map Nav2 actually uses and a later change of the files is noticed.
+# Exit: 0 started; 2 environment (including an unreadable map); 3 refused (already running or cannot check);
+#       4 launch did not start.
 set -uo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 RUN_DIR="${1:-$REPO/artifacts/d0d/$(date +%Y%m%d-%H%M%S)}"
@@ -21,6 +25,28 @@ source "$REPO/scripts/wsl/ros_env.sh" --full || exit 2   # /opt/ros/jazzy + pinn
 # shellcheck disable=SC1091
 source "$REPO/scripts/wsl/dds_env.sh" || exit 2
 set -u
+
+OVERLAY=$(ros2 pkg prefix carter_navigation) || { echo "ERROR: package carter_navigation not found (ros2 pkg prefix)"; exit 2; }
+MAP="$OVERLAY/share/carter_navigation/maps/carter_warehouse_navigation.yaml"   # the launch file's default `map`
+for a in "$@"; do if [[ "$a" == map:=* ]]; then MAP="${a#map:=}"; fi; done   # ros2 launch: the last map:= wins
+[[ "$MAP" == /* ]] || MAP="$PWD/$MAP"
+if [[ "$MAP" =~ [[:space:]] ]]; then echo "ERROR: map path contains whitespace (nav2-launch.meta is space-separated): $MAP"; exit 2; fi
+MAP_ID=$(python3 - "$MAP" <<'PY'
+import hashlib, os, sys
+import yaml
+path = sys.argv[1]
+def sha(p):
+    with open(p, 'rb') as f:
+        return hashlib.sha256(f.read()).hexdigest()
+try:
+    with open(path) as f:
+        image = os.path.join(os.path.dirname(path), yaml.safe_load(f)['image'])
+    print(f"map_yaml={path} map_sha256={sha(path)} map_image={image} map_image_sha256={sha(image)}")
+except (OSError, yaml.YAMLError, KeyError, TypeError) as exc:
+    print(f"{type(exc).__name__}: {exc}")
+    sys.exit(1)
+PY
+) || { echo "ERROR: cannot read the map Nav2 would load ($MAP): $MAP_ID"; exit 2; }
 
 starttime_of() { sed -E 's/^.*\) //' "/proc/$1/stat" 2>/dev/null | awk '{print $20}'; }
 
@@ -44,7 +70,8 @@ rm -f "$RUN_DIR/nav2.exit" "$RUN_DIR/nav2.pid"
   echo "start_wall=$(date -Is)"
   echo "cmd=ros2 launch carter_navigation carter_navigation.launch.xml use_sim_time:=true $*"
   echo "env RMW_IMPLEMENTATION=$RMW_IMPLEMENTATION ROS_DOMAIN_ID=$ROS_DOMAIN_ID FASTRTPS_DEFAULT_PROFILES_FILE=$FASTRTPS_DEFAULT_PROFILES_FILE DISPLAY=${DISPLAY:-unset}"
-  echo "overlay=$(ros2 pkg prefix carter_navigation)"
+  echo "overlay=$OVERLAY"
+  echo "$MAP_ID"
 } > "$RUN_DIR/nav2-launch.meta"
 
 # `env --default-signal=INT,TERM`: a non-interactive shell starts `&` jobs with SIGINT ignored, and that inherited

@@ -26,7 +26,7 @@ t_new() {
   [[ -f "$R/scripts/wsl/dds_env.sh" ]] || printf '%s\n' 'echo "stub dds_env.sh"' 'export FASTRTPS_DEFAULT_PROFILES_FILE=/dev/null' 'return 0' > "$R/scripts/wsl/dds_env.sh"
   echo "11111111-2222-3333-4444-555555555555" > "$T/proc/sys/kernel/random/boot_id"
   : > "$T/calls.log"; : > "$T/signals.log"
-  export ROBOSIM_PROC_ROOT="$T/proc" FAKEPROC="$TESTS_SHELL/fakeproc.py" REAL_PY FAKE_T="$T"
+  export ROBOSIM_PROC_ROOT="$T/proc" FAKEPROC="$TESTS_SHELL/fakeproc.py" REAL_PY REAL_SLEEP FAKE_T="$T"
   local stub
   for stub in pgrep pkill kill; do
     printf '#!/bin/bash\nexec "%s" "%s" %s "$@"\n' "$REAL_PY" "$TESTS_SHELL/fakeproc.py" "$stub" > "$T/bin/$stub"
@@ -34,7 +34,19 @@ t_new() {
   printf '#!/bin/bash\nexec "%s" "%s" spawn "$$" "$@"\n' "$REAL_PY" "$TESTS_SHELL/fakeproc.py" > "$T/bin/setsid"
   cat > "$T/bin/sleep" <<'EOF'
 #!/bin/bash
+# sleep stub: no waiting, except that the caller's unfinished background jobs (the stub setsid spawns) are allowed to
+# finish first (real time, at most 5 s), so the scripts' polling loops see their result deterministically.
 echo "sleep $*" >> "$FAKE_T/calls.log"
+for _ in $(seq 1 500); do
+  busy=0
+  for p in $(/usr/bin/pgrep -P "$PPID"); do
+    [[ $p == "$$" ]] && continue
+    st=$(sed -E 's/^.*\) //' "/proc/$p/stat" 2>/dev/null | cut -c1)
+    [[ -n "$st" && "$st" != Z ]] && busy=1
+  done
+  [[ $busy -eq 0 ]] && break
+  "$REAL_SLEEP" 0.01
+done
 exit "${FAKE_SLEEP_RC:-0}"
 EOF
   cat > "$T/bin/timeout" <<'EOF'
@@ -82,6 +94,7 @@ EOF
 # mkproc <pid> <sid> <ppid> <start> <json spec>: add a fake process (see fakeproc.py for the spec keys).
 mkproc() { "$REAL_PY" "$FAKEPROC" mk "$@"; }
 alive_fake() { [[ -d "$ROBOSIM_PROC_ROOT/$1" ]]; }
+fake_clear() { rm -rf "$ROBOSIM_PROC_ROOT"/[0-9]*; }   # every fake process gone (as after a clean stop)
 
 check() { # check <description> <expected> <actual>
   if [[ "$2" == "$3" ]]; then echo "PASS  $1"; else echo "FAIL  $1: expected '$2', got '$3'"; FAILS=$((FAILS + 1)); fi
