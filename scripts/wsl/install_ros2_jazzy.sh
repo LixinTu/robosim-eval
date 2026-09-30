@@ -11,18 +11,20 @@
 # locale steps only run when the current locale is not UTF-8; navigation packages needed by the pinned Isaac
 # workspace are added. Re-running is safe: apt only installs what is missing.
 #
-# Log: $REPO/artifacts/d0b/install-jazzy.log ; exit code: .../install-jazzy.exit
+# Log: a NEW directory <repo>/artifacts/setup-<time>/install-jazzy.log, exit code next to it in install-jazzy.exit,
+# so a re-run never appends to or overwrites the recorded D0b evidence in artifacts/d0b (finding critic-5).
+# ROBOSIM_INSTALL_LOG=<file>.log writes exactly there instead (exit code in <file>.exit).
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 
 WITH_UPGRADE=no
 [[ "${1:-}" == "--with-upgrade" ]] && WITH_UPGRADE=yes
 
-LOG_DIR="$REPO/artifacts/d0b"
-mkdir -p "$LOG_DIR"
-LOG="$LOG_DIR/install-jazzy.log"
+LOG="${ROBOSIM_INSTALL_LOG:-$REPO/artifacts/setup-$(date +%Y%m%d-%H%M%S)/install-jazzy.log}"
+EXIT_FILE="${LOG%.log}.exit"
+mkdir -p "$(dirname "$LOG")"
 exec > >(tee -a "$LOG") 2>&1
-trap 'rc=$?; echo; echo "=== install_ros2_jazzy.sh end $(date -Is) exit=$rc ==="; echo "$rc" > "$LOG_DIR/install-jazzy.exit"' EXIT
+trap 'rc=$?; echo; echo "=== install_ros2_jazzy.sh end $(date -Is) exit=$rc ==="; echo "$rc" > "$EXIT_FILE"' EXIT
 
 echo "=== install_ros2_jazzy.sh start $(date -Is) user=$(id -un) with_upgrade=$WITH_UPGRADE ==="
 step() { echo; echo "--- [$(date +%T)] $* ---"; }

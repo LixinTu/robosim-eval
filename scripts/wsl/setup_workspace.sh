@@ -4,16 +4,16 @@
 # need to install something, the script stops and prints the list instead of calling sudo).
 #   bash /mnt/d/RoboSim-Eval/scripts/wsl/setup_workspace.sh
 # Idempotent: an existing checkout is verified (tag commit, clean tree, submodules) and reused, never force-reset.
-# Log: $REPO/artifacts/d0b/setup-workspace.log ; exit code: .../setup-workspace.exit
+# Log: a NEW directory <repo>/artifacts/setup-<time>/setup-workspace.log, exit code next to it in setup-workspace.exit,
+# so a re-run never appends to or overwrites the recorded D0b evidence in artifacts/d0b (finding critic-5).
+# ROBOSIM_SETUP_LOG=<file>.log writes exactly there instead (exit code in <file>.exit).
 set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # this checkout (a worktree runs its own code)
 
 EXPECTED_COMMIT=a9e8471ee901bc2332c1e4aca94ac580713ca3ab
 TAG=IsaacSim-6.1.0
 WS_ROOT="${ROBOSIM_VENDOR_ROOT:-$HOME/robotics/vendor/isaac-ros-6.1}"
-LOG_DIR="$REPO/artifacts/d0b"
-mkdir -p "$LOG_DIR"
-LOG="${ROBOSIM_SETUP_LOG:-$LOG_DIR/setup-workspace.log}"            # override to re-run without touching D0b evidence
+LOG="${ROBOSIM_SETUP_LOG:-$REPO/artifacts/setup-$(date +%Y%m%d-%H%M%S)/setup-workspace.log}"
 EXIT_FILE="${LOG%.log}.exit"
 mkdir -p "$(dirname "$LOG")"
 exec > >(tee -a "$LOG") 2>&1
