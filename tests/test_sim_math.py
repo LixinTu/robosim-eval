@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import math
+import sys
+import types
+from types import SimpleNamespace as NS
 
 import pytest
 
@@ -89,3 +92,45 @@ def test_reset_check_fails_closed_on_non_finite_ground_truth(pose, v, w):
     res = check_reset(pose, v, w, SPAWN)
     assert not res.ok
     assert any("not finite" in r for r in res.reasons)
+
+
+def _entity_state(frame_id: str) -> NS:
+    """Duck-typed simulation_interfaces/EntityState as Isaac's GetEntityState fills it (D5 normal run, at stop)."""
+    return NS(header=NS(frame_id=frame_id),
+              pose=NS(position=NS(x=0.032, y=-1.037, z=0.1), orientation=NS(x=0.0, y=0.0, z=0.0, w=1.0)),
+              twist=NS(linear=NS(x=0.3, y=0.4, z=0.0), angular=NS(x=0.0, y=0.0, z=-0.2)))
+
+
+def _adapter_returning(monkeypatch, state: NS):
+    """SimAdapter whose service call returns a fixed GetEntityState response (no ROS: the srv module is faked)."""
+    srv = types.ModuleType("simulation_interfaces.srv")
+    srv.GetEntityState = NS(Request=lambda: NS(entity=""))
+    pkg = types.ModuleType("simulation_interfaces")
+    pkg.srv = srv
+    monkeypatch.setitem(sys.modules, "simulation_interfaces", pkg)
+    monkeypatch.setitem(sys.modules, "simulation_interfaces.srv", srv)
+    from robosim_eval.sim_adapter import RESULT_OK, SimAdapter
+    sim = SimAdapter(node=None)
+    monkeypatch.setattr(sim, "_call", lambda _cls, _name, _req, timeout=None: NS(
+        result=NS(result=RESULT_OK, error_message=""), state=state))
+    return sim
+
+
+def test_ground_truth_is_labelled_world_not_the_robot_name(monkeypatch):
+    # Isaac sets header.frame_id to the prim name ("nova_carter") although the pose comes from get_world_poses; the
+    # message definition reads frame_id as the frame of the pose, so the record must say world and keep Isaac's value
+    rec = _adapter_returning(monkeypatch, _entity_state("nova_carter")).entity_state("/World/Nova_Carter_ROS/chassis_link")
+    assert rec["frame"] == "world"
+    assert rec["isaac_frame_id"] == "nova_carter"
+    assert "ground truth" in rec["source"] and "world" in rec["source"]
+    # the keys older records already carry keep their meaning
+    assert rec["entity"] == "/World/Nova_Carter_ROS/chassis_link" and isinstance(rec["received_wall"], float)
+    assert (rec["x"], rec["y"], rec["z"]) == (0.032, -1.037, 0.1)
+    assert rec["yaw"] == pytest.approx(0.0) and rec["linear_speed"] == pytest.approx(0.5)
+    assert rec["angular_speed"] == pytest.approx(0.2)
+
+
+def test_ground_truth_frame_is_world_when_isaac_leaves_it_empty(monkeypatch):
+    # EntityState.msg: "Empty frame defaults to world"
+    rec = _adapter_returning(monkeypatch, _entity_state("")).entity_state("/World/x")
+    assert rec["frame"] == "world" and rec["isaac_frame_id"] == ""
