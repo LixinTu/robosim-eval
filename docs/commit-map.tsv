@@ -1,0 +1,112 @@
+old_short	old_full	new_full	subject
+dbf67ce	dbf67cee7c386fcbfb5f9f6a58f47ff1db73061d	7ec76c15b3a2c3aa4656269cfc49941850a94fc1	chore: add reference documents as baseline
+c4fa3d8	c4fa3d8f57eb27296e769d417507e27cc2058afe	f236fba7f2ad631c4b2173621f6a269a8031b93e	chore(harness): bootstrap plan, entry files, D0a environment evidence
+19ab9ad	19ab9adb6c23e9bf997770936b9a64febcab4906	ec369ecc2a9aa52c9955fc04369fa31e23270191	feat(scripts): add install script, env scripts, Fast DDS profile and Isaac start script
+9456d3f	9456d3f4a363cf87205708c6b64b7bb6cc7dd59f	a588e2c7e62e7aeef55b9d9833bd4287ea1bb9dd	feat(scripts): add setup_workspace.sh to clone and build the pinned carter_navigation closure
+339502c	339502cb462609c71fc94ecb5a6d92e291b39106	099a8017c9e126e52a58eefb0085b87621b01585	feat(d0b): ROS 2 Jazzy installed, WSL comms and rviz2 verified, pinned workspace built
+b97de1b	b97de1b462b264452d75e3c283644f2ba0869c0b	f793efacc5d1a5238c23e8130853625e1f384d64	feat(d0c): Isaac relaunched with ROS 2 bridge, scene playing; discovery blocked by Windows Firewall
+0fa568d	0fa568d42a68a9528878907e8109a3ad2a36d8bd	eb21a13962f9ee7ad9d2e81409117c3ed1b623e7	feat(d0c): WSL receives Isaac data after firewall rule; clock, odom, TF, 3D lidar verified
+aa4fda2	aa4fda2fcba5a8b89e9d8b82e81f0dcd163968e7	a38a15739ed35779b366c1b7fc6dfbc3d4a4f8ba	feat(d0c): pause/resume test passed; D0c complete; add Nav2 start/stop/ready scripts for D0d
+d74d970	d74d9708161f6c5072933afab78e4121ef93d92a	69b958bbc87f37c00c21f04f781a5311c357b85d	feat(d0d): Nav2 launched and ready; recorder, goal sender and map overview scripts
+5f5782b	5f5782bd17d3288dfca73678ba2f82352573dcba	db753da4a6528b16d87a24b58bf3184314d65e42	feat(d0d): first real A->B navigation reached the goal; evidence and analysis
+6365dcb	6365dcbc586ea4d159d0f12a2bea6876954da5ba	7dc9eb2ed8251e60ece2ac6586b7773e6c916c89	feat(d0d): AMCL-independent arrival check, verified stop path, setup guide
+c73a214	c73a214f886aa225b23a05d25c89db9aa4097f52	bb7cc59c8a0516e992754e3010a15f908c85148f	docs(review): D0 independent review package (round 1)
+8bce97b	8bce97b2dbf8df078867b60c162591573b211ea0	77ccd870e3a95958106c4cbdbb7632b77c56eb98	docs(review): record aborted review attempts; add Codex review runner; update ledger
+1d5fd48	1d5fd4813e1e2c5f7c67ba4dc3a5243840c3126c	e7b4ceb27b5113e48cab88a3ab2e6ccb5067fdf5	docs(review): extend the review package to 8bce97b; add round1b Codex prompt
+82fce88	82fce882e734fa29d061eb6e8178c17b74db8963	cd7aa1b80ef96a707b2124a96eac36f98907c2b0	fix(scripts): ownership checks, truthful exit codes, explicit env modes
+b57a2cd	b57a2cd580c849910a7b4188510b6f2bdba3e96f	6575b913631b2d022b42d317e24d6028a81c5202	feat(analysis): verified goal, target-goal filtering, A5 verdicts, fixed-input tests
+19203e0	19203e0a83779fc2aa3c464328885d337a63e23c	07788ac7688270f5b9ed0734cad1ce8840faaeda	docs(d0): correct evidence and status after the internal pre-review
+976a067	976a06709a6b337dd2dcfb783a56e548c5d8be63	00126cb4915b50ca4c6fa7983a0b5ec07b7d3a07	docs(review): refresh the review package for snapshot 19203e0
+e1980a0	e1980a05c50f33bbcab7a4b7955a7d157e8088fa	6e687c34581e5fa43c3f208f80aae8c41919958e	docs: add a technical overview of the D0 system
+b89bda0	b89bda0222cf0999779d677d43eb060815707bc5	0373b0bd5f60309be41671f5d5912f2b209cb26d	docs(review): record the round1b abort and queue a chunked Codex review
+16aef89	16aef89aee292467eaef0184408d9ac3b7ff0724	f0c67e41dab0b4ed7ff59e58d861d9bd3e9b8a70	fix(scripts): use an ISO NotBefore in the queue example
+e8ae2c0	e8ae2c008085ed63261511baaad36435967097a9	0cc589f3f364b17793fb51751cd319944f5fb9e7	feat(doctor): add the D1 bounded ROS 2 data and environment check
+c6cbdab	c6cbdab5a74f19a03f282878b44f1dd15916a156	f4b9288011e63496d470f32cdffb3f4f3e3756fd	docs(d1): record the real pause test and document the doctor
+293ebf1	293ebf17351350b37b73eb2b23fe3829c5a3411b	c896684498406e6427b81a320198209fc06a7dba	docs(review): add the D1 review package; queue rounds across review folders
+f83bdce	f83bdce0ba28b63e62dbda97fde1941cdd6a9e87	c04a0ab8931b5d460b9d8710ed6d9404c0778367	feat(scripts): start Isaac with the ROS 2 sim_control extension
+ec0c1a1	ec0c1a19b9201aea110506a58d8036da72bbfe41	7d716b5640d2fafb815e933bad2fde3a8d8d9543	feat(scripts): optional python_server for Kit-side contact sensing
+967641d	967641d62222e8a2116e28718c46baa948331b4a	b19ee94ccae8ab92f58ca810b50114a79c88c38e	docs(d1): record the real closed-simulation doctor run (exit 11)
+020aca5	020aca5a21d8652a2079b12da108fc9aa75d07de	22ee919825bb1d85148a36638f68a2268a317744	feat(sim): control Isaac and read ground truth through sim_control
+0a3fb41	0a3fb41cfc4445eabd233f170ff754d226a8d39d	ecf2d2a935c282681fe75fa4a64e9b80f1fdd321	feat(runner): add the D2 run state machine with per-state deadlines
+69fabc8	69fabc8691b84d428eab373c8ae087bf2b5e256e	b7052401b65232257c7f3aeda6c5829c19b5a8c8	feat(runner): add the D2 single-run runner with a full teardown
+0279b05	0279b05d56975fe3059f88e167e7313040382757	941876a81866960fece5fe61a290d3e1bb7bafb5	fix(runner): re-check a degraded doctor after a reset, bounded
+d4756d0	d4756d087cdc45c2867b7f8378680f93ddc8673a	82d47e8494f3b578aa348bddf569397bdc886c5f	fix(runner): judge stop-still only on odometry after the terminal status
+db5b161	db5b1615694a2743242abc96daeef98ac82adcfb	556df809bef44a4d0f9f734eaf97f375a4ae86f3	docs(d2): record the real runs, document the runner and sim control
+cfa8245	cfa82459e4b42b6c936a37744917e6ba83542295	afa888adcbec5b521fc20b06b1af26ae0a15ab40	docs(review): add the D2 review package (two chunks, frozen at db5b161)
+cab286d	cab286d807e634178f15df6508b4dd71419192c2	a69bbfa8e51de0440866d7d05a1d6b0c09964336	feat(contact): run the Kit-side contact monitor inside Isaac
+3db8a0b	3db8a0be16b2b5e0367ed7a5eb70be5670c3c177	1b159de37bfbaf2a1f2d634271af6a42bd0c9651	feat(evaluator): judge arrival, timeout, collision and cancel separately
+96f668f	96f668feb55fae78cd0adeabe2d0856d1d4dcaf1	d45f42e46a6f91829e1632c0712a5165645f4d25	feat(runner): judge runs with the D3 evaluator and contact data
+0e27675	0e276753088f10290313832b87e20b9c0400c93e	e81b3b8a31aefdd970c0dc09a42789899b6ef0e2	feat(report): static HTML batch report from saved run records
+a79290c	a79290c6a5c499b99bc864b50057002fa47eb847	bf0718c18549eac05db81a1b7eae9e65dafd83d6	feat(batch): D4 batch runner over scenarios and repeats
+4332d79	4332d793f47cd0266819089f62f22d21832d498b	70c539d50a08fd868452255c88c0fab8c0997eff	fix(runner): drop pre-reset odometry before the stop-still check
+d33d69c	d33d69c47258eb42721b284b54a3a2a467024768	478b9b83dc45662b9a13f6de25737fdeb51bb87d	docs(d3): record the scenario runs, the defect record and the D3 status
+3b58422	3b58422931c4bf73be1805adf2a2eb030fd45228	6fcdcf1b71f0eac091648936e032dbce0c742f8c	docs(review): add the D3 review package (two chunks, frozen at d33d69c)
+2b8f27c	2b8f27c129b23c08a04ccfa643eae5104d3eccb1	20eb42334552258bb7e789a0ac4f5cd712d2a8bc	fix(report): list every commit, show Nav2 recoveries, readable counts
+f4c859c	f4c859c07457e3bd1545e49295b05aff4f3312e6	a4aec66fc8f0d2d971d28d504acb00d8ec384762	docs(d4): record the batch, the stuck-start analysis and the D4 status
+02de625	02de6252dc2f7ef7221d098c5acc6cefe005a138	a1320f89b603e00915f535da0de94a3a40ae2fc3	docs(d4): keep the nine batch run records and the regenerated report
+67a8ffa	67a8ffa7ea5f2cd33532845a4db54644c76ee929	30c9453e5c3cf73a1b337884a78a95ac43d9ae68	feat(runner): run a scenario with a declared Nav2 parameter change
+e7c7e92	e7c7e925e3c3db7292246fe193441891d9a0d9f4	29ac3cd415743c4001ba0658e7c056fb6f333a91	docs(demo): write down the D5 parameter-change prediction before the rerun
+12a1544	12a15440be59f9b77bd39660952de744fb17a374	85ccc1a36d2662e528a1b9f90fac19076ae8e947	fix(runner): load the world before installing the contact monitor
+9ae722b	9ae722b969f341ce8c814bf27ba312926b16c158	ae7f251fc8206b10bf66b2de16a00d816ab8f8e0	fix(runner): refresh the simulation time before sending the goal
+5966d95	5966d9594408647f3221ed304f65c11642d01df8	252bf9db8e5f6cdaaba0378be0a7553b8f5cdfb1	docs(d5): README, the three demos, defects 3-4 and the D5 status
+24fa308	24fa308f0d777d4eeabd2f12b2f1a6eb6202420e	3835df8a2f7fd9f08318e15df761027cd5f74d64	docs(d5): keep the demo, defect and comparison run records
+bd9f34e	bd9f34ed9d759e63a176b82b83fed5ad36d0ec10	5da1915905f38f4474eb11be23df06b4a5e844bc	docs(review): add the D5 review package (frozen at 24fa308)
+7fe517e	7fe517eafa91dc84cc1bdfe050ec2ceb02d33a47	160cc4a48a0426e8c448bdf25ead857e34e0d490	fix(scripts): parse the time-only Codex retry message in the review queue
+c132a68	c132a68c81c862c0a9fde0ed16775e2d92868be5	f618c844ef4a28e6e6fc37df45363c6b249460e7	fix(analysis): address the five Codex D0 round1c-a findings
+156c31a	156c31a6df4cf5a37cfb2a50ecc3b3ee3b8f525f	a39147c8b91158b7e42da309f6c35e641882c516	fix(scripts): judge Codex usage limits only from its own ERROR lines
+94be232	94be2325b1082825622cb31e5aef12c7fd23ab41	a3f28a364b3d1cefb39f1c11e642752443f3b634	docs: correct review status, test commands and D5 figures (docs review findings)
+2d84748	2d847480c0871e0f71f6913c24e713fedf15c5a1	787169619a8f91f0a9b3cc9a5c2d7b6d3ad54e9e	fix(nav2): keep ROS parameter types and address real vendor parameters
+bfbdc58	bfbdc58458bb272cdfcaa3409fcaa328c8e2b011	cb3c156ed9092457c706e7ca4092abf8a09620d1	fix(sim): fail the reset check on a non-finite ground truth
+f19a50f	f19a50fd98d025d4b68c77bf430425ee9376ffc5	a51d041fa7c4507e3b694e1cc8b0303f6b50ff03	refactor(scripts): derive the repository root from each script's location
+e5c2970	e5c2970e92637c17929aa8577f46ad94e84dae31	7e7b3bfa34c5fcf5af53f88cfa110434490cff0a	fix(sim): label the sim_control ground truth with the world frame
+f68ddaa	f68ddaa3819adcb5e9de693cafd85ea336f84fe3	017964f63d6e3c017ad76d7c5404e695b4026602	fix(scripts): keep setup re-runs away from the recorded D0b evidence
+5aa523a	5aa523acc24ac4fe89fcb3ec06546ddf4bf974ae	1059b517b7c091c1e3c897d9e594904d7ac187be	fix(sim): turn undecodable contact-client output into ContactError
+b0fee6e	b0fee6e640bbcf0a4cb091e737f3a3f0c7dfc8bd	5b68e0e389e3868909ef95dea25c5285685f7d8b	fix(config): validate the baseline config strictly at load
+5d50449	5d50449e1021ff5834eb9b3f63183236a663651f	8caf04258de395b06e167bd1184c6ede74efd28e	fix(sim): surface persisting contacts and dropped events from fetch()
+66020c8	66020c8ac167bae5dafd70811a86725bd610c245	aebbe1e34ca09dfa4ea311e500a2eea866ac142d	fix(evaluator): require evidence for unreachable and never pass lost or partial data
+a95bbe0	a95bbe05ba9796ff229d046a8c1eb746f2011846	a6f9239ea0666142590d1b43322568b806476278	fix(report): base every number on the D3 verdict and the batch record
+ed6b766	ed6b766bddb2929e4aa4274b08c1c6d54923e993	7593fa5e399c5d2c5777c8f733b5500e118bca29	feat(analysis): report what the recording covers and use the script's own checkout
+1ae88ca	1ae88cabc3f04bc36969156a610d69c275bed991	5033b0630b30ef10264bfcc8b0e8109ffa781d45	fix(sim): stamp contact events with Isaac's simulation time
+2a7b44c	2a7b44c20f192c16eb56ca387b04272811f12949	bfb616d54261f179d6f762e4451c33ec07a8c11a	feat(map): check start and goal against the pinned Nav2 map
+c786dd4	c786dd4d90919c467117bfe1517b9b0dd99c60fe	b80fbd4e1c40f424ccbce97e465d12163d0d6161	fix(scripts): check goals against the map Nav2 loaded for the run
+1710fc3	1710fc30fb314f727a2f3e521284fbba3b233d6e	b2c98feff14dca1872abc0388b5027a55caeaacc	style(config): wrap the new config and nav2 lines at 120 columns
+4a0ff99	4a0ff99b58148328a93d27d5df7b7ea1ef53baa6	acf757481b70f1c336be9bde1f36d2aaeb1cd176	fix(doctor): judge interfaces by publisher types and check the environment first
+9019b39	9019b397cdfc42281a748f81966eacd0bae503e6	a8973e9968399595c55cc3b86409ee2d9e04da83	feat(runner): restartable accept/stop deadlines and batch-aborting failures
+fd23bd9	fd23bd96c616d55bf305ecb21064c3c6cb7d6051	1b6b16df3989d62ae9bca3449d5466fe75ec11e0	fix(batch): abort when a runner did not close out, let Ctrl-C reach the batch
+8ed5e8c	8ed5e8c6d9c500296eb26754ff15428274aad255	06e1f9a5d80cf647fab0f72dbd7e8785636d078b	refactor(sim): split isaac_py.ps1 into dot-sourceable functions
+45cf7f1	45cf7f17948460f1d53acf1fc4d2b4995866a250	e10b15c62e2bf8241466850f9bbf2c6610e5291c	fix(scripts): bound the goal client and check the whole goal transcript
+d26fe44	d26fe44bd9afd286f72d96a2b89d013e7816b829	2369c6eb5989da97d17664d5c3caba5013acbdc5	fix(scripts): scan the same run dirs in both halves of run_bag_scans.sh
+2f31b13	2f31b1357925be47191390333cc9e842e13af4dd	47c561775aa3c4a68c885b8472861b68023fc1b6	fix(batch): write the attempt record before echoing it to the terminal
+32215fd	32215fd86f1372de4972d0c1323dde1cf2355c28	5ff7697d8a7cacfef0d12015c42f7cd986905b38	fix(scripts): run the doctor of the checkout the scripts are in
+6a04d05	6a04d05707ed493f358e05e0d480f6ffeb58a338	8b7aa5d57cfc14856b0aa5ddb1d274ee7dfc8a75	test(batch): widen the timing margin of the terminal cap test
+410a2e5	410a2e51e45260274015eedc693cb2d2b25076bd	66ac8beacd3ed87c02a309522c3f0b57f0692ee8	fix(report): show "-" for collisions of a scenario with no attempt run
+6f0e262	6f0e262c74810b2e39091cc93569000800fa6f78	cec942682598b2f4791ab6d9700ca4396427166c	fix(sim): make isaac_py.ps1 answer every failure with one JSON line
+f74af95	f74af951499ac17c29f18e96422f2b92efc07251	4c6ebcef685f2550f79aa2eadc06a88d938ef513	docs(overview): add the review-and-fix status (section 16) and correct stale claims
+3c62740	3c6274008b72ae4b45d12878703c3ca431cc2e75	8036c91640f4b0feb337d1a877a6bfda57cf2243	fix(sim): run the contact client of the checkout contacts.py is in
+4748258	4748258690a57d3f8123c781baa2afd5b878dfb2	ad1ebfd897572e47d04ec227eac3fcdac0f625be	fix(sim): derive the repository root of sim.sh from its own location
+d1eca82	d1eca828a0ad67c638f6159bc59e671dbfdc0b68	a3083dc399895c88dc7ced3139ea5a7b08cc57a7	fix(sim): take the Fast DDS profile of start_isaac_ros2.ps1 from its checkout
+3d9d94e	3d9d94ed9621178b0b8d019673438377cfc75186	e9cf3e2a7c529fb4c75119e5c0ecc17f877d4f24	refactor(sim): clarify windows_path and the found_pairs contract
+8aff44c	8aff44c94fdedd3ce432dd9dbcf1d2ab2383ceb8	afac801c0153665da12fb3a894d1e185ec7e6c3e	fix(scripts): stop only proven own recorders and check their exit codes
+66b5085	66b5085590c891065f685272f5fb2f462080a8da	cbadf92b3281300bdd754aa7abd0f2333903865c	fix(runner): resolve every sent goal, guard each teardown step, check the map and the obstacles
+6d3014c	6d3014c28ca3bafca78d5c4b077c8de3a7cbc9e6	1e9ce63b1f5faa33f8fbf2ff2718583052506316	fix(scripts): let stop_nav2 clean up its own leftovers and keep the exit code
+892a25d	892a25dafc5a141734783ce596774b85f56773c3	52c8127e31c1e6522183c5a9aa80a4d5bb96b24a	fix(scripts): let a terminal Ctrl-C reach the runner and test it through a pty
+877d870	877d87021c070e975ea2dcf8a061bfca734a5fa4	7b94a9090ccf2f2c9c0c9e6b4cd04a3090ded555	fix(scripts): make the Codex queue lock atomic and aware of stale owners
+354b2a8	354b2a8c48ab13d08f22d9bd220fe618c99a6c0f	fce93ae1a9d3466e9913777c7e3e9bdd901100c4	fix(scripts): treat an unreadable recorder identity as unknown, not foreign
+db4d678	db4d6784f1e9e7a94824bda1767108b39dd96813	b67112bfa42f93af0f9b9b4e101a52eb377547b5	docs(test): list --accept-delay in the fake Nav2 usage line
+3ba5368	3ba5368eaeba1075d3689800ab5b60a6b416cd01	cb7c6a49dfb1d64de46897ac0a3e86296aee210e	docs(review): keep the Codex D0 round1c-a and round1c-b reports and the queue logs
+20ce450	20ce4505b4c81ba53dfeb58710218a24f7b46778	7f065f7e4b26d99177b9a2631e8e55315bb41c84	docs(overview): apply the fact-check of section 16 and keep the review records
+3a34e1b	3a34e1ba88023082017edb1ef5a8fe848a073811	67f2562a43fd5c85a586aade249dfc99e5a484a7	docs(overview): qualify the no-wrong-verdict claim with the fault-injection exception
+c92a8b3	c92a8b36abb35560c49fbad0b88a65fb7e70ccbf	37c887ae1fa7704e85ce34f0edb1d264b83b97f6	fix(batch): keep the running attempt out of the terminal, forward Ctrl-C
+078a9c3	078a9c3a8a990a80d05906bcaeaf8e9edc93e5e9	8f00e1d81aacb2a102d4274855599c51aaf58cc5	merge(review): impl/core fixes for the 2026-09-30 review findings
+e61d0b0	e61d0b0a20b5ceea04ee470b95bca36225fa46fe	cfdd0b3792b30ff1a6a0b86bf6552171ce616c4a	merge(review): impl/sim fixes for the 2026-09-30 review findings
+6d6f303	6d6f303c2536d32768f828d115d401b432f7ea09	56b4ca1f69b2a39c051bf04b03f8b31f48e293fe	merge(review): impl/config fixes for the 2026-09-30 review findings
+50514d0	50514d01146a3fb6fd34a33b9a788130577720e3	90c839abcc0176bbb65f6882653379e6ecdbc9fb	merge(review): impl/report fixes for the 2026-09-30 review findings
+e7e7917	e7e7917f8ef1b9b6ac43bc949f54ed0427cb7fde	2193f8f3bae3bccfb46a7a11dc46c3b2369db47e	fix(runner): keep Nav2's own exit apart from the cleanup; check the record cap
+5154180	5154180cd4e6ebaff934d419e9d8682f16abe4ee	36d42fb2ebac2bdc0d3e3dfdb53b53fcaa800f3e	fix(scripts): read /proc ownership records without a SIGPIPE-prone pipe
+6789b30	6789b3082185a00324206b4803b1e762f3657fd1	4ff810eb5b74173e16a3605b06a4e366049865ba	fix(scripts): accept on a repeated stop only sessions an earlier stop signalled
+f4cc201	f4cc2013f7a0a07aa9bff04a56ad48b454acf6bf	bad1ca41e12091e05eae359e813d761921df81a6	merge: D0-D5 (environment, doctor, runner, verdicts, batch and report, delivery) into master
+b246d95	b246d9546b2f5099b53ccca726664c8b37107e61	6108b21fbcdf389eb0fac56b9864f87aed0a1b71	docs: correct review status, test commands and D5 figures (docs review findings)
+80424f0	80424f0e44ac2b15a64951ea2e0b4d3219e92868	c2c195dd2420225e374bae0f9dab2f2befd0a95a	docs(overview): add the review-and-fix status (section 16) and correct stale claims
+2e3887b	2e3887b83f2da2c119b5c6af6b4e6e85b2c927fd	dae941231b8d420dbee7d3c0aa4aaf2eabb4aeb8	docs(overview): apply the fact-check of section 16 and keep the review records
+9c2d5b4	9c2d5b4955ceb5ca52298cfa22362f5c893c9f86	09ed39970bfa534860b610ca37a6f540b5cb695d	docs(overview): qualify the no-wrong-verdict claim with the fault-injection exception
+d276b87	d276b87efb53bfb490a1d479c11ec0bd6265f066	7b73dcb2c20af094cf000ed846211d8cef7929e5	chore(release): v0.1.0 licence, notice and release notes
