@@ -267,3 +267,42 @@ def test_refresh_clock_reports_when_no_fresh_message_arrives():
         return t[0]
 
     assert refresh_clock(feed.spin_once, lambda: feed.count, wait_s=1.0, now=now) is False
+
+
+# ---- review round 2 (runner-1, runner-6, runner-7, critic-2) --------------------------------------------------------
+
+def test_the_accept_deadline_restarts_when_the_goal_is_sent():
+    # runner-7: SEND_GOAL is entered before the recorder start; A5's 10 s acceptance wait counts from the goal itself
+    fsm = RunStateMachine(LIM, 0.0, None)
+    fsm.go(State.WAIT_READY, 1.0, None, "prepared")
+    fsm.go(State.SEND_GOAL, 30.0, 12.0, "nav2 ready")
+    fsm.restart("goal sent", 38.0, 14.0)
+    assert fsm.state is State.SEND_GOAL and fsm.check(45.0, 15.0) is None      # 15 s after entry, 7 s after sending
+    assert fsm.check(48.5, 15.5) == "accept_timeout"
+    assert [h.reason for h in fsm.history][-2:] == ["nav2 ready", "goal sent"]
+
+
+def test_the_stop_deadline_can_restart_after_an_injected_pause():
+    # runner-6: the stop wait starts once the simulation plays again
+    fsm = RunStateMachine(LIM, 0.0, None)
+    for st, t in ((State.WAIT_READY, 1.0), (State.SEND_GOAL, 2.0), (State.EXECUTING, 3.0), (State.STOP_CONFIRM, 10.0)):
+        fsm.go(st, t, None, "step")
+    fsm.restart("simulation resumed", 16.0, None)
+    assert fsm.check(25.0, None) is None and fsm.check(26.5, None) == "stop_timeout"
+
+
+def test_restart_is_refused_in_other_states():
+    fsm = RunStateMachine(LIM, 0.0, None)
+    fsm.go(State.WAIT_READY, 1.0, None, "prepared")
+    with pytest.raises(ValueError, match="WAIT_READY"):
+        fsm.restart("no", 2.0, None)
+
+
+def test_a_failure_can_abort_the_batch_even_during_teardown():
+    # critic-2: Nav2 or the recorders not confirmed stopped at teardown: error and no further batch runs
+    fsm = RunStateMachine(LIM, 0.0, None)
+    fsm.fail("start_nav2.sh exit 4", 1.0, None)
+    assert fsm.state is State.TEARDOWN and not fsm.abort_batch
+    fsm.fail("stop_nav2.sh exit 1: Nav2 was not confirmed stopped", 2.0, None, abort=True)
+    assert fsm.state is State.TEARDOWN and fsm.abort_batch and fsm.execution_status == "error"
+    assert len(fsm.errors) == 2 and [h.state for h in fsm.history] == [State.PREPARE, State.TEARDOWN]
