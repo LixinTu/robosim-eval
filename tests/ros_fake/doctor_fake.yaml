@@ -1,5 +1,6 @@
 # Doctor config for the fake-node integration test: same topics and thresholds as configs/baseline.yaml, but the
 # isolated ROS domain 42 so that the fake publishers never mix with the real Isaac data on domain 0.
+# scripts/wsl/test_doctor_fake.sh writes a copy with domain_id set to ROBOSIM_TEST_DOMAIN (default 42) and uses that.
 env: {rmw: rmw_fastrtps_cpp, domain_id: "42", ros_distro: jazzy, require_dds_profile: true}
 topics:
   clock: {name: /clock, type: rosgraph_msgs/msg/Clock}
