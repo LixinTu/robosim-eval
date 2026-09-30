@@ -220,8 +220,10 @@ def spawn_recorder(me: int, argv: List[str]) -> int:
     name = Path(exitfile).name[:-len(".exit")]
     env = dict(os.environ)
     wrapper_argv = argv[1:]  # after exec: bash -c SCRIPT files... timeout ...
-    if name in os.environ.get("FAKE_DEAD", "").split(","):
-        Path(exitfile).write_text("1\n")
+    if name in os.environ.get("FAKE_DEAD", "").split(","):  # the recorder ended at once (status FAKE_DEAD_EXIT)
+        Path(exitfile).write_text(os.environ.get("FAKE_DEAD_EXIT", "1") + "\n")
+        if stampfile:
+            Path(stampfile).write_text("0\n")  # its line stamper then ends normally at end of input
         Path(pidfile).write_text(f"{me}\n")
         return 0
     start = next_counter("start", 1000)

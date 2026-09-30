@@ -17,8 +17,11 @@
 # Exit codes (finding codex-b-2): <name>.exit holds the recorder's, <name>.stamp.exit the line stamper's status of a text
 # stream. Accepted: 0 or 2 after the stop request (ros2 bag / ros2 topic echo return 2 = signal.SIGINT when stopped),
 # 124 = the time cap was reached; a stamper must exit 0. Anything else, a non-numeric value, or a recorder that had
-# already ended before the (first) stop request without reaching the cap is an abnormal end. A repeated stop of the
-# same attempt (record.meta already has a "record stop" line) accepts sessions ended by the earlier request.
+# already ended without being signalled by a stop request (and not at the cap) is an abnormal end. Each run appends
+# "record stop <time> sessions=<name>:<signalled|stopped_earlier|ended|foreign|unknown>,..." to record.meta once its
+# SIGINT is out. A repeated stop of the same attempt accepts as ended by the earlier request only the sessions an
+# earlier run signalled; one that was gone, foreign or unknown then keeps that classification (finding shell-rev-2). A
+# "record stop" line without sessions= (older stop_record.sh) proves nothing.
 # Required data (plan doc A7: no data must not look like success): bag topics /clock, /chassis/odom, /tf and a non-empty
 # odom.txt; when a goal transcript (goal-*.txt) exists, also the NavigateToPose status and feedback topics and a
 # non-empty action_status.txt.
@@ -46,7 +49,9 @@ stat_field() { sed -E 's/^.*\) //' "$PROC/$1/stat" 2>/dev/null | awk -v f="$2" '
 # when grep stops at an early match, and our own process would look foreign (finding shell-rev-1).
 has_token() { [[ -n "$TOKEN" ]] && grep -qzxF "ROBOSIM_OWNER_TOKEN=$TOKEN" "$PROC/$1/environ" 2>/dev/null; }
 BOOT=$(meta_value boot_id); TOKEN=$(meta_value token)
-PREV_STOP=$(grep -m1 '^record stop ' "$ATT/record.meta" 2>/dev/null)   # an earlier stop_record.sh run on this attempt
+PREV_STOP=$(sed -n -E '/^record stop /{s/^record stop ([^ ]*).*/\1/p;q;}' "$ATT/record.meta" 2>/dev/null)   # first earlier run
+# " name name ... ": the sessions an earlier stop_record.sh run of this attempt signalled (see the header)
+PREV_SIGNALLED=" $(sed -n -E 's/^record stop .* sessions=([^ ]*).*/\1/p' "$ATT/record.meta" 2>/dev/null | tr ',' '\n' | sed -n 's/:signalled$//p' | tr '\n' ' ')"
 NAMES=(); SIDS=(); STARTS=(); KINDS=()
 while read -r name sid start kind _; do
   [[ -n "${name:-}" ]] || continue
@@ -109,13 +114,18 @@ signal_all() {
   done
 }
 wait_gone() { local n=$1; for _ in $(seq 1 "$n"); do alive_any || return 0; sleep 1; done; alive_any && return 1; return 0; }
+verdict() { case ${STATE[$1]} in own) echo signalled ;; stopped) echo stopped_earlier ;; gone) echo ended ;; *) echo "${STATE[$1]}" ;; esac; }
+session_record() { local i out=(); for i in "${!NAMES[@]}"; do out+=("${NAMES[$i]}:$(verdict "$i")"); done; local IFS=,; echo "${out[*]}"; }
 
 declare -a STATE WHY
 UNSTOPPED=()
 for i in "${!NAMES[@]}"; do
   classify "$i"
   case ${STATE[i]} in
-    gone) if [[ -n "$PREV_STOP" ]]; then STATE[i]=stopped; echo "session ${NAMES[$i]} (${SIDS[$i]}) ended by the earlier stop request ($PREV_STOP)"
+    gone) if [[ "$PREV_SIGNALLED" == *" ${NAMES[$i]} "* ]]; then
+            STATE[i]=stopped; echo "session ${NAMES[$i]} (${SIDS[$i]}) ended after an earlier stop request signalled it (first stop $PREV_STOP)"
+          elif [[ -n "$PREV_STOP" ]]; then
+            echo "session ${NAMES[$i]} (${SIDS[$i]}) had already ended without a signal from an earlier stop request (first $PREV_STOP)"
           else echo "session ${NAMES[$i]} (${SIDS[$i]}) had already ended before the stop request"; fi ;;
     foreign) fail 7 "session ${NAMES[$i]} (${SIDS[$i]}) not signalled: ${WHY[i]}" ;;
     unknown) fail 7 "session ${NAMES[$i]} (${SIDS[$i]}) not signalled: ${WHY[i]}; it may still be running"
@@ -123,13 +133,14 @@ for i in "${!NAMES[@]}"; do
   esac
 done
 signal_all INT
+# written as soon as the SIGINT is out, so a run interrupted while waiting still leaves what it signalled
+echo "record stop $(date -Is) sessions=$(session_record)" >> "$ATT/record.meta"
 if ! wait_gone 20; then signal_all TERM; wait_gone 10 || { signal_all KILL; sleep 2; }; fi
 for i in "${!NAMES[@]}"; do
   if [[ ${STATE[i]} == own ]] && session_alive "$i"; then
     fail 3 "session ${NAMES[$i]} (${SIDS[$i]}) still alive after SIGKILL"; UNSTOPPED+=("${NAMES[$i]}")
   fi
 done
-echo "record stop $(date -Is)" >> "$ATT/record.meta"
 
 echo "recorder exit codes (0/2 = stopped by SIGINT; 124 = time cap reached; a line stamper exits 0):"
 check_exit() { # check_exit <i> <file> <what>

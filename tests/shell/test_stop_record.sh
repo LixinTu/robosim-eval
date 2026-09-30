@@ -166,6 +166,40 @@ stop
 check "F8: stopping it again (all gone, stopped by the earlier request) -> exit 0" 0 "$RC"
 check_grep "F8: says an earlier stop request ended them" 'earlier stop' "$T/out.txt"
 
+# F9-F11 (shell-rev-2): a repeated stop accepts as stopped by the earlier request only sessions that request signalled.
+t_new stop_record.sh; cd "$T" || exit 1; baginfo
+attempt "$T/att"; six_sessions
+rm -rf "$ROBOSIM_PROC_ROOT"/5100003 "$ROBOSIM_PROC_ROOT"/5200004 "$ROBOSIM_PROC_ROOT"/5200005
+echo 2 > "$A/amcl_pose.exit"; echo 0 > "$A/amcl_pose.stamp.exit"
+stop
+check "F9: early exit 2, first stop -> exit 8" 8 "$RC"
+check_grep "F9: the first stop records what it signalled" '^record stop .* sessions=bag:signalled,odom:signalled,amcl_pose:ended,cmd_vel:signalled,' "$A/record.meta"
+stop
+check "F9: second stop -> still exit 8" 8 "$RC"
+check_no_grep "F9: not claimed as ended by the earlier stop request" 'amcl_pose.*(ended by|signalled it)' "$T/out.txt"
+check_grep "F9: still reported as ended before the stop" 'amcl_pose.*before the stop' "$T/out.txt"
+check "F9: the five signalled sessions count as stopped by it" 5 "$(grep -c 'signalled it' "$T/out.txt")"
+stop
+check "F9: third stop -> still exit 8" 8 "$RC"
+check "F9: third stop still knows the five the first one signalled" 5 "$(grep -c 'signalled it' "$T/out.txt")"
+t_new stop_record.sh; cd "$T" || exit 1; baginfo
+attempt "$T/att"; six_sessions
+fake_clear; for n in bag odom amcl_pose cmd_vel action_status tf_map_base; do echo 2 > "$A/$n.exit"; done
+for n in odom amcl_pose cmd_vel action_status tf_map_base; do echo 0 > "$A/$n.stamp.exit"; done
+echo "record stop 2026-09-30T00:10:00+00:00" >> "$A/record.meta"
+stop
+check "F10: an earlier stop line without a session record proves nothing -> exit 8" 8 "$RC"
+check_no_grep "F10: nothing claimed as stopped by it" 'signalled it' "$T/out.txt"
+t_new stop_record.sh; cd "$T" || exit 1; baginfo
+attempt "$T/att"; six_sessions
+FAKE_PGREP_FAIL=5100001 stop
+check "F11: first stop cannot query the bag session -> exit 7" 7 "$RC"
+check_grep "F11: recorded as unknown" '^record stop .* sessions=bag:unknown,' "$A/record.meta"
+rm -rf "$ROBOSIM_PROC_ROOT"/5100001 "$ROBOSIM_PROC_ROOT"/5200001; echo 2 > "$A/bag.exit"
+stop
+check "F11: the bag recorder ended later without our signal -> exit 8" 8 "$RC"
+check_no_grep "F11: not claimed as stopped by the earlier request" 'bag .*signalled it' "$T/out.txt"
+
 # G. the wrapper exited but recorder processes remain in its session.
 t_new stop_record.sh; cd "$T" || exit 1; baginfo
 attempt "$T/att"; six_sessions

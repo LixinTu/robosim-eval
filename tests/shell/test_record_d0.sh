@@ -12,7 +12,7 @@ NAMES=(bag odom amcl_pose cmd_vel action_status tf_map_base)
 setup() {
   t_new record_d0.sh stop_record.sh; cd "$T" || exit 1
   export HOME="$T/home" FAKE_SPAWN=recorder FAKE_EXIT_bag=0 FAKE_EXIT_tf_map_base=0
-  unset FAKE_NOPID FAKE_DEAD FAKE_STAMP_FAIL
+  unset FAKE_NOPID FAKE_DEAD FAKE_DEAD_EXIT FAKE_STAMP_FAIL
   printf '%s\n' "Topic information: Topic: /clock | Type: x | Count: 10 | Serialization Format: cdr" \
     "Topic: /chassis/odom | Type: x | Count: 10 | Serialization Format: cdr" "Topic: /tf | Type: x | Count: 10 |" > "$T/ros2/baginfo"
 }
@@ -63,6 +63,16 @@ rec
 check "4: a recorder not running -> exit 1" 1 "$RC"
 check "4: the five running sessions got SIGINT" 5 "$(grep -c '^pkill INT session' "$T/signals.log")"
 check "4: nothing started here is left running" 0 "$(alive_count)"
+
+# 4b. that recorder ended with exit 2 (also what `ros2 topic echo` returns for an argument error): the inline stop and
+#     a later stop of the same attempt (e.g. a runner's teardown) both report the abnormal end (shell-rev-2).
+setup; A="$T/att4b"; export FAKE_DEAD=cmd_vel FAKE_DEAD_EXIT=2
+rec
+check_grep "4b: the inline stop reports the abnormal end" 'stop_record.sh exit 8' "$T/rec.txt"
+for n in "${NAMES[@]:1}"; do printf 'line\n' > "$A/$n.txt"; done; mkdir -p "$(cat "$A/bag-path.txt")"
+bash "$R/scripts/wsl/stop_record.sh" "$A" > "$T/stop.txt" 2>&1
+check "4b: stopping the attempt again still reports it -> exit 8" 8 $?
+check_grep "4b: ... as a recorder that ended before the stop" 'cmd_vel had ended before the stop request with exit 2' "$T/stop.txt"
 
 # 5. the real wrapper code keeps both statuses of a text stream (codex-b-3): recorder 0, stamper failing with 7.
 setup; A="$T/att5"; export FAKE_SPAWN=exec FAKE_STAMP_FAIL=1
