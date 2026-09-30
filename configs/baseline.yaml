@@ -33,3 +33,11 @@ doctor:
     odom: {min_rate_hz: 8.0, max_age_s: 2.0}
     tf: {min_rate_hz: 8.0, max_age_s: 2.0}
     lidar: {min_rate_hz: 1.0, max_age_s: 2.5}
+
+# Isaac control through isaacsim.ros2.sim_control (D2; scripts/windows/start_isaac_ros2.ps1 enables it).
+sim:
+  world_uri: https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.1/Isaac/Samples/ROS2/Scenario/carter_warehouse_navigation.usd
+  robot_entity: /World/Nova_Carter_ROS/chassis_link   # rigid body + articulation root: live pose and twist
+  spawn: {x: -6.0, y: -1.0, yaw: 3.141592653589793}    # authored USD pose of /World/Nova_Carter_ROS (D0)
+  reset_check: {position_m: 0.05, yaw_rad: 0.05, speed: 0.02}
+  obstacle_usd: D:/RoboSim-Eval/configs/assets/box_1m.usda   # resolved by Isaac on Windows

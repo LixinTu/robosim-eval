@@ -8,8 +8,9 @@ from typing import Any, Dict, Mapping, Optional, Union
 import yaml
 
 from robosim_eval.doctor_checks import DoctorThresholds, StreamThresholds
+from robosim_eval.sim_math import Pose2D
 
-__all__ = ["EnvExpect", "TopicSpec", "DoctorConfig", "BaselineConfig", "load_config"]
+__all__ = ["EnvExpect", "TopicSpec", "DoctorConfig", "SimConfig", "BaselineConfig", "load_config"]
 
 
 @dataclass(frozen=True)
@@ -36,10 +37,22 @@ class DoctorConfig:
 
 
 @dataclass(frozen=True)
+class SimConfig:
+    world_uri: str
+    robot_entity: str
+    spawn: Pose2D
+    reset_position_m: float
+    reset_yaw_rad: float
+    reset_speed: float
+    obstacle_usd: Optional[str] = None
+
+
+@dataclass(frozen=True)
 class BaselineConfig:
     env: EnvExpect
     topics: Mapping[str, TopicSpec]
     doctor: DoctorConfig
+    sim: Optional[SimConfig] = None
 
 
 def _positive(section: str, key: str, value: Any) -> float:
@@ -89,4 +102,19 @@ def load_config(path: Union[str, Path]) -> BaselineConfig:
                                   streams=streams)
     doctor = DoctorConfig(discovery_timeout_s=_positive("doctor", "discovery_timeout_s", doc.get("discovery_timeout_s")),
                           window_s=_positive("doctor", "window_s", doc.get("window_s")), thresholds=thresholds)
-    return BaselineConfig(env=env, topics=topics, doctor=doctor)
+    return BaselineConfig(env=env, topics=topics, doctor=doctor, sim=_load_sim(raw.get("sim")))
+
+
+def _load_sim(sim: Optional[Mapping[str, Any]]) -> Optional[SimConfig]:
+    if sim is None:
+        return None
+    spawn = _require(sim, "spawn", "sim")
+    check = sim.get("reset_check", {})
+    return SimConfig(world_uri=str(_require(sim, "world_uri", "sim")),
+                     robot_entity=str(_require(sim, "robot_entity", "sim")),
+                     spawn=Pose2D(float(_require(spawn, "x", "sim.spawn")), float(_require(spawn, "y", "sim.spawn")),
+                                  float(_require(spawn, "yaw", "sim.spawn"))),
+                     reset_position_m=_positive("sim.reset_check", "position_m", check.get("position_m", 0.05)),
+                     reset_yaw_rad=_positive("sim.reset_check", "yaw_rad", check.get("yaw_rad", 0.05)),
+                     reset_speed=_positive("sim.reset_check", "speed", check.get("speed", 0.02)),
+                     obstacle_usd=sim.get("obstacle_usd"))

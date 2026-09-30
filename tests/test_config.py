@@ -79,3 +79,17 @@ def test_missing_clock_topic_is_rejected(tmp_path: Path):
 def test_missing_file_raises_file_not_found(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
         load_config(tmp_path / "nope.yaml")
+
+
+def test_baseline_sim_section_has_world_robot_and_spawn():
+    import math
+    sim = load_config(BASELINE).sim
+    assert sim is not None
+    assert sim.world_uri.endswith("/Isaac/Samples/ROS2/Scenario/carter_warehouse_navigation.usd")
+    assert sim.robot_entity == "/World/Nova_Carter_ROS/chassis_link"
+    assert (sim.spawn.x, sim.spawn.y) == (-6.0, -1.0) and sim.spawn.yaw == pytest.approx(math.pi)
+    assert 0 < sim.reset_position_m <= 0.1 and 0 < sim.reset_yaw_rad <= 0.1
+
+
+def test_config_without_sim_section_has_no_sim(tmp_path: Path):
+    assert load_config(write(tmp_path, GOOD)).sim is None

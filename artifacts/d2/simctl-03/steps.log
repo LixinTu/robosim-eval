@@ -1,0 +1,9 @@
+00:14:16 01-state     exit=0      1.0s  {"command": "state", "state": "stopped"}
+00:14:24 02-load      exit=0      8.4s  {"command": "load", "uri": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.1/Isaac/Samples/ROS2/Scenario/carter_warehouse_navigation.usd", "state": "stopped"}
+00:14:27 03-play      exit=0      2.2s  {"command": "play", "state": "playing"}
+00:14:33 04-pose      exit=0      1.0s  {"command": "pose", "entity": "/World/Nova_Carter_ROS/chassis_link", "frame": "nova_carter", "x": -6.001190185546875, "y": -1.0000001192092896, "z": 8.791685104370117e-07, "yaw": 3.1415774690615166, "
+00:14:39 05-doctor    exit=0      6.0s  written /mnt/d/RoboSim-Eval/artifacts/d2/simctl-03/doctor-20260930-001433.json
+00:14:40 06-pose-later exit=0      1.2s  {"command": "pose", "entity": "/World/Nova_Carter_ROS/chassis_link", "frame": "nova_carter", "x": -6.004299163818359, "y": -1.0, "z": 8.344650268554688e-07, "yaw": 3.141585947957529, "linear_speed": 0
+00:14:52 07-reset     exit=0     11.6s  {"command": "reset", "state": "playing"}
+00:14:56 08-reset-check exit=0      1.1s  {"command": "reset-check", "entity": "/World/Nova_Carter_ROS/chassis_link", "frame": "nova_carter", "x": -6.001043796539307, "y": -1.0000001192092896, "z": 7.897615432739258e-07, "yaw": 3.141576591852
+00:15:02 09-doctor    exit=0      6.0s  written /mnt/d/RoboSim-Eval/artifacts/d2/simctl-03/doctor-20260930-001456.json
