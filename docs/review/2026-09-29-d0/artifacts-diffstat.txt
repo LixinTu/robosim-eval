@@ -1,5 +1,7 @@
  artifacts/README.md                                |    28 +
+ artifacts/d0a/codex-login-status.txt               |     3 +
  artifacts/d0a/commands.md                          |    14 +
+ artifacts/d0a/isaac-version.txt                    |    13 +
  artifacts/d0a/windows-probe.txt                    |   382 +
  artifacts/d0a/wsl-probe-clean.txt                  |   217 +
  artifacts/d0a/wsl-probe-login.txt                  |   217 +
@@ -50,18 +52,23 @@
  artifacts/d0c/probe-04-playing/topic_cmd_vel.txt   |    33 +
  .../topic_front_3d_lidar_lidar_points.txt          |    55 +
  artifacts/d0c/probe-04-playing/topic_tf.txt        |    47 +
- artifacts/d0d/commands.md                          |    53 +
+ artifacts/d0d/commands.md                          |    66 +
+ artifacts/d0d/run-01/attempt-01/action_status.err  |     0
  artifacts/d0d/run-01/attempt-01/action_status.txt  |    50 +
+ artifacts/d0d/run-01/attempt-01/amcl_pose.err      |     0
  artifacts/d0d/run-01/attempt-01/amcl_pose.txt      |     8 +
  artifacts/d0d/run-01/attempt-01/bag-info.txt       |    21 +
  artifacts/d0d/run-01/attempt-01/bag-path.txt       |     1 +
  artifacts/d0d/run-01/attempt-01/bag.log            |    25 +
+ artifacts/d0d/run-01/attempt-01/cmd_vel.err        |     0
  artifacts/d0d/run-01/attempt-01/cmd_vel.txt        |   540 +
  artifacts/d0d/run-01/attempt-01/goal-202437.txt    | 61961 +++++++++++++++++++
+ artifacts/d0d/run-01/attempt-01/odom.err           |     0
  artifacts/d0d/run-01/attempt-01/odom.txt           |  4743 ++
  artifacts/d0d/run-01/attempt-01/record.meta        |     2 +
  artifacts/d0d/run-01/attempt-01/record.pids        |     6 +
- artifacts/d0d/run-01/attempt-01/result.json        |   136 +
+ artifacts/d0d/run-01/attempt-01/result.json        |   251 +
+ artifacts/d0d/run-01/attempt-01/tf_map_base.err    |     1 +
  artifacts/d0d/run-01/attempt-01/tf_map_base.txt    |    11 +
  artifacts/d0d/run-01/attempt-01/trajectory.csv     |  5118 ++
  artifacts/d0d/run-01/map-overview.txt              |    46 +
@@ -70,24 +77,30 @@
  artifacts/d0d/run-01/ready-201532.txt              |   465 +
  artifacts/d0d/run-01/ready-check-01.txt            |   468 +
  artifacts/d0d/run-01/rviz-before-goal-2018.png     |   Bin 0 -> 1336449 bytes
+ artifacts/d0d/run-01/usd-inspection-wiring.txt     |   278 +
  artifacts/d0d/run-01/usd-inspection.txt            |    70 +
  artifacts/d0d/run-02-stoptest/nav2-launch.log      |   354 +
  artifacts/d0d/run-02-stoptest/nav2-launch.meta     |     6 +
  artifacts/d0d/run-02-stoptest/nav2.exit            |     1 +
+ .../run-02-stoptest/record-test/action_status.err  |     0
  .../run-02-stoptest/record-test/action_status.exit |     1 +
  .../run-02-stoptest/record-test/action_status.txt  |     0
+ .../d0d/run-02-stoptest/record-test/amcl_pose.err  |     0
  .../d0d/run-02-stoptest/record-test/amcl_pose.exit |     1 +
  .../d0d/run-02-stoptest/record-test/amcl_pose.txt  |     1 +
  .../d0d/run-02-stoptest/record-test/bag-info.txt   |    21 +
  .../d0d/run-02-stoptest/record-test/bag-path.txt   |     1 +
  artifacts/d0d/run-02-stoptest/record-test/bag.exit |     1 +
  artifacts/d0d/run-02-stoptest/record-test/bag.log  |    24 +
+ .../d0d/run-02-stoptest/record-test/cmd_vel.err    |     0
  .../d0d/run-02-stoptest/record-test/cmd_vel.exit   |     1 +
  .../d0d/run-02-stoptest/record-test/cmd_vel.txt    |     0
+ artifacts/d0d/run-02-stoptest/record-test/odom.err |     0
  .../d0d/run-02-stoptest/record-test/odom.exit      |     1 +
  artifacts/d0d/run-02-stoptest/record-test/odom.txt |   277 +
  .../d0d/run-02-stoptest/record-test/record.meta    |     8 +
  .../d0d/run-02-stoptest/record-test/record.pids    |     6 +
+ .../run-02-stoptest/record-test/tf_map_base.err    |     6 +
  .../run-02-stoptest/record-test/tf_map_base.exit   |     1 +
  .../run-02-stoptest/record-test/tf_map_base.txt    |   350 +
  artifacts/d0d/run-03-stoptest/nav2-launch.log      |   356 +
@@ -96,4 +109,47 @@
  artifacts/d0d/run-04-stoptest/nav2-launch.log      |   499 +
  artifacts/d0d/run-04-stoptest/nav2-launch.meta     |     6 +
  artifacts/d0d/run-04-stoptest/nav2.exit            |     1 +
- 98 files changed, 90481 insertions(+)
+ artifacts/d0d/run-05-regress/mutation_check.py     |    48 +
+ artifacts/d0d/run-05-regress/nav2-launch.log       |   501 +
+ artifacts/d0d/run-05-regress/nav2-launch.meta      |     6 +
+ artifacts/d0d/run-05-regress/nav2.exit             |     1 +
+ .../run-05-regress/neg-analyze-goal-mismatch.txt   |     2 +
+ .../run-05-regress/neg-bag-missing/bag-path.txt    |     1 +
+ .../d0d/run-05-regress/neg-bag-missing/record.meta |     1 +
+ .../d0d/run-05-regress/neg-bag-missing/record.pids |     0
+ .../neg-foreign-session/nav2-launch.log            |     0
+ .../neg-foreign-session/nav2-launch.meta           |     2 +
+ .../d0d/run-05-regress/neg-map-overview-stdout.txt |     7 +
+ artifacts/d0d/run-05-regress/neg-map-overview.txt  |     0
+ .../neg-ready-without-nav2/ready-220805.txt        |   215 +
+ artifacts/d0d/run-05-regress/neg-send_goal-yaw.txt |     4 +
+ .../d0d/run-05-regress/neg-stop_nav2-foreign.txt   |     3 +
+ .../run-05-regress/neg-stop_record-bag-missing.txt |    14 +
+ artifacts/d0d/run-05-regress/ready-220532.txt      |   496 +
+ .../run-05-regress/record-test/action_status.err   |     0
+ .../run-05-regress/record-test/action_status.exit  |     1 +
+ .../run-05-regress/record-test/action_status.txt   |     0
+ .../d0d/run-05-regress/record-test/amcl_pose.err   |     0
+ .../d0d/run-05-regress/record-test/amcl_pose.exit  |     1 +
+ .../d0d/run-05-regress/record-test/amcl_pose.txt   |     1 +
+ .../d0d/run-05-regress/record-test/bag-info.txt    |    21 +
+ .../d0d/run-05-regress/record-test/bag-path.txt    |     1 +
+ artifacts/d0d/run-05-regress/record-test/bag.exit  |     1 +
+ artifacts/d0d/run-05-regress/record-test/bag.log   |    25 +
+ .../d0d/run-05-regress/record-test/cmd_vel.err     |     0
+ .../d0d/run-05-regress/record-test/cmd_vel.exit    |     1 +
+ .../d0d/run-05-regress/record-test/cmd_vel.txt     |     0
+ artifacts/d0d/run-05-regress/record-test/odom.err  |     0
+ artifacts/d0d/run-05-regress/record-test/odom.exit |     1 +
+ artifacts/d0d/run-05-regress/record-test/odom.txt  |   231 +
+ .../d0d/run-05-regress/record-test/record.meta     |     8 +
+ .../d0d/run-05-regress/record-test/record.pids     |     6 +
+ .../d0d/run-05-regress/record-test/tf_map_base.err |     6 +
+ .../run-05-regress/record-test/tf_map_base.exit    |     1 +
+ .../d0d/run-05-regress/record-test/tf_map_base.txt |   320 +
+ artifacts/d0d/run-05-regress/regress-negative.txt  |     9 +
+ artifacts/d0d/run-05-regress/regress-positive.txt  |   566 +
+ artifacts/d0d/run-05-regress/regress_negative.sh   |    35 +
+ .../d0d/run-05-regress/setup-workspace-rerun.exit  |     1 +
+ .../d0d/run-05-regress/setup-workspace-rerun.log   |   199 +
+ 154 files changed, 93646 insertions(+)

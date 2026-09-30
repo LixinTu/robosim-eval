@@ -1,6 +1,6 @@
 # Codex 独立审查提示词(第 1 轮重跑,round1b)
 
-说明:第 1 轮(round1)在 2026-09-29 20:59 因账户用量上限中止、无意见;本文件是同一轮的重跑,范围延伸到 `8bce97b`。
+说明:第 1 轮(round1)在 2026-09-29 20:59 因账户用量上限中止、无意见;本文件是同一轮的重跑,范围延伸到 `19203e0`(含 Claude 内部预审第 2 次之后的修复;内部预审的逐条处理见 docs/review/2026-09-29-d0/REVIEW.md,请独立判断,不要只核对那张表)。
 
 你是本次交付的独立审查者。请对 D:\RoboSim-Eval 项目的 D0 交付做独立代码审查。本轮保持源码只读,不直接修复;完成后把报告交回 Claude Code,由 Claude Code 核实和修复。
 
@@ -14,7 +14,7 @@
 ## 审查材料与范围
 
 - 审查材料:`docs/review/2026-09-29-d0-handoff.md`(先读它)。
-- 代码范围:基线 `dbf67cee7c386fcbfb5f9f6a58f47ff1db73061d` 到被审版本 `8bce97b2dbf8df078867b60c162591573b211ea0`(`git diff dbf67ce 8bce97b`;docs/review/ 下是审查材料,不属于被审代码);完整非证据 diff 在 `docs/review/2026-09-29-d0/task.diff`,改动清单在 `docs/review/2026-09-29-d0/changed-files.json`。
+- 代码范围:基线 `dbf67cee7c386fcbfb5f9f6a58f47ff1db73061d` 到被审版本 `19203e0a83779fc2aa3c464328885d337a63e23c`(`git diff dbf67ce 19203e0`;docs/review/ 下是审查材料,不属于被审代码);完整非证据 diff 在 `docs/review/2026-09-29-d0/task.diff`,改动清单在 `docs/review/2026-09-29-d0/changed-files.json`。
 - 需求原文:`RoboSim-Eval-Plan-and-Setup-ZH(1).md` 的 §0.2、§A4、§A5、§A7、§B0–B7、§C。
 
 先核对代码范围,直接阅读原始需求、验收条件、实际 diff、相关完整代码和证据文件。不要只依据实现者的交接说明或完成总结判断。
