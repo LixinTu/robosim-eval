@@ -9,8 +9,8 @@
 | 阶段 0 · 唯一计划与入口 | 完成(2026-09-29) | 基线 commit `dbf67ce`(master);分支 `feature/d0-environment`;AGENTS.md / CLAUDE.md / docs/plan.md / docs/harness-sources.md / artifacts/README.md | — |
 | D0a · 环境证据 | 完成(2026-09-29 19:02–19:04) | docs/environment.md;artifacts/d0a/(两侧探测原始输出 + commands.md) | 门槛 1→2 通过;发现:WSL 内无 ROS 2,sudo 需密码 |
 | D0b · ROS 2 Jazzy + 6.1.0 示例工作区 | 完成(2026-09-29 19:16–19:30) | artifacts/d0b/commands.md(安装日志、check-ros-install、talker/listener ×2、rviz2 测试、setup-workspace.log) | 门槛 2→3 通过。工作区 `~/robotics/vendor/isaac-ros-6.1`,HEAD a9e8471…;安装脚本首跑退出码 1 是校验步骤的 `set -u` 缺陷(已修),安装本身成功 |
-| D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 进行中:Isaac 已用 bridge 重启(kit 33104)、Nova Carter 场景已加载并 Play(显存 3128 MiB,可承载);**阻塞在 Windows 防火墙**——Isaac 的 SPDP 多播已到达 WSL,但 WSL→Windows 入站被挡,等待用户以管理员加一条限定 kit.exe + vEthernet (WSL) + UDP 的入站规则 | artifacts/d0c/commands.md(bridge-check-01/02、probe-01/02、kit-udp-endpoints-01、diag-01) | 升级链走到第 ④ 步(①无残留 ②③对入站阻断无效);规则加上后重跑 probe_topics.sh;kit 日志的 TF aggregation 警告待观察是否随发现恢复而消失 |
-| D0d · 一次真实 A→B | 未开始 | artifacts/d0d/(待生成) | 需用户 RViz 操作 |
+| D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 完成(2026-09-29 19:35–20:12) | artifacts/d0c/commands.md;probe-04-playing/(/clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、tf2_echo odom→base_link);clock-continuity-01;clock-pause-test-02(暂停 29 s 时钟停、恢复后继续);bridge-check-01/02;kit-udp-endpoints-01;diag-01 | 门槛 3→4 通过。排障:Windows 防火墙阻断 WSL→kit.exe 入站(用户以管理员加一条限定规则后解决);首次 Play 后 7 s 时间线被停止(重新 Play 解决)。发现:示例场景不发布 2D 雷达扫描(params 的局部代价地图两路来源无数据,D0d 记偏差);USD 动画时间线每 ~41 s 循环但仿真时钟不受影响;显存峰值 3754 MiB |
+| D0d · 一次真实 A→B | 进行中:准备 Nav2 启动/停止/就绪脚本 | artifacts/d0d/(待生成) | 需用户 RViz 操作(核对定位、可能发目标);cmd_vel 类型已确认 geometry_msgs/Twist,与 Jazzy Nav2 默认一致 |
 | D0 交付 + 独立审查 | 未开始 | docs/review/(待生成) | Codex 登录状态待查 |
 | D1 doctor / D2 单次运行 / D3 判定 / D4 批量复跑 / D5 作品交付 | 未开始 | — | D0 通过后按序进行 |
 
