@@ -73,3 +73,19 @@ def test_spawn_names_are_confined_to_the_tool_root():
     for bad in ("/World/Nova_Carter_ROS", "/World/RoboSimObstaclesX/a", f"{SPAWN_ROOT}/../Nova_Carter_ROS", "", "a/b"):
         with pytest.raises(ValueError):
             validate_spawn_name(bad)
+
+
+@pytest.mark.parametrize("pose, v, w", [
+    (Pose2D(math.nan, math.nan, math.nan), 0.0, 0.0),                    # physics blow-up: every field NaN
+    (Pose2D(math.nan, -1.0, math.pi), 0.0, 0.0),                         # one coordinate NaN, the rest at the spawn
+    (Pose2D(-6.0, -1.0, math.nan), 0.0, 0.0),                            # heading NaN (e.g. from a NaN quaternion)
+    (Pose2D(-6.0, -1.0, math.pi), math.nan, 0.0),                        # pose at the spawn, speeds NaN
+    (Pose2D(-6.0, -1.0, math.pi), 0.0, math.nan),
+    (Pose2D(-6.0, math.inf, math.pi), 0.0, 0.0),
+    (Pose2D(-6.0, -1.0, math.pi), 0.0, -math.inf),
+])
+def test_reset_check_fails_closed_on_non_finite_ground_truth(pose, v, w):
+    # every comparison with NaN is False, so without an explicit check a NaN ground truth would pass the reset check
+    res = check_reset(pose, v, w, SPAWN)
+    assert not res.ok
+    assert any("not finite" in r for r in res.reasons)
