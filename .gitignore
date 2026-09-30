@@ -31,3 +31,6 @@ Thumbs.db
 artifacts/**/*.pid
 artifacts/**/pid-*
 # (*.err recorder stderr files are kept: small, and they are failure evidence; see review finding R4)
+
+# ---- Codex review queue: the lock file holds the running queue PID (transient) ----
+docs/review/codex-queue.lock

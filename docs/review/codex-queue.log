@@ -1,0 +1,32 @@
+﻿2026-09-29T23:52:59.8986929-07:00 queue start pid=14924 items=2026-09-29-d0/round1c-a,2026-09-29-d0/round1c-b,2026-09-29-d0/round1c-c,2026-09-29-d0/round1c-d,2026-09-29-d1/round1 max_attempts=4 not_before=2026-09-30T03:38
+2026-09-29T23:52:59.9156952-07:00 sleep until 2026-09-30T03:38:00 (13501 s): NotBefore
+2026-09-30T00:50:07.0160986-07:00 queue pid 14924 stopped by Claude to requeue with the D2 chunks
+2026-09-30T00:50:07.4150964-07:00 queue start pid=8184 items=2026-09-29-d0/round1c-a,2026-09-29-d0/round1c-b,2026-09-29-d0/round1c-c,2026-09-29-d0/round1c-d,2026-09-29-d1/round1,2026-09-30-d2/round1a,2026-09-30-d2/round1b max_attempts=4 not_before=2026-09-30T03:38
+2026-09-30T00:50:07.4340966-07:00 sleep until 2026-09-30T03:38:00 (10073 s): NotBefore
+2026-09-30T01:32:45.6780964-07:00 queue pid 8184 stopped by Claude to requeue with the D3 chunks
+2026-09-30T01:32:46.1695975-07:00 queue start pid=46228 items=2026-09-29-d0/round1c-a,2026-09-29-d0/round1c-b,2026-09-29-d0/round1c-c,2026-09-29-d0/round1c-d,2026-09-29-d1/round1,2026-09-30-d2/round1a,2026-09-30-d2/round1b,2026-09-30-d3/round1a,2026-09-30-d3/round1b max_attempts=4 not_before=2026-09-30T03:38
+2026-09-30T01:32:46.1955952-07:00 sleep until 2026-09-30T03:38:00 (7514 s): NotBefore
+2026-09-30T02:36:39.4346949-07:00 queue pid 46228 stopped by Claude to requeue with the D4 and D5 packages
+2026-09-30T02:36:51.1456948-07:00 queue start pid=58304 items=2026-09-29-d0/round1c-a,2026-09-29-d0/round1c-b,2026-09-29-d0/round1c-c,2026-09-29-d0/round1c-d,2026-09-29-d1/round1,2026-09-30-d2/round1a,2026-09-30-d2/round1b,2026-09-30-d3/round1a,2026-09-30-d3/round1b,2026-09-30-d4/round1,2026-09-30-d5/round1 max_attempts=4 not_before=2026-09-30T03:38
+2026-09-30T02:36:51.1596947-07:00 sleep until 2026-09-30T03:38:00 (3669 s): NotBefore
+2026-09-30T03:42:10.3331955-07:00 item=2026-09-29-d0/round1c-a attempt=1 exit=0 report=True usage_limit=False
+2026-09-30T03:43:40.2666944-07:00 item=2026-09-29-d0/round1c-b attempt=1 exit=1 report=False usage_limit=True
+2026-09-30T03:43:40.2796946-07:00 sleep until 2026-09-30T04:13:40 (1800 s): usage limit on 2026-09-29-d0/round1c-b
+2026-09-30T04:13:45.6061953-07:00 item=2026-09-29-d0/round1c-b attempt=2 exit=1 report=False usage_limit=True
+2026-09-30T04:13:45.6126956-07:00 sleep until 2026-09-30T04:43:45 (1800 s): usage limit on 2026-09-29-d0/round1c-b
+2026-09-30T04:43:50.9186966-07:00 item=2026-09-29-d0/round1c-b attempt=3 exit=1 report=False usage_limit=True
+2026-09-30T04:43:50.9231966-07:00 sleep until 2026-09-30T05:13:50 (1800 s): usage limit on 2026-09-29-d0/round1c-b
+2026-09-30T05:13:56.2336970-07:00 item=2026-09-29-d0/round1c-b attempt=4 exit=1 report=False usage_limit=True
+2026-09-30T05:13:56.2406950-07:00 stop: 2026-09-29-d0/round1c-b still failing after 4 attempts
+2026-09-30T06:59:19.8016947-07:00 queue restarted by Claude after fixing the time-only retry parse (codex_queue_lib.ps1); failed round1c-b attempts moved to 2026-09-29-d0/queue-run-20260930-0338/
+2026-09-30T06:59:20.1576947-07:00 queue start pid=56004 items=2026-09-29-d0/round1c-a,2026-09-29-d0/round1c-b,2026-09-29-d0/round1c-c,2026-09-29-d0/round1c-d,2026-09-29-d1/round1,2026-09-30-d2/round1a,2026-09-30-d2/round1b,2026-09-30-d3/round1a,2026-09-30-d3/round1b,2026-09-30-d4/round1,2026-09-30-d5/round1 max_attempts=8 not_before=2026-09-30T08:41
+2026-09-30T06:59:20.1731947-07:00 sleep until 2026-09-30T08:41:00 (6100 s): NotBefore
+2026-09-30T07:06:13.3911996-07:00 queue pid 56004 stopped by Claude: user reports the Codex quota is back, restarting without NotBefore
+2026-09-30T07:06:13.8887010-07:00 queue start pid=58748 items=2026-09-29-d0/round1c-a,2026-09-29-d0/round1c-b,2026-09-29-d0/round1c-c,2026-09-29-d0/round1c-d,2026-09-29-d1/round1,2026-09-30-d2/round1a,2026-09-30-d2/round1b,2026-09-30-d3/round1a,2026-09-30-d3/round1b,2026-09-30-d4/round1,2026-09-30-d5/round1 max_attempts=8 not_before=
+2026-09-30T07:06:13.8942009-07:00 skip 2026-09-29-d0/round1c-a (report exists)
+2026-09-30T07:12:31.0751960-07:00 item=2026-09-29-d0/round1c-b attempt=1 exit=0 report=True usage_limit=False
+2026-09-30T07:12:36.5031964-07:00 item=2026-09-29-d0/round1c-c attempt=1 exit=1 report=False usage_limit=True
+2026-09-30T07:12:36.5486971-07:00 sleep until 2026-09-30T12:09:00 (17784 s): usage limit on 2026-09-29-d0/round1c-c
+2026-09-30T07:25:12.6516951-07:00 queue pid 58748 stopped by Claude: restart with the transcript-safe usage-limit detection (fix branch 156c31a, scripts from the fix worktree until merged)
+2026-09-30T07:25:13.1081950-07:00 queue start pid=35156 items=2026-09-29-d0/round1c-a,2026-09-29-d0/round1c-b,2026-09-29-d0/round1c-c,2026-09-29-d0/round1c-d,2026-09-29-d1/round1,2026-09-30-d2/round1a,2026-09-30-d2/round1b,2026-09-30-d3/round1a,2026-09-30-d3/round1b,2026-09-30-d4/round1,2026-09-30-d5/round1 max_attempts=8 not_before=2026-09-30T12:09
+2026-09-30T07:25:13.1241952-07:00 sleep until 2026-09-30T12:09:00 (17027 s): NotBefore

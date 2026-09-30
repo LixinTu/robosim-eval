@@ -1,0 +1,1997 @@
+OpenAI Codex v0.157.0
+--------
+workdir: D:\RoboSim-Eval
+model: gpt-6-astra
+provider: openai
+approval: on-request
+sandbox: read-only
+reasoning effort: ultra
+reasoning summaries: none
+session id: 01a0f1e4-8996-74e1-83f2-5932a923b2a3
+--------
+user
+Read the file D:\RoboSim-Eval\docs\review\2026-09-29-d0\codex-prompt-round1c-a.md (UTF-8, Chinese) and carry out exactly the review it describes. Do not modify any file. Write the final report in Chinese.
+2026-09-30T10:38:02.682714Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer error=\"invalid_request\", error_description=\"No access token was provided in this request\", resource_metadata=\"https://api.githubcopilot.com/.well-known/oauth-protected-resource/mcp/\"" })
+hook: SessionStart
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Failed
+codex
+我会先读取指定审查提示词及适用的审查规范，再按其中范围开展只读审查，不修改任何文件。
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+2026-09-30T10:38:10.332119Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"Failed to create unified exec process: helper_unknown_error: apply deny-read ACLs\")" }
+2026-09-30T10:38:10.332156Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"Failed to create unified exec process: helper_unknown_error: apply deny-read ACLs\")" }
+hook: PreToolUse
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'D:\\RoboSim-Eval\\docs\\review\\2026-09-29-d0\\codex-prompt-round1c-a.md' -Encoding UTF8" in D:\RoboSim-Eval
+ succeeded in 18ms:
+
+**额度很紧,请严格控制阅读量:**
+- 被审代码一律用 `git -C D:\RoboSim-Eval show 19203e0:<路径>` 读取。工作区可能已有后续提交,不代表被审版本。
+- 只读"本片文件"列出的文件和"需求"列出的章节(用 Select-String 或 findstr 定位章节,只读那一段)。
+- 不要读 `docs/review/` 下的 task.diff、changed-files.json、*-stderr.txt;不要整份读取 artifacts/ 下超过 200 行的日志,需要证据时只定位几行。
+
+## 第 0 步(各一句话,写在报告开头)
+1. 列出本会话实际加载的项目说明来源(例如 AGENTS.md、CLAUDE.md、全局说明)。
+2. 根据 docs/plan.md 写出"当前任务"。
+
+## 本片文件(1/4:评测逻辑)
+- `scripts/wsl/analyze_attempt.py`、`scripts/wsl/analyze_attempt.sh`
+- `tests/test_analyze_attempt.py`
+- 证据(可选,额度允许时):`artifacts/d0d/run-01/attempt-01/result.json`
+
+## 需求
+`RoboSim-Eval-Plan-and-Setup-ZH(1).md` 的 §A5(状态合同与阈值)。
+
+## 本片审查重点
+1. `evaluate()`:目标核对与不一致时不写结果;按目标 ID 过滤;停稳规则(阈值、时间基准、断档与倒退的处理);到达判定的时刻与位置来源;数据完整性的窗口与门槛;五个状态字段与 §A5 是否一致;退出码。
+2. 坐标合成(`pose_compose`、TF 合成)是否正确,角度是否归一化。
+3. 边界情况:空数据、只有部分话题、多个目标、被拒绝、没有转录、`--spawn` 缺失、时间戳倒退。
+4. 测试是否真的约束了这些规则;列出最重要的缺失用例。
+
+## 报告格式(中文)
+每个发现写清:严重程度(Blocker / Major / Minor);文件、函数或行号;触发条件;预期行为与实际行为;依据(代码行、可复现命令或失败用例);用户影响与修复方向;分类(已复现问题 / 有代码依据的问题 / 待确认疑点)。不设最低数量,没有发现就如实说明;不写纯风格偏好。
+
+最后记录:审查版本 19203e0、实际执行过的检查、没读或没验证的部分、剩余风险、使用的模型名称(若可见)。
+
+hook: PreToolUse
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'C:\\Users\\Administrator\\.codex\\plugins\\cache\\claude-plugins-official\\superpowers\\6.4.1\\skills\\using-superpowers\\SKILL.md' -Encoding UTF8
+Get-Content -LiteralPath 'C:\\Users\\Administrator\\.agents\\skills\\code-review-excellence\\SKILL.md' -Encoding UTF8" in D:\RoboSim-Eval
+ succeeded in 70ms:
+---
+
+<SUBAGENT-STOP>
+If you were dispatched as a subagent to execute a specific task, ignore this skill.
+</SUBAGENT-STOP>
+
+<EXTREMELY-IMPORTANT>
+If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
+
+IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
+
+This is not negotiable. You cannot rationalize your way out of this.
+</EXTREMELY-IMPORTANT>
+
+## The Rule
+
+**Invoke relevant or requested skills BEFORE any response or action** — including clarifying questions, exploring the codebase, or checking files. If it turns out wrong for the situation, you don't have to use it.
+
+**Before entering plan mode:** if you haven't already brainstormed, invoke the brainstorming skill first.
+
+Then announce "Using [skill] to [purpose]" and follow the skill exactly. If it has a checklist, create a todo per item.
+
+## Skill Priority
+
+When multiple skills apply, process skills come first — they set the approach, then implementation skills (frontend-design, etc.) carry it out. Brainstorming and systematic-debugging are Superpowers' most common process skills, but the rule holds for any of them.
+
+- "Let's build X" → superpowers:brainstorming first, then implementation skills.
+- "Fix this bug" → superpowers:systematic-debugging first, then domain skills.
+
+## Red Flags
+
+These thoughts mean STOP—you're rationalizing:
+
+| Thought | Reality |
+|---------|---------|
+| "This is just a simple question" | Questions are tasks. Check for skills. |
+| "I need more context first" | Skill check comes BEFORE clarifying questions. |
+| "Let me explore the codebase first" | Skills tell you HOW to explore. Check first. |
+| "I can check git/files quickly" | Files lack conversation context. Check for skills. |
+| "Let me gather information first" | Skills tell you HOW to gather information. |
+| "This doesn't need a formal skill" | If a skill exists, use it. |
+| "I remember this skill" | Skills evolve. Read current version. |
+| "This doesn't count as a task" | Action = task. Check for skills. |
+| "The skill is overkill" | Simple things become complex. Use it. |
+| "I'll just do this one thing first" | Check BEFORE doing anything. |
+| "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
+| "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
+
+## Platform Adaptation
+
+If your harness appears here, read its reference file for special instructions:
+
+- Claude Code: `references/claude-code-tools.md`
+- Codex: `references/codex-tools.md`
+- Pi: `references/pi-tools.md`
+- Antigravity: `references/antigravity-tools.md`
+- Hermes Agent: `references/hermes-tools.md`
+- Muse: `references/muse-tools.md`
+
+## User Instructions
+
+User instructions (CLAUDE.md, AGENTS.md, GEMINI.md, etc, direct requests) take precedence over skills, which in turn override default behavior. Only skip skill workflows or instructions when your human partner has explicitly told you to.
+---
+name: code-review-excellence
+description: This skill should be used when the user asks to review a diff or pull request, write review comments, audit code quality, establish review standards, or improve how a team performs code review.
+version: 0.1.0
+---
+
+# Code Review Excellence
+
+Transform code reviews from gatekeeping to knowledge sharing through constructive feedback, systematic analysis, and collaborative improvement.
+
+## When to Use This Skill
+
+- Reviewing pull requests and code changes
+- Establishing code review standards for teams
+- Mentoring junior developers through reviews
+- Conducting architecture reviews
+- Creating review checklists and guidelines
+- Improving team collaboration
+- Reducing code review cycle time
+- Maintaining code quality standards
+
+## Core Principles
+
+### 1. The Review Mindset
+
+**Goals of Code Review:**
+- Catch bugs and edge cases
+- Ensure code maintainability
+- Share knowledge across team
+- Enforce coding standards
+- Improve design and architecture
+- Build team culture
+
+**Not the Goals:**
+- Show off knowledge
+- Nitpick formatting (use linters)
+- Block progress unnecessarily
+- Rewrite to your preference
+
+### 2. Effective Feedback
+
+**Good Feedback is:**
+- Specific and actionable
+- Educational, not judgmental
+- Focused on the code, not the person
+- Balanced (praise good work too)
+- Prioritized (critical vs nice-to-have)
+
+```markdown
+❌ Bad: "This is wrong."
+✅ Good: "This could cause a race condition when multiple users
+         access simultaneously. Consider using a mutex here."
+
+❌ Bad: "Why didn't you use X pattern?"
+✅ Good: "Have you considered the Repository pattern? It would
+         make this easier to test. Here's an example: [link]"
+
+❌ Bad: "Rename this variable."
+✅ Good: "[nit] Consider `userCount` instead of `uc` for
+         clarity. Not blocking if you prefer to keep it."
+```
+
+### 3. Review Scope
+
+**What to Review:**
+- Logic correctness and edge cases
+- Security vulnerabilities
+- Performance implications
+- Test coverage and quality
+- Error handling
+- Documentation and comments
+- API design and naming
+- Architectural fit
+
+**What Not to Review Manually:**
+- Code formatting (use Prettier, Black, etc.)
+- Import organization
+- Linting violations
+- Simple typos
+
+## Review Process
+
+### Phase 1: Context Gathering (2-3 minutes)
+
+```markdown
+Before diving into code, understand:
+
+1. Read PR description and linked issue
+2. Check PR size (>400 lines? Ask to split)
+3. Review CI/CD status (tests passing?)
+4. Understand the business requirement
+5. Note any relevant architectural decisions
+```
+
+### Phase 2: High-Level Review (5-10 minutes)
+
+```markdown
+1. **Architecture & Design**
+   - Does the solution fit the problem?
+   - Are there simpler approaches?
+   - Is it consistent with existing patterns?
+   - Will it scale?
+
+2. **File Organization**
+   - Are new files in the right places?
+   - Is code grouped logically?
+   - Are there duplicate files?
+
+3. **Testing Strategy**
+   - Are there tests?
+   - Do tests cover edge cases?
+   - Are tests readable?
+```
+
+### Phase 3: Line-by-Line Review (10-20 minutes)
+
+```markdown
+For each file:
+
+1. **Logic & Correctness**
+   - Edge cases handled?
+   - Off-by-one errors?
+   - Null/undefined checks?
+   - Race conditions?
+
+2. **Security**
+   - Input validation?
+   - SQL injection risks?
+   - XSS vulnerabilities?
+   - Sensitive data exposure?
+
+3. **Performance**
+   - N+1 queries?
+   - Unnecessary loops?
+   - Memory leaks?
+   - Blocking operations?
+
+4. **Maintainability**
+   - Clear variable names?
+   - Functions doing one thing?
+   - Complex code commented?
+   - Magic numbers extracted?
+```
+
+### Phase 4: Summary & Decision (2-3 minutes)
+
+```markdown
+1. Summarize key concerns
+2. Highlight what you liked
+3. Make clear decision:
+   - ✅ Approve
+   - 💬 Comment (minor suggestions)
+   - 🔄 Request Changes (must address)
+4. Offer to pair if complex
+```
+
+## Review Techniques
+
+### Technique 1: The Checklist Method
+
+```markdown
+## Security Checklist
+- [ ] User input validated and sanitized
+- [ ] SQL queries use parameterization
+- [ ] Authentication/authorization checked
+- [ ] Secrets not hardcoded
+- [ ] Error messages don't leak info
+
+## Performance Checklist
+- [ ] No N+1 queries
+- [ ] Database queries indexed
+- [ ] Large lists paginated
+- [ ] Expensive operations cached
+- [ ] No blocking I/O in hot paths
+
+## Testing Checklist
+- [ ] Happy path tested
+- [ ] Edge cases covered
+- [ ] Error cases tested
+- [ ] Test names are descriptive
+- [ ] Tests are deterministic
+```
+
+### Technique 2: The Question Approach
+
+Instead of stating problems, ask questions to encourage thinking:
+
+```markdown
+❌ "This will fail if the list is empty."
+✅ "What happens if `items` is an empty array?"
+
+❌ "You need error handling here."
+✅ "How should this behave if the API call fails?"
+
+❌ "This is inefficient."
+✅ "I see this loops through all users. Have we considered
+    the performance impact with 100k users?"
+```
+
+### Technique 3: Suggest, Don't Command
+
+```markdown
+## Use Collaborative Language
+
+❌ "You must change this to use async/await"
+✅ "Suggestion: async/await might make this more readable:
+    ```typescript
+    async function fetchUser(id: string) {
+        const user = await db.query('SELECT * FROM users WHERE id = ?', id);
+        return user;
+    }
+    ```
+    What do you think?"
+
+❌ "Extract this into a function"
+✅ "This logic appears in 3 places. Would it make sense to
+    extract it into a shared utility function?"
+```
+
+### Technique 4: Differentiate Severity
+
+```markdown
+Use labels to indicate priority:
+
+🔴 [blocking] - Must fix before merge
+🟡 [important] - Should fix, discuss if disagree
+🟢 [nit] - Nice to have, not blocking
+💡 [suggestion] - Alternative approach to consider
+📚 [learning] - Educational comment, no action needed
+🎉 [praise] - Good work, keep it up!
+
+Example:
+"🔴 [blocking] This SQL query is vulnerable to injection.
+ Please use parameterized queries."
+
+"🟢 [nit] Consider renaming `data` to `userData` for clarity."
+
+"🎉 [praise] Excellent test coverage! This will catch edge cases."
+```
+
+## Language-Specific Patterns
+
+### Python Code Review
+
+```python
+# Check for Python-specific issues
+
+# ❌ Mutable default arguments
+def add_item(item, items=[]):  # Bug! Shared across calls
+    items.append(item)
+    return items
+
+# ✅ Use None as default
+def add_item(item, items=None):
+    if items is None:
+        items = []
+    items.append(item)
+    return items
+
+# ❌ Catching too broad
+try:
+    result = risky_operation()
+except:  # Catches everything, even KeyboardInterrupt!
+    pass
+
+# ✅ Catch specific exceptions
+try:
+    result = risky_operation()
+except ValueError as e:
+    logger.error(f"Invalid value: {e}")
+    raise
+
+# ❌ Using mutable class attributes
+class User:
+    permissions = []  # Shared across all instances!
+
+# ✅ Initialize in __init__
+class User:
+    def __init__(self):
+        self.permissions = []
+```
+
+### TypeScript/JavaScript Code Review
+
+```typescript
+// Check for TypeScript-specific issues
+
+// ❌ Using any defeats type safety
+function processData(data: any) {  // Avoid any
+    return data.value;
+}
+
+// ✅ Use proper types
+interface DataPayload {
+    value: string;
+}
+function processData(data: DataPayload) {
+    return data.value;
+}
+
+// ❌ Not handling async errors
+async function fetchUser(id: string) {
+    const response = await fetch(`/api/users/${id}`);
+    return response.json();  // What if network fails?
+}
+
+// ✅ Handle errors properly
+async function fetchUser(id: string): Promise<User> {
+    try {
+        const response = await fetch(`/api/users/${id}`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to fetch user:', error);
+        throw error;
+    }
+}
+
+// ❌ Mutation of props
+function UserProfile({ user }: Props) {
+    user.lastViewed = new Date();  // Mutating prop!
+    return <div>{user.name}</div>;
+}
+
+// ✅ Don't mutate props
+function UserProfile({ user, onView }: Props) {
+    useEffect(() => {
+        onView(user.id);  // Notify parent to update
+    }, [user.id]);
+    return <div>{user.name}</div>;
+}
+```
+
+## Advanced Review Patterns
+
+### Pattern 1: Architectural Review
+
+```markdown
+When reviewing significant changes:
+
+1. **Design Document First**
+   - For large features, request design doc before code
+   - Review design with team before implementation
+   - Agree on approach to avoid rework
+
+2. **Review in Stages**
+   - First PR: Core abstractions and interfaces
+   - Second PR: Implementation
+   - Third PR: Integration and tests
+   - Easier to review, faster to iterate
+
+3. **Consider Alternatives**
+   - "Have we considered using [pattern/library]?"
+   - "What's the tradeoff vs. the simpler approach?"
+   - "How will this evolve as requirements change?"
+```
+
+### Pattern 2: Test Quality Review
+
+```typescript
+// ❌ Poor test: Implementation detail testing
+test('increments counter variable', () => {
+    const component = render(<Counter />);
+    const button = component.getByRole('button');
+    fireEvent.click(button);
+    expect(component.state.counter).toBe(1);  // Testing internal state
+});
+
+// ✅ Good test: Behavior testing
+test('displays incremented count when clicked', () => {
+    render(<Counter />);
+    const button = screen.getByRole('button', { name: /increment/i });
+    fireEvent.click(button);
+    expect(screen.getByText('Count: 1')).toBeInTheDocument();
+});
+
+// Review questions for tests:
+// - Do tests describe behavior, not implementation?
+// - Are test names clear and descriptive?
+// - Do tests cover edge cases?
+// - Are tests independent (no shared state)?
+// - Can tests run in any order?
+```
+
+### Pattern 3: Security Review
+
+```markdown
+## Security Review Checklist
+
+### Authentication & Authorization
+- [ ] Is authentication required where needed?
+- [ ] Are authorization checks before every action?
+- [ ] Is JWT validation proper (signature, expiry)?
+- [ ] Are API keys/secrets properly secured?
+
+### Input Validation
+- [ ] All user inputs validated?
+- [ ] File uploads restricted (size, type)?
+- [ ] SQL queries parameterized?
+- [ ] XSS protection (escape output)?
+
+### Data Protection
+- [ ] Passwords hashed (bcrypt/argon2)?
+- [ ] Sensitive data encrypted at rest?
+- [ ] HTTPS enforced for sensitive data?
+- [ ] PII handled according to regulations?
+
+### Common Vulnerabilities
+- [ ] No eval() or similar dynamic execution?
+- [ ] No hardcoded secrets?
+- [ ] CSRF protection for state-changing operations?
+- [ ] Rate limiting on public endpoints?
+```
+
+## Giving Difficult Feedback
+
+### Pattern: The Sandwich Method (Modified)
+
+```markdown
+Traditional: Praise + Criticism + Praise (feels fake)
+
+Better: Context + Specific Issue + Helpful Solution
+
+Example:
+"I noticed the payment processing logic is inline in the
+controller. This makes it harder to test and reuse.
+
+[Specific Issue]
+The calculateTotal() function mixes tax calculation,
+discount logic, and database queries, making it difficult
+to unit test and reason about.
+
+[Helpful Solution]
+Could we extract this into a PaymentService class? That
+would make it testable and reusable. I can pair with you
+on this if helpful."
+```
+
+### Handling Disagreements
+
+```markdown
+When author disagrees with your feedback:
+
+1. **Seek to Understand**
+   "Help me understand your approach. What led you to
+    choose this pattern?"
+
+2. **Acknowledge Valid Points**
+   "That's a good point about X. I hadn't considered that."
+
+3. **Provide Data**
+   "I'm concerned about performance. Can we add a benchmark
+    to validate the approach?"
+
+4. **Escalate if Needed**
+   "Let's get [architect/senior dev] to weigh in on this."
+
+5. **Know When to Let Go**
+   If it's working and not a critical issue, approve it.
+   Perfection is the enemy of progress.
+```
+
+## Best Practices
+
+1. **Review Promptly**: Within 24 hours, ideally same day
+2. **Limit PR Size**: 200-400 lines max for effective review
+3. **Review in Time Blocks**: 60 minutes max, take breaks
+4. **Use Review Tools**: GitHub, GitLab, or dedicated tools
+5. **Automate What You Can**: Linters, formatters, security scans
+6. **Build Rapport**: Emoji, praise, and empathy matter
+7. **Be Available**: Offer to pair on complex issues
+8. **Learn from Others**: Review others' review comments
+
+## Common Pitfalls
+
+- **Perfectionism**: Blocking PRs for minor style preferences
+- **Scope Creep**: "While you're at it, can you also..."
+- **Inconsistency**: Different standards for different people
+- **Delayed Reviews**: Letting PRs sit for days
+- **Ghosting**: Requesting changes then disappearing
+- **Rubber Stamping**: Approving without actually reviewing
+- **Bike Shedding**: Debating trivial details extensively
+
+## Templates
+
+### PR Review Comment Template
+
+```markdown
+## Summary
+[Brief overview of what was reviewed]
+
+## Strengths
+- [What was done well]
+- [Good patterns or approaches]
+
+## Required Changes
+🔴 [Blocking issue 1]
+🔴 [Blocking issue 2]
+
+## Suggestions
+💡 [Improvement 1]
+💡 [Improvement 2]
+
+## Questions
+❓ [Clarification needed on X]
+❓ [Alternative approach consideration]
+
+## Verdict
+✅ Approve after addressing required changes
+```
+
+## Resources
+
+- **references/code-review-best-practices.md**: Comprehensive review guidelines
+- **references/common-bugs-checklist.md**: Language-specific bugs to watch for
+- **references/security-review-guide.md**: Security-focused review checklist
+- **assets/pr-review-template.md**: Standard review comment template
+- **assets/review-checklist.md**: Quick reference checklist
+- **scripts/pr-analyzer.py**: Analyze PR complexity and suggest reviewers
+
+codex
+本片限定审查提交 `19203e0` 的评测逻辑。我会使用 `code-review-excellence` 技能核对 §A5 合同，并并行检查测试覆盖；所有代码均从该提交读取，不启动或停止任何 WSL、Isaac Sim 或 Nav2 进程。
+2026-09-30T10:38:31.655329Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer error=\"invalid_request\", error_description=\"No access token was provided in this request\", resource_metadata=\"https://api.githubcopilot.com/.well-known/oauth-protected-resource/mcp/\"" })
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Select-String -LiteralPath 'D:\\RoboSim-Eval\\docs\\plan.md' -Pattern '"'^#'"','当前','下一步' -Encoding UTF8
+Select-String -LiteralPath 'D:\\RoboSim-Eval\\RoboSim-Eval-Plan-and-Setup-ZH(1).md' -Pattern '"'^#.*A5'"','"'^#.*A6'"','"'^#.*B'"' -Encoding UTF8
+Select-String -LiteralPath 'D:\\RoboSim-Eval\\Codex-Harness-Pack-ZH(1).md' -Pattern '"'^#'"','默认.*独立审查提示词' -Encoding UTF8
+Get-Content -LiteralPath 'C:\\Users\\Administrator\\.codex\\plugins\\cache\\claude-plugins-official\\superpowers\\6.4.1\\skills\\using-superpowers\\references\\codex-tools.md' -Encoding UTF8" in D:\RoboSim-Eval
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git -C D:\\RoboSim-Eval show 19203e0:scripts/wsl/analyze_attempt.sh" in D:\RoboSim-Eval
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git -C D:\\RoboSim-Eval show 19203e0:scripts/wsl/analyze_attempt.py" in D:\RoboSim-Eval
+ succeeded in 163ms:
+
+docs\plan.md:1:# RoboSim Eval — 执行计划与状态(唯一活计划)
+docs\plan.md:3:> 这是项目唯一维护状态的计划。需求、验收方法、状态合同的原文在根目录 `RoboSim-Eval-Plan-and-Setup-ZH(1).md`(2026-09-29 冻结参考),其中的"当前状态"列已作
+废,状态只看本文件。开发流程约定见两份 harness pack(同样冻结参考)。
+docs\plan.md:5:## 1. 状态总览
+docs\plan.md:21:**当前任务:** D0–D5 都已实现并在真实 Isaac 上验证,剩下审查与验收:Codex 分片审查排队中(2026-09-30 03:38 起)→ 逐条核实、修复有效项、重跑受影响检查 → 用户验收
+ → 本地按顺序合并分支(d0 → d1 → … → d5 → master,不推送)。分支是叠加的:每个交付分支从上一个分出;某个交付的审查修复在它自己的分支上做,再向后合并。
+docs\plan.md:29:## 2. 决定记录
+docs\plan.md:45:## 3. 本轮范围
+docs\plan.md:51:## 4. 执行机制(贯穿各阶段)
+docs\plan.md:60:## 5. 最小组合(harness pack 第 C 步)
+docs\plan.md:64:3. 补的机制与验证方式:AGENTS.md / CLAUDE.md / docs/plan.md(让 Codex 列出它加载的说明来源与当前任务:已并入审查提示词第 0 步,第 1 轮中止前未输出,**尚
+未验证**);commands.md 格式(原计划故意记录一条失败命令;实际记录了多条真实失败及其非零退出码,如 `sudo -n true` 1、安装脚本 1、probe 1、stop_nav2 5,另有分析脚本的固定输入测试与改坏检查
+,见 REVIEW.md);审查交接(第 1 轮因额度中止,**待重跑**)。
+docs\plan.md:67:## 6. 阶段
+docs\plan.md:69:### 阶段 0 · 唯一计划与入口
+docs\plan.md:75:### 阶段 1 · D0a 环境证据(只读,不装任何东西,不需要用户)
+docs\plan.md:76:- Windows(scripts/windows/probe_env.ps1):OS/build、nvidia-smi、内存、磁盘、wsl 版本与发行版、Isaac 路径、post_install.bat
+ 会建的链接 vs 实际存在(只查;确缺当前需要的链接才按官方说明修一次)、.wslconfig、防火墙配置文件、vEthernet (WSL) 连接配置文件与 IP、已有 kit.exe 规则、用户/系统环境变量中的 ROS/RMW/F
+ASTRTPS/CYCLONE、执行策略、是否提权、codex 版本/登录/exec 参数、kit 日志位置。
+docs\plan.md:80:### 阶段 2 · D0b ROS 2 Jazzy + 官方 6.1.0 示例工作区
+docs\plan.md:90:### 阶段 3 · D0c Windows↔WSL 桥接 + Nova Carter 场景 + 原始数据
+docs\plan.md:92:- 用户回合(一次性重启):保存 → 正常关闭当前 Isaac(不杀 PID 29036)→ 确认 `Get-Process kit` 为空 → 用户在新的普通 PowerShell 以 Bypass 方式
+跑脚本;若弹出防火墙对话框,对 kit.exe 允许(含公用网络)→ 用户报告"GUI 已起、控制台无红色错误" → 在 kit 日志确认 isaacsim.ros2.bridge 已加载并记第一条相关错误 → 用户:Window → E
+xamples → Robotics Examples → ROS2 → Navigation → Nova Carter → Load Sample Scene → Play → 报告"已 Play"。只用普通 Nova Carter 
+示例。
+docs\plan.md:98:### 阶段 4 · D0d Nav2 + 一次真实 A→B
+docs\plan.md:108:### 阶段 5 · D0 交付与独立审查
+docs\plan.md:114:## 7. 本轮验收清单
+docs\plan.md:128:## 8. 偏差记录
+docs\plan.md:140:## 9. 发现、已知问题与未验证清单
+docs\plan.md:178:## 10. 风险
+docs\plan.md:185:## 11. 下一项:审查、验收与合并
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:1:# RoboSim Eval：项目执行计划与 Claude Code 接手说明
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:138:### A5. 状态与结果合同
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:182:### A6. 数据与复跑
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:230:## B. 从当前进度继续：先跑通 D0
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:234:### B0. 终端与目录
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:244:### B1. 补齐环境证据，不重装
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:276:### B2. ROS 2 Jazzy：只补缺项
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:295:### B3. 使用 6.1 对应的官方示例工作区
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:336:### B4. Windows ↔ WSL 的 ROS 通信
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:373:### B5. 加载一个 Nova Carter，先看原始数据
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:400:### B6. 启动 Nav2，完成一次真实 A→B
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:422:### B7. 本次 D0 交付与用户三步验收
+Codex-Harness-Pack-ZH(1).md:1:# Codex 独立审查 Harness 参考与执行资料包
+Codex-Harness-Pack-ZH(1).md:13:## 本版默认分工（性能比较后的更新）
+Codex-Harness-Pack-ZH(1).md:31:## 交给 Codex 的方法
+Codex-Harness-Pack-ZH(1).md:38:### 一次性交接提示词
+Codex-Harness-Pack-ZH(1).md:50:## 先明确：哪些是提示词，哪些是项目的 harness
+Codex-Harness-Pack-ZH(1).md:58:## 阅读顺序与最小落地
+Codex-Harness-Pack-ZH(1).md:60:### 第一步：确认实际项目
+Codex-Harness-Pack-ZH(1).md:66:### 第二步：按问题读资料
+Codex-Harness-Pack-ZH(1).md:74:### 第三步：准备审查并跑必要的非破坏性检查
+Codex-Harness-Pack-ZH(1).md:80:## 项目文件各自承担什么
+Codex-Harness-Pack-ZH(1).md:96:## Codex 方法速查
+Codex-Harness-Pack-ZH(1).md:112:## Codex 官方资料
+Codex-Harness-Pack-ZH(1).md:116:### C01 · 先读：Codex Best practices
+Codex-Harness-Pack-ZH(1).md:121:### C02 · 先读：AGENTS.md
+Codex-Harness-Pack-ZH(1).md:126:### C03 · 先读：Customization
+Codex-Harness-Pack-ZH(1).md:131:### C04 · 按需：Build skills
+Codex-Harness-Pack-ZH(1).md:136:### C05 · 先读相关章节：Code review
+Codex-Harness-Pack-ZH(1).md:141:### C06 · 复杂任务先读：Run long horizon tasks with Codex
+Codex-Harness-Pack-ZH(1).md:146:### C07 · 按需：Hooks
+Codex-Harness-Pack-ZH(1).md:151:### C08 · 按需：Non-interactive mode
+Codex-Harness-Pack-ZH(1).md:156:### C09 · 按需：Testing Agent Skills Systematically with Evals
+Codex-Harness-Pack-ZH(1).md:161:### C10 · 按需：Subagents
+Codex-Harness-Pack-ZH(1).md:166:### C11 · 按需：Docs MCP
+Codex-Harness-Pack-ZH(1).md:171:### C12 · 按需：Developer commands
+Codex-Harness-Pack-ZH(1).md:176:### C13 · 按环境：Windows sandbox
+Codex-Harness-Pack-ZH(1).md:181:### C14 · 按环境：WSL
+Codex-Harness-Pack-ZH(1).md:186:### C15 · 进阶：Rethinking skills and prompts for GPT-6 Astra
+Codex-Harness-Pack-ZH(1).md:192:## Codex 与 Claude Code 互相检查
+Codex-Harness-Pack-ZH(1).md:211:## 少量命令提示
+Codex-Harness-Pack-ZH(1).md:225:## R 系列：此前讨论的通用方法与 Claude Code 协作资料
+Codex-Harness-Pack-ZH(1).md:227:### R01 · 通用参考 · OpenAI：Harness engineering
+Codex-Harness-Pack-ZH(1).md:232:### R02 · 通用参考 · Anthropic：Effective harnesses for long-running agents
+Codex-Harness-Pack-ZH(1).md:237:### R03 · 通用参考 · Claude Code Best Practices
+Codex-Harness-Pack-ZH(1).md:242:### R04 · 通用参考 · Codex：AGENTS.md
+Codex-Harness-Pack-ZH(1).md:247:### R05 · 通用参考 · Claude Code Common Workflows
+Codex-Harness-Pack-ZH(1).md:252:### R06 · 按问题深入 · Claude Code Hooks
+Codex-Harness-Pack-ZH(1).md:257:### R07 · 按问题深入 · Anthropic：Harness design for long-running application development
+Codex-Harness-Pack-ZH(1).md:262:### R08 · 通用参考 · Codex：Code Review
+Codex-Harness-Pack-ZH(1).md:267:### R09 · 双工具协作 · OpenAI：Codex plugin for Claude Code
+Codex-Harness-Pack-ZH(1).md:272:### R10 · 双工具协作 · 官方插件的 review 命令定义
+Codex-Harness-Pack-ZH(1).md:277:### R11 · 社区示例 · ClauDex
+Codex-Harness-Pack-ZH(1).md:282:### R12 · 规格与计划 · GitHub Spec Kit
+Codex-Harness-Pack-ZH(1).md:287:### R13 · 规格与计划 · OpenSpec
+Codex-Harness-Pack-ZH(1).md:292:### R14 · 开发步骤 · Superpowers
+Codex-Harness-Pack-ZH(1).md:297:### R15 · 分阶段交接 · GSD Core（当前仓库）
+Codex-Harness-Pack-ZH(1).md:302:### R16 · 持续执行 · Ralph（snarktank 实现）
+Codex-Harness-Pack-ZH(1).md:307:### R17 · 完整产品流程 · BMAD Method
+Codex-Harness-Pack-ZH(1).md:312:### R18 · 任务调度 · OpenAI Symphony
+Codex-Harness-Pack-ZH(1).md:317:### R19 · 开发过程评测 · Google：The Anatomy of Harness Engineering
+Codex-Harness-Pack-ZH(1).md:322:### R20 · 基于失败改进 · LangChain：Improving Deep Agents with harness engineering
+Codex-Harness-Pack-ZH(1).md:327:### R21 · 学习课程 · Claude Code in Action
+Codex-Harness-Pack-ZH(1).md:332:### R22 · 长期执行代码示例 · Anthropic Autonomous Coding Quickstart
+Codex-Harness-Pack-ZH(1).md:337:### R23 · 实现能力参考 · Scale SWE-Bench Pro V2
+Codex-Harness-Pack-ZH(1).md:342:### R24 · 审查能力参考 · MacroscopeBench
+Codex-Harness-Pack-ZH(1).md:347:### R25 · 顺序效应研究 · Codex 与 Claude 的协作顺序
+Codex-Harness-Pack-ZH(1).md:353:## 通用执行与交接提示词
+Codex-Harness-Pack-ZH(1).md:357:### Codex 主实现提示词（仅在明确切换角色时）
+Codex-Harness-Pack-ZH(1).md:411:### 默认：Codex 独立审查提示词
+Codex-Harness-Pack-ZH(1).md:432:### 日常继续提示词
+Codex-Harness-Pack-ZH(1).md:436:### 根据审查修复的提示词
+Codex-Harness-Pack-ZH(1).md:440:## 完成后的最小证据
+## Subagent dispatch requires multi-agent support
+
+Add to your Codex config (`~/.codex/config.toml`):
+
+```toml
+[features]
+multi_agent = true
+```
+
+This enables the multi-agent tools that skills like
+`dispatching-parallel-agents` and `subagent-driven-development` use.
+Which tools you get depends on the multi-agent version your model
+preset selects (current presets run V2; older ones run V1). Trust your
+actual tool list over any table — including this one — when they
+disagree.
+
+- **Spawning:** give children a clean context with
+  `spawn_agent {fork_turns: "none"}`; the default `"all"` copies your
+  entire transcript into the child. On Codex 0.145+, role files under
+  `~/.codex/agents/` attach to isolated forks via `agent_type`.
+  Full-history forks accept `model` and `reasoning_effort` overrides
+  (only `agent_type` is refused there) — isolated forks are the SDD
+  default for context hygiene, not because overrides require them.
+- **Fix rounds:** resume the implementer with `followup_task` — it
+  delivers your message, triggers a turn, and transparently reloads a
+  child the harness evicted. Never dispatch a fresh implementer on the
+  theory that a spawned agent cannot be messaged again; on V2 it
+  always can.
+- **Lifecycle:** V2 has no `close_agent`. Finished children are
+  evicted automatically when slots are needed; leaving them unclosed
+  costs nothing. Only V1 sessions have `close_agent` — there, close
+  reviewers when their review returns, and close each implementer
+  after its task's review passes.
+- **Model names:** never copy a model name from a skill, table, or old
+  session into `spawn_agent` without checking it against your current
+  spawn allowlist — V2 accepts only V2-capable presets and hard-errors
+  on the rest.
+
+## Waiting on children
+
+`wait_agent` is an event subscription, not a poll: a long wait wakes
+the moment a child produces mailbox activity, with the same latency as
+a short one. Short-timeout polling buys nothing and costs a tool call —
+and a context rebill — per poll. In measured sessions, roughly
+two-thirds of all wait calls were short polls that timed out.
+
+- While you still have local work, do not wait at all. A completed
+  child's final answer is pushed into your mailbox and arrives with
+  your next turn.
+- When you are genuinely idle with children outstanding, wait in
+  bounded stretches: `wait_agent` with `timeout_ms` 300000-600000
+  (5-10 minutes). After each stretch — wake or timeout — post one
+  status line, run `list_agents`, and chase any child that finished
+  without reporting. Never stack polls shorter than five minutes; the
+  event subscription wakes a bounded stretch just as fast as a short
+  one.
+- Completion mail cannot wake an idle controller (it is delivered
+  without triggering a turn); covering that idle window is
+  `wait_agent`'s only job. A stretch that times out with no activity
+  is your cue to reconcile, not to shorten the next stretch.
+
+## Model routing on spawns
+
+Every `spawn_agent` you issue — including when you are yourself a
+spawned child running a fan-out — sets `model` AND `reasoning_effort`
+explicitly, per the Model Selection rules of the skill you are
+executing. Setting `model` alone is a trap: the child's effort
+silently resets to that model's default, not to yours.
+
+Ask your human partner to add a machine-level backstop to
+`~/.codex/config.toml` so any spawn that slips through still routes to
+a deliberate tier instead of silently inheriting the session's most
+expensive model:
+
+```toml
+[agents]
+default_subagent_model = "<a mid-tier model from your spawn allowlist>"
+default_subagent_reasoning_effort = "medium"
+```
+
+## Environment Detection
+
+Skills that create worktrees or finish branches should detect their
+environment with read-only git commands before proceeding:
+
+```bash
+GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
+GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
+BRANCH=$(git branch --show-current)
+```
+
+- `GIT_DIR != GIT_COMMON` → already in a linked worktree (skip creation)
+- `BRANCH` empty → detached HEAD (cannot branch/push/PR from sandbox)
+
+See `using-git-worktrees` Step 0 and `finishing-a-development-branch`
+Step 1 for how each skill uses these signals.
+
+## Codex App Finishing
+
+When the sandbox blocks branch/push operations (detached HEAD in an
+externally managed worktree), the agent commits all work and informs
+the user to use the App's native controls:
+
+- **"Create branch"** — names the branch, then commit/push/PR via App UI
+- **"Hand off to local"** — transfers work to the user's local checkout
+
+The agent can still run tests, stage files, and output suggested branch
+names, commit messages, and PR descriptions for the user to copy.
+
+
+
+ succeeded in 24ms:
+#!/usr/bin/env python3
+"""analyze_attempt.py — RoboSim Eval D0d: turn one navigation attempt's raw records into result.json + trajectory.csv.
+
+Usage (inside WSL with the ROS environment sourced; see analyze_attempt.sh):
+  python3 analyze_attempt.py <attempt_dir> --goal X Y YAW [--spawn X Y YAW] [--tolerance 0.5] [--stop-lin 0.05]
+                             [--stop-ang 0.1] [--stop-hold 1.0] [--max-stop-gap 0.25] [--dropout 2.0]
+Inputs in <attempt_dir>: rosbag/ (record_d0.sh + stop_record.sh), goal-*.txt (send_goal.sh transcript, optional).
+Exit: 0 validation pass; 10 fail; 11 inconclusive; 2 bad arguments / --goal differs from the goal actually sent;
+      1 the recording could not be read.
+
+Result contract (plan doc A5): execution_status completed|error|interrupted; task_outcome reached|canceled|unknown (this
+tool never emits unreachable or timeout: aborted/rejected goals are "unknown" with the raw Nav2 status kept; timeouts are
+D3 scope); safety_status is always "unknown" in D0 (contact not measured); data_status complete|incomplete;
+validation_status pass|fail|inconclusive for the D0 expectation "reach the goal and come to rest".
+
+Target goal: the goal id printed by the CLI action client (goal-*.txt); without a transcript, the first goal id that
+becomes ACCEPTED/EXECUTING inside the bag. Status and feedback of any other goal id (e.g. a finished goal that is still
+listed in the transient-local status array) are ignored. --goal must equal the pose recorded in the transcript's
+"send_goal start" line; without a transcript the goal is operator-entered and the attempt is at best "inconclusive".
+
+Position sources (every reported pose carries frame, source and sim stamp):
+  nav2_feedback_map          NavigateToPose feedback current_pose of the target goal (map frame; AMCL-based estimate)
+  tf_map_base_link           /tf map->odom (AMCL) (+) odom->base_link (Isaac odometry) (map frame; estimate)
+  sim_state_odom_plus_spawn  (with --spawn) ideal odometry /chassis/odom (+) USD spawn pose; independent of AMCL, valid
+                             only under PRECONDITIONS below
+Arrival is evaluated at a defined event: the stop-confirmation instant, else the terminal status, else the recording end.
+"""
+import argparse, csv, glob, json, math, os, re
+
+STATUS_NAMES = {0: "UNKNOWN", 1: "ACCEPTED", 2: "EXECUTING", 3: "CANCELING", 4: "SUCCEEDED", 5: "CANCELED", 6: "ABORTED"}
+PRECONDITIONS = [
+    "/chassis/odom is ideal odometry: isaacsim.core.nodes.IsaacComputeOdometry computes it from the simulated chassis "
+    "state (its only input is the chassis prim; no wheel or noise model), expressed relative to the pose where it "
+    "started (evidence: artifacts/d0d/run-01/usd-inspection.txt; odom ~0 right after Play).",
+    "The odometry started at the spawn: the simulation was (re)started with Play from the authored stage and was not "
+    "stopped/reset between that Play and the end of this recording.",
+    "The USD-authored root pose of /World/Nova_Carter_ROS equals the chassis (base_link) pose at Play start "
+    "(authored layer values; the composed stage was not inspected).",
+    "The Isaac world frame equals the Nav2 map frame (supported by the map yaml origin and by the amcl initial_pose in "
+    "the pinned params being equal to the USD spawn).",
+]
+
+
+class GoalMismatch(Exception):
+    """--goal differs from the goal recorded in the send_goal transcript."""
+
+
+def yaw_of(q):
+    return math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+
+
+def wrap(a):
+    return math.atan2(math.sin(a), math.cos(a))
+
+
+def pose_compose(a, b):
+    """(x, y, yaw) a (+) b."""
+    c, s = math.cos(a[2]), math.sin(a[2])
+    return (a[0] + c * b[0] - s * b[1], a[1] + s * b[0] + c * b[1], wrap(a[2] + b[2]))
+
+
+def last_at_or_before(seq, t_ns):
+    """seq sorted by receive time in element 0; the last element with t <= t_ns (None if there is none)."""
+    best = None
+    for e in seq:
+        if e[0] <= t_ns:
+            best = e
+        else:
+            break
+    return best
+
+
+def read_bag(bagdir):
+    """Read the topics the evaluation needs. Tuples (element 0 is always the receive time in ns):
+    clock (t, sim) | odom (t, stamp, frame, child, x, y, yaw, |v|, |w|) | cmd_vel (t, v, w) | status (t, uuid, code) |
+    feedback (t, uuid, stamp, frame, x, y, yaw, dist_remaining, nav_time, recoveries) | tf_* (t, stamp, x, y, yaw)."""
+    from rosbag2_py import SequentialReader, StorageOptions, ConverterOptions  # ROS-only imports stay lazy for tests
+    from rclpy.serialization import deserialize_message
+    from rosidl_runtime_py.utilities import get_message
+    reader = SequentialReader()
+    reader.open(StorageOptions(uri=bagdir, storage_id=""), ConverterOptions("", ""))
+    types = {t.name: t.type for t in reader.get_all_topics_and_types()}
+    out = {"clock": [], "odom": [], "cmd_vel": [], "status": [], "feedback": [], "tf_map_odom": [], "tf_odom_base": []}
+    stamp = lambda h: h.stamp.sec + h.stamp.nanosec / 1e9
+    while reader.has_next():
+        topic, data, t_ns = reader.read_next()
+        msg = deserialize_message(data, get_message(types[topic]))
+        if topic == "/clock":
+            out["clock"].append((t_ns, msg.clock.sec + msg.clock.nanosec / 1e9))
+        elif topic == "/chassis/odom":
+            p, o, tw = msg.pose.pose.position, msg.pose.pose.orientation, msg.twist.twist
+            out["odom"].append((t_ns, stamp(msg.header), msg.header.frame_id, msg.child_frame_id, p.x, p.y, yaw_of(o),
+                                math.hypot(tw.linear.x, tw.linear.y), abs(tw.angular.z)))
+        elif topic == "/cmd_vel":
+            out["cmd_vel"].append((t_ns, msg.linear.x, msg.angular.z))
+        elif topic == "/navigate_to_pose/_action/status":
+            for s in msg.status_list:
+                out["status"].append((t_ns, bytes(s.goal_info.goal_id.uuid).hex(), s.status))
+        elif topic == "/navigate_to_pose/_action/feedback":
+            fb = msg.feedback
+            p, o = fb.current_pose.pose.position, fb.current_pose.pose.orientation
+            out["feedback"].append((t_ns, bytes(msg.goal_id.uuid).hex(), stamp(fb.current_pose.header),
+                                    fb.current_pose.header.frame_id, p.x, p.y, yaw_of(o), fb.distance_remaining,
+                                    fb.navigation_time.sec + fb.navigation_time.nanosec / 1e9, fb.number_of_recoveries))
+        elif topic == "/tf":
+            for tr in msg.transforms:
+                key, tt = (tr.header.frame_id, tr.child_frame_id), tr.transform
+                rec = (t_ns, stamp(tr.header), tt.translation.x, tt.translation.y, yaw_of(tt.rotation))
+                if key == ("map", "odom"):
+                    out["tf_map_odom"].append(rec)
+                elif key == ("odom", "base_link"):
+                    out["tf_odom_base"].append(rec)
+    return out
+
+
+def compose_map_base(map_odom, odom_base):
+    """map->base_link = latest map->odom (+) each odom->base_link sample; returns (t_ns, stamp, x, y, yaw)."""
+    res, j = [], 0
+    if not map_odom:
+        return res
+    for t_ns, st, x, y, yaw in odom_base:
+        while j + 1 < len(map_odom) and map_odom[j + 1][0] <= t_ns:
+            j += 1
+        _, _, mx, my, myaw = map_odom[j]
+        res.append((t_ns, st, *pose_compose((mx, my, myaw), (x, y, yaw))))
+    return res
+
+
+def parse_goal_transcript(att):
+    """Parse the newest goal-*.txt written by send_goal.sh (the sent goal, goal id, result, errors)."""
+    files = sorted(glob.glob(os.path.join(att, "goal-*.txt")))
+    info = {"transcript": None, "transcripts_found": len(files), "sent_goal": None, "goal_id": None, "accepted_wall": None,
+            "result_wall": None, "status_text": None, "rejected": False, "error_code": None, "error_msg": None,
+            "client_exit": None}
+    if not files:
+        return info
+    info["transcript"] = os.path.basename(files[-1])
+    for line in open(files[-1], encoding="utf-8", errors="replace"):
+        line = line.rstrip("\n")
+        m = re.search(r"send_goal start .*?\bx=(\S+) y=(\S+) yaw=(\S+)", line)
+        if m:
+            info["sent_goal"] = [float(m.group(1)), float(m.group(2)), float(m.group(3))]
+            continue
+        m = re.search(r"send_goal end .*?action_client_exit=(\d+)", line)
+        if m:
+            info["client_exit"] = int(m.group(1))
+            continue
+        m = re.match(r"(\S+) (.*)", line)
+        if not m:
+            continue
+        wall, rest = m.groups()
+        body = rest.strip()
+        if "Goal accepted with ID" in rest:
+            info["accepted_wall"] = wall
+            info["goal_id"] = rest.split()[-1].lower().replace("-", "")
+        elif "Goal was rejected" in rest:
+            info["rejected"], info["status_text"], info["result_wall"] = True, "REJECTED", wall
+        elif body.startswith("error_code:"):
+            info["error_code"] = int(body.split(":", 1)[1])
+        elif body.startswith("error_msg:"):
+            info["error_msg"] = body.split(":", 1)[1].strip().strip("'\"")
+        elif "Goal finished with status" in rest:
+            info["result_wall"], info["status_text"] = wall, rest.split(":")[-1].strip()
+    return info
+
+
+def stop_still(odom, t_end_ns, lin, ang, hold, max_gap):
+    """Stop-still on the odom twist after the terminal status: |v| < lin and |w| < ang continuously for `hold` s of sim
+    time; a sample gap larger than max_gap (sim s) or a backwards stamp restarts the window. States: confirmed; not_still
+    (at least 2*hold s of gap-free data and never at rest for hold s); not_observed (too little or gappy data)."""
+    res = {"state": "not_observed", "confirmed_at_sim": None, "confirmed_at_t_ns": None, "observed_after_end_sim_s": 0.0,
+           "max_gap_after_end_sim_s": None, "max_lin_after_end": None, "max_ang_after_end": None, "samples_after_end": 0}
+    if t_end_ns is None:
+        return res
+    after = [o for o in odom if o[0] >= t_end_ns]
+    res["samples_after_end"] = len(after)
+    if not after:
+        return res
+    res["observed_after_end_sim_s"] = after[-1][1] - after[0][1]
+    res["max_lin_after_end"] = max(o[7] for o in after)
+    res["max_ang_after_end"] = max(o[8] for o in after)
+    gaps = [b[1] - a[1] for a, b in zip(after, after[1:])]
+    res["max_gap_after_end_sim_s"] = max(gaps) if gaps else None
+    start, prev = None, None
+    for o in after:
+        if prev is not None and (o[1] - prev[1] > max_gap or o[1] < prev[1]):
+            start = None
+        if o[7] < lin and o[8] < ang:
+            start = start or o
+            if o[1] - start[1] >= hold:
+                res.update(state="confirmed", confirmed_at_sim=o[1], confirmed_at_t_ns=o[0])
+                return res
+        else:
+            start = None
+        prev = o
+    if res["observed_after_end_sim_s"] >= 2 * hold and (not gaps or max(gaps) <= max_gap):
+        res["state"] = "not_still"
+    return res
+
+
+def stream_integrity(seq, lo, hi, stamp_index=1):
+    """Largest receive-time gap (s) inside [lo, hi] including the edges, and the number of backwards stamps."""
+    times = [e[0] for e in seq if lo <= e[0] <= hi]
+    pts = [lo] + times + [hi]
+    max_gap = max((b - a) for a, b in zip(pts, pts[1:])) / 1e9 if hi > lo else 0.0
+    stamps = [e[stamp_index] for e in seq]
+    backwards = sum(1 for a, b in zip(stamps, stamps[1:]) if b < a)
+    return {"count": len(seq), "count_in_window": len(times), "max_wall_gap_s": round(max_gap, 3), "backward_stamps": backwards}
+
+
+def _pose(e, xi, yi, yawi, si, frame, goal=None):
+    if e is None:
+        return None
+    d = {"frame": frame, "x": e[xi], "y": e[yi], "yaw": e[yawi], "sim_stamp_s": e[si], "recv_wall_ns": e[0]}
+    if goal is not None:
+        d["error_to_goal_m"] = math.hypot(e[xi] - goal[0], e[yi] - goal[1])
+    return d
+
+
+def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0.1, stop_hold=1.0, max_stop_gap=0.25,
+             dropout=2.0):
+    """Pure evaluation of one attempt; returns (result dict, trajectory rows). Raises GoalMismatch."""
+    gx, gy, gyaw = goal
+    fail_reasons, inconclusive = [], []
+
+    if tr.get("sent_goal") is not None:
+        sx, sy, syaw = tr["sent_goal"]
+        if abs(sx - gx) > 1e-6 or abs(sy - gy) > 1e-6 or abs(wrap(syaw - gyaw)) > 1e-6:
+            raise GoalMismatch(f"--goal {list(goal)} differs from the goal sent in {tr.get('transcript')}: {tr['sent_goal']}")
+        goal_source, goal_verified = f"goal sent by the CLI action client (transcript {tr.get('transcript')})", True
+    else:
+        goal_source, goal_verified = "operator-entered --goal (no goal transcript; not verified against the goal actually sent)", False
+        inconclusive.append("goal not verified against a send_goal transcript")
+
+    statuses = sorted(bag["status"])
+    target, target_src = tr.get("goal_id"), "transcript"
+    if not target:
+        target_src = "first goal id that became ACCEPTED/EXECUTING in the recording"
+        target = next((u for _, u, s in statuses if s in (1, 2)), None)
+    st = [e for e in statuses if target and e[1] == target]
+    other_ids = sorted({u for _, u, _ in statuses if u != target})
+    fb = [f for f in bag["feedback"] if target and f[1] == target]
+    t_accept = next((t for t, _, s in st if s in (1, 2)), None)
+    term = next(((t, s) for t, _, s in st if s in (4, 5, 6)), None)
+    t_end, raw_status = term if term else (None, None)
+    if t_accept is None and st:
+        t_accept = st[0][0]
+        inconclusive.append("the target goal's ACCEPTED/EXECUTING status was not recorded")
+    rejected = bool(tr.get("rejected"))
+
+    if t_end is not None or rejected:
+        execution_status = "completed"
+    elif t_accept is not None:
+        execution_status = "interrupted"
+        inconclusive.append("goal accepted but no terminal status before the recording ended")
+    else:
+        execution_status = "error"
+        inconclusive.append("target goal not observed in the recording")
+
+    odom = bag["odom"]
+    stop = stop_still(odom, t_end, stop_lin, stop_ang, stop_hold, max_stop_gap)
+    if stop["state"] == "confirmed":
+        t_arr, arr_event = stop["confirmed_at_t_ns"], "stop_confirmed"
+    elif t_end is not None:
+        t_arr, arr_event = t_end, "terminal_status"
+    else:
+        t_arr, arr_event = (odom[-1][0] if odom else None), "recording_end"
+    t_last = max((seq[-1][0] for seq in bag.values() if seq), default=None)
+
+    tf_mb = compose_map_base(bag["tf_map_odom"], bag["tf_odom_base"])
+    sim_traj = [(o[0], o[1], *pose_compose(tuple(spawn), (o[4], o[5], o[6]))) for o in odom] if spawn else []
+    at = lambda seq, t: last_at_or_before(seq, t) if (seq and t is not None) else None
+    positions = {
+        "nav2_feedback_map": {"source": "Nav2 feedback current_pose of the target goal (map frame; AMCL-based estimate)",
+                              "at_arrival": _pose(at(fb, t_arr), 4, 5, 6, 2, "map", goal),
+                              "at_recording_end": _pose(fb[-1] if fb else None, 4, 5, 6, 2, "map", goal)},
+        "tf_map_base_link": {"source": "/tf map->odom (AMCL) (+) odom->base_link (Isaac odometry); map frame; estimate",
+                             "at_arrival": _pose(at(tf_mb, t_arr), 2, 3, 4, 1, "map", goal),
+                             "at_recording_end": _pose(tf_mb[-1] if tf_mb else None, 2, 3, 4, 1, "map", goal)},
+        "odom": {"source": "ideal odometry /chassis/odom (IsaacComputeOdometry; odom frame = pose at Play start)",
+                 "at_arrival": _pose(at(odom, t_arr), 4, 5, 6, 1, "odom"),
+                 "at_recording_end": _pose(odom[-1] if odom else None, 4, 5, 6, 1, "odom")},
+    }
+    if spawn:
+        positions["sim_state_odom_plus_spawn"] = {
+            "source": f"ideal odometry /chassis/odom (+) USD spawn {list(spawn)}; independent of AMCL; see preconditions",
+            "at_arrival": _pose(at(sim_traj, t_arr), 2, 3, 4, 1, "map", goal),
+            "at_recording_end": _pose(sim_traj[-1] if sim_traj else None, 2, 3, 4, 1, "map", goal)}
+        arr_src = "sim_state_odom_plus_spawn"
+    else:
+        arr_src = "nav2_feedback_map"
+        inconclusive.append("no AMCL-independent position source (--spawn not given); the Nav2 estimate is not an independent check")
+    arr = positions[arr_src]["at_arrival"]
+    arr_err = arr["error_to_goal_m"] if arr else None
+
+    lo = t_accept if t_accept is not None else (odom[0][0] if odom else 0)
+    hi = t_arr if t_arr is not None else (t_last or lo)
+    integrity = {name: stream_integrity(bag[name], lo, hi) for name in ("clock", "odom", "tf_odom_base", "tf_map_odom")}
+    integrity["feedback_target_goal"] = {"count": len(fb)}
+    problems = [f"{n}: no messages" for n, v in integrity.items() if v["count"] == 0]
+    problems += [f"{n}: gap of {v['max_wall_gap_s']} s wall > {dropout} s" for n, v in integrity.items()
+                 if "max_wall_gap_s" in v and v["max_wall_gap_s"] > dropout]
+    problems += [f"{n}: {v['backward_stamps']} backwards stamps" for n, v in integrity.items() if v.get("backward_stamps")]
+    data_complete = not problems
+    if not data_complete:
+        inconclusive.append("data incomplete: " + "; ".join(problems))
+    if raw_status == 4 and stop["state"] == "not_observed":
+        inconclusive.append("stop-still could not be observed after the result (recording too short or gappy)")
+
+    if rejected:
+        task_outcome = "unknown"
+        fail_reasons.append("goal rejected by the action server")
+    elif raw_status == 4:
+        task_outcome = "reached" if (stop["state"] == "confirmed" and arr_err is not None and arr_err <= tolerance) else "unknown"
+        if stop["state"] == "not_still":
+            fail_reasons.append("Nav2 reported SUCCEEDED but the robot did not come to rest")
+        if arr_err is not None and arr_err > tolerance:
+            fail_reasons.append(f"position error {arr_err:.3f} m > tolerance {tolerance} m ({arr_src})")
+    elif raw_status == 5:
+        task_outcome = "canceled"
+        fail_reasons.append("goal canceled")
+    else:
+        task_outcome = "unknown"
+        if raw_status == 6:
+            fail_reasons.append("Nav2 terminal status ABORTED (kept as unknown, not interpreted as unreachable)")
+
+    if fail_reasons:
+        validation = "fail"
+    elif task_outcome == "reached" and not inconclusive:
+        validation = "pass"
+    else:
+        validation = "inconclusive"
+
+    clock = bag["clock"]
+    sim_at = lambda t: (last_at_or_before(clock, t) or (None, None))[1] if (clock and t is not None) else None
+    fb_last = fb[-1] if fb else None
+    crosscheck = None
+    if spawn:
+        crosscheck = {}
+        for label, t in (("at_goal_accept", t_accept), ("at_terminal_status", t_end), ("at_arrival_check", t_arr)):
+            s, m = at(sim_traj, t), at(tf_mb, t)
+            if s is None:
+                continue
+            crosscheck[label] = {"sim_state_xy": [round(s[2], 4), round(s[3], 4)],
+                                 "amcl_estimate_xy": [round(m[2], 4), round(m[3], 4)] if m else None,
+                                 "amcl_minus_sim_state_m": round(math.hypot(m[2] - s[2], m[3] - s[3]), 4) if m else None}
+        mo = bag["tf_map_odom"]
+        crosscheck["map_to_odom_first"] = [round(v, 4) for v in mo[0][2:]] if mo else None
+        crosscheck["map_to_odom_last"] = [round(v, 4) for v in mo[-1][2:]] if mo else None
+        crosscheck["map_to_odom_implied_by_spawn"] = [round(v, 4) for v in spawn]
+
+    result = {
+        "schema": "robosim-eval attempt result, D0 (plan doc A5)",
+        "goal": {"frame": "map", "x": gx, "y": gy, "yaw": gyaw, "source": goal_source, "verified_against_transcript": goal_verified,
+                 "position_tolerance_m": tolerance, "orientation_assessed": False},
+        "target_goal": {"id": target, "id_source": target_src, "other_goal_ids_in_recording": other_ids},
+        "execution_status": execution_status,
+        "task_outcome": task_outcome,
+        "safety_status": "unknown",
+        "data_status": "complete" if data_complete else "incomplete",
+        "validation_status": validation,
+        "verdict_reasons": {"fail": fail_reasons, "inconclusive": inconclusive},
+        "arrival_check": {"source": arr_src, "event": arr_event, "sim_time_s": arr["sim_stamp_s"] if arr else None,
+                          "error_to_goal_m": arr_err, "tolerance_m": tolerance},
+        "nav2_raw": {"terminal_status_code": raw_status, "terminal_status_name": STATUS_NAMES.get(raw_status, "none"),
+                     "rejected": rejected, "status_text_from_client": tr.get("status_text"), "error_code": tr.get("error_code"),
+                     "error_msg": tr.get("error_msg"), "client_exit": tr.get("client_exit"), "transcript": tr.get("transcript"),
+                     "recoveries": fb_last[9] if fb_last else None,
+                     "distance_remaining_last_feedback_m": fb_last[7] if fb_last else None},
+        "timing": {"accepted_wall": tr.get("accepted_wall"), "result_wall": tr.get("result_wall"),
+                   "accept_to_result_wall_s": (t_end - t_accept) / 1e9 if (t_accept is not None and t_end is not None) else None,
+                   "sim_time_at_accept_s": sim_at(t_accept), "sim_time_at_result_s": sim_at(t_end),
+                   "accept_to_result_sim_s": (sim_at(t_end) - sim_at(t_accept)) if (sim_at(t_accept) is not None and sim_at(t_end) is not None) else None},
+        "positions": positions,
+        "position_source_crosscheck": crosscheck,
+        "stop_still": {"rule": f"|v|<{stop_lin} m/s and |w|<{stop_ang} rad/s for {stop_hold} s sim time after the terminal "
+                               f"status (/chassis/odom twist; window restarts on gaps > {max_stop_gap} s)", **stop},
+        "data_integrity": {"window": "goal accept .. arrival check (receive time)", "dropout_threshold_wall_s": dropout, **integrity},
+        "message_counts": {k: len(v) for k, v in bag.items()},
+        "preconditions_for_sim_state_source": PRECONDITIONS if spawn else None,
+        "notes": [
+            "safety_status is unknown: contact/collision was not measured in D0 (D3).",
+            "task_outcome never uses 'unreachable' or 'timeout' here; rejected/aborted goals stay 'unknown' with the raw status.",
+            "The sim-state source is derived from Isaac odometry plus the USD spawn; it is not a separate ground-truth topic.",
+        ],
+    }
+
+    rows = [["recv_wall_ns", "sim_stamp_s", "frame_id", "source", "x", "y", "yaw", "lin_speed", "ang_speed"]]
+    for o in odom:
+        rows.append([o[0], f"{o[1]:.3f}", o[2], "ideal odometry /chassis/odom (IsaacComputeOdometry, relative to Play start)",
+                     f"{o[4]:.4f}", f"{o[5]:.4f}", f"{o[6]:.4f}", f"{o[7]:.4f}", f"{o[8]:.4f}"])
+    for s in sim_traj:
+        rows.append([s[0], f"{s[1]:.3f}", "map", "sim_state_odom_plus_spawn (independent of AMCL)", f"{s[2]:.4f}", f"{s[3]:.4f}", f"{s[4]:.4f}", "", ""])
+    for r in tf_mb:
+        rows.append([r[0], f"{r[1]:.3f}", "map", "tf map->odom (AMCL) + odom->base_link (estimate)", f"{r[2]:.4f}", f"{r[3]:.4f}", f"{r[4]:.4f}", "", ""])
+    for f in fb:
+        rows.append([f[0], f"{f[2]:.3f}", f[3], "nav2_feedback of the target goal (map, AMCL-based estimate)", f"{f[4]:.4f}", f"{f[5]:.4f}", f"{f[6]:.4f}", "", ""])
+    return result, rows
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument("attempt_dir")
+    ap.add_argument("--goal", nargs=3, type=float, required=True, metavar=("X", "Y", "YAW"))
+    ap.add_argument("--spawn", nargs=3, type=float, metavar=("X", "Y", "YAW"),
+                    help="USD-authored spawn pose in the map frame; enables the AMCL-independent position source")
+    ap.add_argument("--tolerance", type=float, default=0.5)
+    ap.add_argument("--stop-lin", type=float, default=0.05)
+    ap.add_argument("--stop-ang", type=float, default=0.1)
+    ap.add_argument("--stop-hold", type=float, default=1.0)
+    ap.add_argument("--max-stop-gap", type=float, default=0.25)
+    ap.add_argument("--dropout", type=float, default=2.0)
+    a = ap.parse_args(argv)
+    att = a.attempt_dir
+    try:
+        bag = read_bag(os.path.join(att, "rosbag"))
+    except Exception as e:  # the recording itself is unusable: report, do not guess
+        print(f"ERROR: cannot read {os.path.join(att, 'rosbag')}: {type(e).__name__}: {e}")
+        return 1
+    tr = parse_goal_transcript(att)
+    try:
+        result, rows = evaluate(bag, tr, tuple(a.goal), tuple(a.spawn) if a.spawn else None, a.tolerance, a.stop_lin,
+                                a.stop_ang, a.stop_hold, a.max_stop_gap, a.dropout)
+    except GoalMismatch as e:
+        print(f"ERROR: {e}")
+        return 2
+    result["attempt_dir"] = att
+    with open(os.path.join(att, "result.json"), "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+    with open(os.path.join(att, "trajectory.csv"), "w", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerows(rows)
+    keys = ("execution_status", "task_outcome", "safety_status", "data_status", "validation_status", "verdict_reasons",
+            "arrival_check", "nav2_raw", "timing", "stop_still", "position_source_crosscheck")
+    print(json.dumps({k: result[k] for k in keys}, indent=2, ensure_ascii=False))
+    print("written", os.path.join(att, "result.json"), "and trajectory.csv")
+    return {"pass": 0, "fail": 10, "inconclusive": 11}[result["validation_status"]]
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+ succeeded in 4ms:
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$lines = Get-Content -LiteralPath '"'D:\\RoboSim-Eval\\RoboSim-Eval-Plan-and-Setup-ZH(1).md' -Encoding UTF8
+138..181 | ForEach-Object { '{0}: {1}' -f "'$_, $lines[$_ - 1] }
+$lines = Get-Content -LiteralPath '"'D:\\RoboSim-Eval\\Codex-Harness-Pack-ZH(1).md' -Encoding UTF8
+411..430 | ForEach-Object { '{0}: {1}' -f "'$_, $lines[$_ - 1] }
+$lines = Get-Content -LiteralPath '"'D:\\RoboSim-Eval\\docs\\plan.md' -Encoding UTF8
+5..27 | ForEach-Object { '{0}: {1}' -f "'$_, $lines[$_ - 1] }' in D:\RoboSim-Eval
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$lines = @(git -C D:'"\\RoboSim-Eval show 19203e0:scripts/wsl/analyze_attempt.py)
+330..460 | Where-Object { "'$_ -le $lines.Length } | ForEach-Object { '"'{0}: {1}' -f "'$_, $lines[$_ - 1] }
+Get-Command python,py,uv -ErrorAction SilentlyContinue | Select-Object Name,Source' in D:\RoboSim-Eval
+ succeeded in 45ms:
+138: ### A5. 状态与结果合同
+139: 
+140: 运行器的基本状态为：准备 → 等待就绪 → 执行 → 必要时取消 → 收尾 → 结束。
+141: 
+142: 等待就绪、接受目标、导航执行、取消确认、停止确认各自有超时。检查取消请求已发出还不够，需要观察目标结束状态和机器人速度。停止未确认时，中止后续批次并留下错误。
+143: 
+144: 每次运行必须分别记录：
+145: 
+146: | 字段 | 含义与例子 |
+147: | --- | --- |
+148: | `execution_status` | 运行流程是否完整：completed / error / interrupted |
+149: | `task_outcome` | 导航结果：reached / unreachable / timeout / canceled / unknown |
+150: | `safety_status` | 接触规则结果：pass / fail / unknown |
+151: | `data_status` | 必需数据：complete / incomplete |
+152: | `validation_status` | 当前测试预期是否满足：pass / fail / inconclusive |
+153: 
+154: 例如：一个预设不可达目标被验证为不可达、日志完整，导航任务可以是 unreachable，而“不可达目标处理”测试通过。不能把所有拒绝或 aborted 一律解释成不可达：必须保留 Nav2 原始状态、错误码和判定理由；原因不明时用 unknown。实际到达但接触数据丢失，不能写成安全通过。
+155: 
+156: 配置初稿必须含：目标所用坐标系、坐标单位、到达位置容差、朝向是否考核、停稳条件、导航仿真时限、现实等待上限、传感器断流阈值、接触对象过滤规则。具体数值在测量正常频率和场景尺度后确定，并在正式比较前冻结。
+157: 
+158: 首轮调试可从下面的候选值开始；它们是项目起点，不是行业标准。调整必须记录原因，不能跑完后为提高通过率移动门槛。
+159: 
+160: | 参数 | 首轮候选值 |
+161: | --- | --- |
+162: | 到达位置容差 | 0.5 米，参考点为明确配置的机器人基座坐标系 |
+163: | 朝向检查 | 首轮不纳入独立验收；仍向 Nav2 提供有效目标朝向并记录其配置 |
+164: | 停稳 | 线速度低于 0.05 m/s、角速度低于 0.1 rad/s，持续 1 秒仿真时间 |
+165: | 就绪/目标接受/取消确认 | 分别最多等待 60/10/10 秒现实时间 |
+166: | 导航时限 | 120 秒仿真时间；另有 300 秒现实时间上限 |
+167: | 停止确认 | 取消后最多等待 10 秒现实时间，未停稳就终止批次 |
+168: | 关键数据断流 | 按各主题正常周期配置；初值为 max(5 个正常周期，2 秒现实时间) |
+169: 
+170: 目标坐标必须从实际场景确认，不能把文档示例数字当作可行目标。任务开始时必须验证起点和目标位于允许区域。
+171: 
+172: 以下规则作为首版验收约束：
+173: 
+174: - 到达既保存 Nav2 结果，也用独立位置来源核对。明确这是仿真真实位置还是导航估计位置。
+175: - 用仿真真实位置判卷时，避免把额外真实位置暗中提供给被测导航。若官方示例使用理想里程计，要如实记录，不能称为已验证真实定位鲁棒性。
+176: - 接触检测过滤地面、允许接触和机器人自身正常接触。未测量不能当零碰撞。
+177: - 同时记录仿真时钟与主机单调时钟；主机时间用于防止暂停/断连后无限等待。
+178: - 日志只有订阅数据，不应与 Nav2 争抢速度控制。停机使用明确的单一控制权方案，不能同时让多个节点不断发相反指令。
+179: - 记录丢失数、缺失区间或完整性标志；缺失关键数据就保留 unknown/incomplete。
+180: - 用固定坏数据验证评测器：虚假成功、缺接触数据、时间倒退、取消无回执，不能被判为普通通过。
+181: 
+411: ### 默认：Codex 独立审查提示词
+412: 
+413: 请作为本次交付的独立审查者，对当前项目的指定交付做独立代码审查。本轮保持源码只读，不直接修复；完成后将报告交回 Claude Code，由 Claude Code 核实和修复。
+414: 
+415: 审查材料：[填写实现者给出的交接文件或目录]
+416: 代码范围：[填写基线版本、目标版本或明确的改动清单]
+417: 
+418: 先核对代码范围，直接阅读原始需求、验收条件、实际 diff、相关完整代码和测试。覆盖新增未跟踪文件，并区分已有改动。不要只依据实现者的完成总结判断。
+419: 
+420: 检查用户可观察行为、边界条件、异常处理、回归和测试有效性。需要运行检查时使用临时目录或隔离副本，避免修改被审查源码。无法运行的检查明确标注。
+421: 
+422: 每个发现写清：
+423: - 严重程度及真实文件、函数或行号；
+424: - 触发条件、预期行为与实际行为；
+425: - 复现步骤、失败测试或明确的代码依据；
+426: - 用户影响与建议修复方向。
+427: 
+428: 区分已复现问题、有代码依据的问题和待确认疑点。不设最低问题数量；没有发现也如实说明。避免纯风格偏好和没有证据的大规模重构建议。
+429: 
+430: 最后记录实际审查版本、执行过的检查、未验证部分和剩余风险。无法访问代码或范围不清时指出缺失材料，不根据摘要给出通过结论。
+5: ## 1. 状态总览
+6: 
+7: | 交付 | 状态 | 证据 | 阻塞 / 备注 |
+8: | --- | --- | --- | --- |
+9: | 阶段 0 · 唯一计划与入口 | 完成(2026-09-29) | 基线 commit `dbf67ce`(master);分支 `feature/d0-environment`;AGENTS.md / CLAUDE.md / docs/plan.md / docs/harness-sources.md / artifacts/README.md | — |
+10: | D0a · 环境证据 | 完成(2026-09-29 19:02–19:04) | docs/environment.md;artifacts/d0a/(两侧探测原始输出 + commands.md) | 门槛 1→2 通过;发现:WSL 内无 ROS 2,sudo 需密码 |
+11: | D0b · ROS 2 Jazzy + 6.1.0 示例工作区 | 完成(2026-09-29 19:16–19:30) | artifacts/d0b/commands.md(安装日志、check-ros-install、talker/listener ×2、rviz2 测试、setup-workspace.log) | 门槛 2→3 通过。工作区 `~/robotics/vendor/isaac-ros-6.1`,HEAD a9e8471…;安装脚本首跑退出码 1 是校验步骤的 `set -u` 缺陷(已修),安装本身成功 |
+12: | D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 完成(2026-09-29 19:35–20:12) | artifacts/d0c/commands.md;probe-04-playing/(/clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、tf2_echo odom→base_link);clock-continuity-01;clock-pause-test-02(暂停 29 s 时钟停、恢复后继续);bridge-check-01/02;kit-udp-endpoints-01;diag-01 | 门槛 3→4 通过。排障:Windows 防火墙阻断 WSL→kit.exe 入站(用户以管理员加一条限定规则后解决);首次 Play 后 7 s 时间线被停止(重新 Play 解决)。发现:示例场景不发布 2D 雷达扫描(params 的局部代价地图两路来源无数据,D0d 记偏差);USD 动画时间线每 ~41 s 循环但仿真时钟不受影响;显存为几次点采样(空场景 3124–3128 MiB、Play 后 5 s 3754 MiB、Nav2 运行时 Isaac 界面显示 3.9 GiB),未做连续测量 |
+13: | D0d · 一次真实 A→B | 完成(2026-09-29 20:13–20:52) | artifacts/d0d/commands.md;run-01/(nav2-launch.log、ready-check-01、map-overview、rviz 截图、usd-inspection);run-01/attempt-01/(goal-202437.txt、result.json、trajectory.csv、bag-info、文本流);run-02/03/04-stoptest(停止路径验证) | 目标 map (-4.0,-1.0,yaw 0) 由 CLI action client 发送:SUCCEEDED、error_code 0、0 次恢复、8.47 s 仿真时间、停稳确认;**AMCL 独立来源**(理想里程计 + USD 出生位姿)在停稳确认时刻误差 0.091 m,AMCL 估计 0.231 m → validation=pass(内部预审后用新分析脚本重算)。发现见 §9 |
+14: | D0 交付 + 独立审查 | 进行中:**待独立审查** | docs/setup.md;docs/review/2026-09-29-d0-handoff.md;docs/review/2026-09-29-d0/REVIEW.md | Codex 第 1 轮两次因账户用量上限中止、无意见(20:59 用 82,531 tokens;23:23 重跑用 102,685 tokens);同一范围已拆成 4 个分片,由排队脚本从 2026-09-30 03:38 起自动运行,见 REVIEW.md;Claude 内部预审第 2 次完成(38 条,确认 35 条),有效项已修复并回归,见 REVIEW.md |
+15: | D1 doctor | 实现与验证完成(2026-09-29 23:3x–23:49),**待独立审查**与用户验收 | 分支 `feature/d1-doctor`;`robosim_eval/doctor*.py`、`configs/baseline.yaml`、`scripts/wsl/doctor.sh`;证据 `artifacts/d1/commands.md` | 固定输入测试 37 passed、改坏检查 7/7、假节点测试 6/6;真实 Isaac:运行时退出 0,用户按 ⏸ 后 2 s 窗口判"不推进"退出 10,恢复后退出 0 |
+16: | D2 单次运行器 | 实现与验证完成(2026-09-30 00:1x–00:47),**待独立审查**与用户验收 | 分支 `feature/d2-runner`;`robosim_eval/runner*.py`、`sim_adapter.py`、`run_io.py`;`scripts/wsl/run_scenario.sh`、`sim.sh`;证据 `artifacts/d2/commands.md` | 固定输入测试 77 passed;运行器假节点测试 8/8;真实 Isaac:正常 A→B reached(真值误差 0.264 m),导航中 SIGINT → 取消、停车、收尾(interrupted);Isaac 由 sim_control 复位、加载场景、读真值,不再需要 GUI 点击 |
+17: | D3 判定与失败处理 | 实现与验证完成(2026-09-30 00:5x–01:29),**待独立审查**与用户验收 | 分支 `feature/d3-verdicts`;`robosim_eval/evaluator.py`、`contacts.py`、`kit/contact_monitor.py`;证据 `artifacts/d3/commands.md`;缺陷记录 `docs/defect-record.md` | 固定输入测试 109 passed;判定模块改坏检查 8/8(含 4 种必做的坏数据);真实 Isaac:正常、绕行、不可达、取消、超时 pass,断流正确判 inconclusive,碰撞抓到轮子与矮箱子的接触判 fail;修复一个运行器缺陷(复位前 odom 残留) |
+18: | D4 批量复跑 | 实现与验证完成(2026-09-30 01:30–02:0x),**待独立审查**与用户验收 | 分支 `feature/d4-batch`;`robosim_eval/batch.py`、`report.py`、`scripts/wsl/run_batch.sh`;证据 `artifacts/d4/commands.md`、`artifacts/d4/batch-20260930-013010/runs/report.html` | 9 次全部留档、全部 pass(normal 3/3 到达、bypass 3/3 到达且未碰箱子、unreachable 3/3 判不可达);每次复位后真值距出生点 0.07 mm;报告改进 1 处(列出全部 commit、恢复次数列);"开头卡住"查到大部分机制(见 §9) |
+19: | D5 作品交付 | 实现与演示完成(2026-09-30 01:3x–02:3x),**待独立审查**与用户验收 | 分支 `feature/d5-demo`;`README.md`、`docs/demo.md`、`robosim_eval/nav2_params.py`;证据 `artifacts/d5/commands.md` | README 按新终端逐字执行通过;三个演示:正常导航并打开记录(pass)、取消案例及解释(pass)、参数改动 max_vel_x 0.8→0.4 的事先预测与复跑对比(峰值速度、平均速度、行驶段、到达误差符合预测;路程与最大角速度两条预测不成立,见 docs/demo.md);修复缺陷 3(场景未加载时接触监视装不上)与缺陷 4(接受目标时的仿真时间是旧的);固定输入测试 128 passed,运行器假节点测试 10/10 |
+20: 
+21: **当前任务:** D0–D5 都已实现并在真实 Isaac 上验证,剩下审查与验收:Codex 分片审查排队中(2026-09-30 03:38 起)→ 逐条核实、修复有效项、重跑受影响检查 → 用户验收 → 本地按顺序合并分支(d0 → d1 → … → d5 → master,不推送)。分支是叠加的:每个交付分支从上一个分出;某个交付的审查修复在它自己的分支上做,再向后合并。
+22: 
+23: **D0b 结果(2026-09-29 19:16–19:30):** ROS 2 Jazzy desktop + Nav2 + 闭包依赖装好(用户执行);WSL 内 talker/listener 默认与加载 fastdds.xml 均通;rviz2 在 WSLg 下存活 20 s(OpenGL 4.5);工作区 `~/robotics/vendor/isaac-ros-6.1` @ a9e8471…,`colcon build --packages-up-to carter_navigation` 成功;launch 参数 map / params_file / use_sim_time 可查询。
+24: 
+25: **D0a 新增事实(2026-09-29 19:02–19:04,详见 docs/environment.md):** WSL 里完全没有 ROS 2(无 /opt/ros、无 apt 源、无 colcon/rosdep);`sudo -n true` 失败(需密码);WSLg 变量在非交互 shell 也存在;WSL eth0 172.28.211.14/20,网关 172.28.208.1 = Windows vEthernet (WSL);Windows 与 WSL 均无 ROS/DDS 残留配置;`extension_examples` 链接已存在;Claude 的 shell 未提权;Codex 0.157.0 已登录,`codex exec --sandbox read-only` 可用;`isaac-sim.bat` 自动调用 `setup_ros_env.bat`(默认 RMW = rmw_zenoh_cpp,仅当 ROS_DISTRO 未设时才把自带 jazzy 库加入 PATH/AMENT_PREFIX_PATH);自带前缀含 rclpy 7.1.11 与 rmw_fastrtps_cpp.dll / rmw_zenoh_cpp.dll。
+26: 
+27: **已核实的硬事实(2026-09-29):** Windows 10 Pro 10.0.19045.6466;Isaac Sim 6.1 要求页明确 "Windows 10 is not supported"、显存最低 16 GB、Windows 测试驱动 595.97(本机 591.44);官方 WSL2 路线标 deprecated 且要求 Windows 11;WSL 2.6.3.0 + WSLg 1.0.71,发行版 `Ubuntu` 与 `docker-desktop` 均在运行;`D:\isaac-sim-standalone-6.1.0-windows-x86_64\isaac-sim.bat` 与 `exts\isaacsim.ros2.core\jazzy\lib` 存在;Isaac GUI 进程 `kit`(PID 29036)自 16:22 运行中;Codex CLI 已装(npm);IsaacSim-6.1.0 标签下存在 `jazzy_ws/fastdds.xml` 与 `carter_navigation.launch.xml`(参数 map / params_file / use_sim_time)。
+
+ exited 1 in 112ms:
+330:         validation = "pass"
+331:     else:
+332:         validation = "inconclusive"
+333: 
+334:     clock = bag["clock"]
+335:     sim_at = lambda t: (last_at_or_before(clock, t) or (None, None))[1] if (clock and t is not None) else None
+336:     fb_last = fb[-1] if fb else None
+337:     crosscheck = None
+338:     if spawn:
+339:         crosscheck = {}
+340:         for label, t in (("at_goal_accept", t_accept), ("at_terminal_status", t_end), ("at_arrival_check", t_arr)):
+341:             s, m = at(sim_traj, t), at(tf_mb, t)
+342:             if s is None:
+343:                 continue
+344:             crosscheck[label] = {"sim_state_xy": [round(s[2], 4), round(s[3], 4)],
+345:                                  "amcl_estimate_xy": [round(m[2], 4), round(m[3], 4)] if m else None,
+346:                                  "amcl_minus_sim_state_m": round(math.hypot(m[2] - s[2], m[3] - s[3]), 4) if m else None}
+347:         mo = bag["tf_map_odom"]
+348:         crosscheck["map_to_odom_first"] = [round(v, 4) for v in mo[0][2:]] if mo else None
+349:         crosscheck["map_to_odom_last"] = [round(v, 4) for v in mo[-1][2:]] if mo else None
+350:         crosscheck["map_to_odom_implied_by_spawn"] = [round(v, 4) for v in spawn]
+351: 
+352:     result = {
+353:         "schema": "robosim-eval attempt result, D0 (plan doc A5)",
+354:         "goal": {"frame": "map", "x": gx, "y": gy, "yaw": gyaw, "source": goal_source, "verified_against_transcript": goal_verified,
+355:                  "position_tolerance_m": tolerance, "orientation_assessed": False},
+356:         "target_goal": {"id": target, "id_source": target_src, "other_goal_ids_in_recording": other_ids},
+357:         "execution_status": execution_status,
+358:         "task_outcome": task_outcome,
+359:         "safety_status": "unknown",
+360:         "data_status": "complete" if data_complete else "incomplete",
+361:         "validation_status": validation,
+362:         "verdict_reasons": {"fail": fail_reasons, "inconclusive": inconclusive},
+363:         "arrival_check": {"source": arr_src, "event": arr_event, "sim_time_s": arr["sim_stamp_s"] if arr else None,
+364:                           "error_to_goal_m": arr_err, "tolerance_m": tolerance},
+365:         "nav2_raw": {"terminal_status_code": raw_status, "terminal_status_name": STATUS_NAMES.get(raw_status, "none"),
+366:                      "rejected": rejected, "status_text_from_client": tr.get("status_text"), "error_code": tr.get("error_code"),
+367:                      "error_msg": tr.get("error_msg"), "client_exit": tr.get("client_exit"), "transcript": tr.get("transcript"),
+368:                      "recoveries": fb_last[9] if fb_last else None,
+369:                      "distance_remaining_last_feedback_m": fb_last[7] if fb_last else None},
+370:         "timing": {"accepted_wall": tr.get("accepted_wall"), "result_wall": tr.get("result_wall"),
+371:                    "accept_to_result_wall_s": (t_end - t_accept) / 1e9 if (t_accept is not None and t_end is not None) else None,
+372:                    "sim_time_at_accept_s": sim_at(t_accept), "sim_time_at_result_s": sim_at(t_end),
+373:                    "accept_to_result_sim_s": (sim_at(t_end) - sim_at(t_accept)) if (sim_at(t_accept) is not None and sim_at(t_end) is not None) else None},
+374:         "positions": positions,
+375:         "position_source_crosscheck": crosscheck,
+376:         "stop_still": {"rule": f"|v|<{stop_lin} m/s and |w|<{stop_ang} rad/s for {stop_hold} s sim time after the terminal "
+377:                                f"status (/chassis/odom twist; window restarts on gaps > {max_stop_gap} s)", **stop},
+378:         "data_integrity": {"window": "goal accept .. arrival check (receive time)", "dropout_threshold_wall_s": dropout, **integrity},
+379:         "message_counts": {k: len(v) for k, v in bag.items()},
+380:         "preconditions_for_sim_state_source": PRECONDITIONS if spawn else None,
+381:         "notes": [
+382:             "safety_status is unknown: contact/collision was not measured in D0 (D3).",
+383:             "task_outcome never uses 'unreachable' or 'timeout' here; rejected/aborted goals stay 'unknown' with the raw status.",
+384:             "The sim-state source is derived from Isaac odometry plus the USD spawn; it is not a separate ground-truth topic.",
+385:         ],
+386:     }
+387: 
+388:     rows = [["recv_wall_ns", "sim_stamp_s", "frame_id", "source", "x", "y", "yaw", "lin_speed", "ang_speed"]]
+389:     for o in odom:
+390:         rows.append([o[0], f"{o[1]:.3f}", o[2], "ideal odometry /chassis/odom (IsaacComputeOdometry, relative to Play start)",
+391:                      f"{o[4]:.4f}", f"{o[5]:.4f}", f"{o[6]:.4f}", f"{o[7]:.4f}", f"{o[8]:.4f}"])
+392:     for s in sim_traj:
+393:         rows.append([s[0], f"{s[1]:.3f}", "map", "sim_state_odom_plus_spawn (independent of AMCL)", f"{s[2]:.4f}", f"{s[3]:.4f}", f"{s[4]:.4f}", "", ""])
+394:     for r in tf_mb:
+395:         rows.append([r[0], f"{r[1]:.3f}", "map", "tf map->odom (AMCL) + odom->base_link (estimate)", f"{r[2]:.4f}", f"{r[3]:.4f}", f"{r[4]:.4f}", "", ""])
+396:     for f in fb:
+397:         rows.append([f[0], f"{f[2]:.3f}", f[3], "nav2_feedback of the target goal (map, AMCL-based estimate)", f"{f[4]:.4f}", f"{f[5]:.4f}", f"{f[6]:.4f}", "", ""])
+398:     return result, rows
+399: 
+400: 
+401: def main(argv=None):
+402:     ap = argparse.ArgumentParser()
+403:     ap.add_argument("attempt_dir")
+404:     ap.add_argument("--goal", nargs=3, type=float, required=True, metavar=("X", "Y", "YAW"))
+405:     ap.add_argument("--spawn", nargs=3, type=float, metavar=("X", "Y", "YAW"),
+406:                     help="USD-authored spawn pose in the map frame; enables the AMCL-independent position source")
+407:     ap.add_argument("--tolerance", type=float, default=0.5)
+408:     ap.add_argument("--stop-lin", type=float, default=0.05)
+409:     ap.add_argument("--stop-ang", type=float, default=0.1)
+410:     ap.add_argument("--stop-hold", type=float, default=1.0)
+411:     ap.add_argument("--max-stop-gap", type=float, default=0.25)
+412:     ap.add_argument("--dropout", type=float, default=2.0)
+413:     a = ap.parse_args(argv)
+414:     att = a.attempt_dir
+415:     try:
+416:         bag = read_bag(os.path.join(att, "rosbag"))
+417:     except Exception as e:  # the recording itself is unusable: report, do not guess
+418:         print(f"ERROR: cannot read {os.path.join(att, 'rosbag')}: {type(e).__name__}: {e}")
+419:         return 1
+420:     tr = parse_goal_transcript(att)
+421:     try:
+422:         result, rows = evaluate(bag, tr, tuple(a.goal), tuple(a.spawn) if a.spawn else None, a.tolerance, a.stop_lin,
+423:                                 a.stop_ang, a.stop_hold, a.max_stop_gap, a.dropout)
+424:     except GoalMismatch as e:
+425:         print(f"ERROR: {e}")
+426:         return 2
+427:     result["attempt_dir"] = att
+428:     with open(os.path.join(att, "result.json"), "w", encoding="utf-8") as f:
+429:         json.dump(result, f, indent=2, ensure_ascii=False)
+430:     with open(os.path.join(att, "trajectory.csv"), "w", newline="", encoding="utf-8") as f:
+431:         csv.writer(f).writerows(rows)
+432:     keys = ("execution_status", "task_outcome", "safety_status", "data_status", "validation_status", "verdict_reasons",
+433:             "arrival_check", "nav2_raw", "timing", "stop_still", "position_source_crosscheck")
+434:     print(json.dumps({k: result[k] for k in keys}, indent=2, ensure_ascii=False))
+435:     print("written", os.path.join(att, "result.json"), "and trajectory.csv")
+436:     return {"pass": 0, "fail": 10, "inconclusive": 11}[result["validation_status"]]
+437: 
+438: 
+439: if __name__ == "__main__":
+440:     raise SystemExit(main())
+
+Name       Source                                                                   
+----       ------                                                                   
+python.exe C:\Users\Administrator\AppData\Local\Programs\Python\Python313\python.exe
+py.exe     C:\Users\Administrator\AppData\Local\Programs\Python\Launcher\py.exe     
+
+
+
+codex
+已核对 §A5：脚本保留了五类状态，并把 rejected/aborted 记为 `unknown`。我正在检查数据窗口和 TF 时间对齐，重点确认旧数据或到达时刻之后的数据是否会被用于判定。接下来只用 Windows Python 做内存验证，不生成结果文件或测试缓存。
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git -C D:\\RoboSim-Eval diff --stat dbf67ce 19203e0 -- scripts/wsl/analyze_attempt.py scripts/wsl/analyze_attempt.sh tests/test_analyze_attempt.py
+"'$lines = @(git -C D:'"\\RoboSim-Eval show 19203e0:scripts/wsl/analyze_attempt.py)
+108..330 | ForEach-Object { '{0}: {1}' -f "'$_, $lines[$_ - 1] }' in D:\RoboSim-Eval
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import subprocess, types, math, json, copy
+src = subprocess.check_output(['git','-C',r'D:\\RoboSim-Eval','show','19203e0:scripts/wsl/analyze_attempt.py'],text=True,encoding='utf-8')
+m = types.ModuleType('review_analyzer'); exec(compile(src,'19203e0:scripts/wsl/analyze_attempt.py','exec'),m.__dict__)
+def make():
+    b = {k:[] for k in ('clock','odom','cmd_vel','status','feedback','tf_map_odom','tf_odom_base')}
+    for i in range(41):
+        s = i/10; t = int(s*1e9)
+        b['clock'].append((t,s)); b['odom'].append((t,s,'odom','base_link',0.,0.,0.,0.,0.))
+        b['tf_map_odom'].append((t,s,0.,0.,0.)); b['tf_odom_base'].append((t,s,0.,0.,0.))
+        b['feedback'].append((t,'a',s,'map',0.,0.,0.,0.,s,0))
+    b['status']=[(int(1e9),'a',1),(int(2e9),'a',4)]
+    tr={'sent_goal':[0.,0.,0.],'goal_id':'a','transcript':'memory','rejected':False}
+    return b,tr
+def show(label,b,tr,**kw):
+    r,_=m.evaluate(b,tr,kw.pop('goal',(0.,0.,0.)),spawn=(0.,0.,0.),**kw)
+    print(label,json.dumps({k:r[k] for k in ('validation_status','task_outcome','data_status','arrival_check','verdict_reasons')},allow_nan=True))
+    return r
+b,tr=make(); assert show('baseline',b,tr)['validation_status']=='pass'
+b,tr=make(); b['tf_map_odom']=[(0,0.,0.,0.,0.)]; b['feedback']=[b['feedback'][0]]; r=show('no_tf_or_feedback_in_window',b,tr); print('integrity',json.dumps(r['data_integrity']))
+print('future_tf',m.compose_map_base([(int(10e9),10.,100.,0.,0.)],[(int(1e9),1.,0.,0.,0.)]))
+b,tr=make(); b['odom']=[(t,s,'unexpected_frame','different_body',x,y,yaw,v,w) for t,s,fr,ch,x,y,yaw,v,w in b['odom']]; show('wrong_odom_frames',b,tr)
+b,tr=make(); show('nan_yaw_goal',b,tr,goal=(0.,0.,float('nan')))
+b,tr=make(); b['tf_map_odom']=[(int(1e9),1.,0.,0.,0.)]; b['clock']=[(t,1.) for t,s in b['clock']]; show('clock_frozen',b,tr)
+b,tr=make(); b['clock']=[(-int(2e9),10.),(-int(1e9),0.)]+b['clock']; show('backward_outside_window',b,tr)
+print('pose_rotation',m.pose_compose((1.,2.,math.pi/2),(2.,0.,math.pi)))
+'@ | python -B -" in D:\RoboSim-Eval
+ succeeded in 72ms:
+108:                 rec = (t_ns, stamp(tr.header), tt.translation.x, tt.translation.y, yaw_of(tt.rotation))
+109:                 if key == ("map", "odom"):
+110:                     out["tf_map_odom"].append(rec)
+111:                 elif key == ("odom", "base_link"):
+112:                     out["tf_odom_base"].append(rec)
+113:     return out
+114: 
+115: 
+116: def compose_map_base(map_odom, odom_base):
+117:     """map->base_link = latest map->odom (+) each odom->base_link sample; returns (t_ns, stamp, x, y, yaw)."""
+118:     res, j = [], 0
+119:     if not map_odom:
+120:         return res
+121:     for t_ns, st, x, y, yaw in odom_base:
+122:         while j + 1 < len(map_odom) and map_odom[j + 1][0] <= t_ns:
+123:             j += 1
+124:         _, _, mx, my, myaw = map_odom[j]
+125:         res.append((t_ns, st, *pose_compose((mx, my, myaw), (x, y, yaw))))
+126:     return res
+127: 
+128: 
+129: def parse_goal_transcript(att):
+130:     """Parse the newest goal-*.txt written by send_goal.sh (the sent goal, goal id, result, errors)."""
+131:     files = sorted(glob.glob(os.path.join(att, "goal-*.txt")))
+132:     info = {"transcript": None, "transcripts_found": len(files), "sent_goal": None, "goal_id": None, "accepted_wall": None,
+133:             "result_wall": None, "status_text": None, "rejected": False, "error_code": None, "error_msg": None,
+134:             "client_exit": None}
+135:     if not files:
+136:         return info
+137:     info["transcript"] = os.path.basename(files[-1])
+138:     for line in open(files[-1], encoding="utf-8", errors="replace"):
+139:         line = line.rstrip("\n")
+140:         m = re.search(r"send_goal start .*?\bx=(\S+) y=(\S+) yaw=(\S+)", line)
+141:         if m:
+142:             info["sent_goal"] = [float(m.group(1)), float(m.group(2)), float(m.group(3))]
+143:             continue
+144:         m = re.search(r"send_goal end .*?action_client_exit=(\d+)", line)
+145:         if m:
+146:             info["client_exit"] = int(m.group(1))
+147:             continue
+148:         m = re.match(r"(\S+) (.*)", line)
+149:         if not m:
+150:             continue
+151:         wall, rest = m.groups()
+152:         body = rest.strip()
+153:         if "Goal accepted with ID" in rest:
+154:             info["accepted_wall"] = wall
+155:             info["goal_id"] = rest.split()[-1].lower().replace("-", "")
+156:         elif "Goal was rejected" in rest:
+157:             info["rejected"], info["status_text"], info["result_wall"] = True, "REJECTED", wall
+158:         elif body.startswith("error_code:"):
+159:             info["error_code"] = int(body.split(":", 1)[1])
+160:         elif body.startswith("error_msg:"):
+161:             info["error_msg"] = body.split(":", 1)[1].strip().strip("'\"")
+162:         elif "Goal finished with status" in rest:
+163:             info["result_wall"], info["status_text"] = wall, rest.split(":")[-1].strip()
+164:     return info
+165: 
+166: 
+167: def stop_still(odom, t_end_ns, lin, ang, hold, max_gap):
+168:     """Stop-still on the odom twist after the terminal status: |v| < lin and |w| < ang continuously for `hold` s of sim
+169:     time; a sample gap larger than max_gap (sim s) or a backwards stamp restarts the window. States: confirmed; not_still
+170:     (at least 2*hold s of gap-free data and never at rest for hold s); not_observed (too little or gappy data)."""
+171:     res = {"state": "not_observed", "confirmed_at_sim": None, "confirmed_at_t_ns": None, "observed_after_end_sim_s": 0.0,
+172:            "max_gap_after_end_sim_s": None, "max_lin_after_end": None, "max_ang_after_end": None, "samples_after_end": 0}
+173:     if t_end_ns is None:
+174:         return res
+175:     after = [o for o in odom if o[0] >= t_end_ns]
+176:     res["samples_after_end"] = len(after)
+177:     if not after:
+178:         return res
+179:     res["observed_after_end_sim_s"] = after[-1][1] - after[0][1]
+180:     res["max_lin_after_end"] = max(o[7] for o in after)
+181:     res["max_ang_after_end"] = max(o[8] for o in after)
+182:     gaps = [b[1] - a[1] for a, b in zip(after, after[1:])]
+183:     res["max_gap_after_end_sim_s"] = max(gaps) if gaps else None
+184:     start, prev = None, None
+185:     for o in after:
+186:         if prev is not None and (o[1] - prev[1] > max_gap or o[1] < prev[1]):
+187:             start = None
+188:         if o[7] < lin and o[8] < ang:
+189:             start = start or o
+190:             if o[1] - start[1] >= hold:
+191:                 res.update(state="confirmed", confirmed_at_sim=o[1], confirmed_at_t_ns=o[0])
+192:                 return res
+193:         else:
+194:             start = None
+195:         prev = o
+196:     if res["observed_after_end_sim_s"] >= 2 * hold and (not gaps or max(gaps) <= max_gap):
+197:         res["state"] = "not_still"
+198:     return res
+199: 
+200: 
+201: def stream_integrity(seq, lo, hi, stamp_index=1):
+202:     """Largest receive-time gap (s) inside [lo, hi] including the edges, and the number of backwards stamps."""
+203:     times = [e[0] for e in seq if lo <= e[0] <= hi]
+204:     pts = [lo] + times + [hi]
+205:     max_gap = max((b - a) for a, b in zip(pts, pts[1:])) / 1e9 if hi > lo else 0.0
+206:     stamps = [e[stamp_index] for e in seq]
+207:     backwards = sum(1 for a, b in zip(stamps, stamps[1:]) if b < a)
+208:     return {"count": len(seq), "count_in_window": len(times), "max_wall_gap_s": round(max_gap, 3), "backward_stamps": backwards}
+209: 
+210: 
+211: def _pose(e, xi, yi, yawi, si, frame, goal=None):
+212:     if e is None:
+213:         return None
+214:     d = {"frame": frame, "x": e[xi], "y": e[yi], "yaw": e[yawi], "sim_stamp_s": e[si], "recv_wall_ns": e[0]}
+215:     if goal is not None:
+216:         d["error_to_goal_m"] = math.hypot(e[xi] - goal[0], e[yi] - goal[1])
+217:     return d
+218: 
+219: 
+220: def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0.1, stop_hold=1.0, max_stop_gap=0.25,
+221:              dropout=2.0):
+222:     """Pure evaluation of one attempt; returns (result dict, trajectory rows). Raises GoalMismatch."""
+223:     gx, gy, gyaw = goal
+224:     fail_reasons, inconclusive = [], []
+225: 
+226:     if tr.get("sent_goal") is not None:
+227:         sx, sy, syaw = tr["sent_goal"]
+228:         if abs(sx - gx) > 1e-6 or abs(sy - gy) > 1e-6 or abs(wrap(syaw - gyaw)) > 1e-6:
+229:             raise GoalMismatch(f"--goal {list(goal)} differs from the goal sent in {tr.get('transcript')}: {tr['sent_goal']}")
+230:         goal_source, goal_verified = f"goal sent by the CLI action client (transcript {tr.get('transcript')})", True
+231:     else:
+232:         goal_source, goal_verified = "operator-entered --goal (no goal transcript; not verified against the goal actually sent)", False
+233:         inconclusive.append("goal not verified against a send_goal transcript")
+234: 
+235:     statuses = sorted(bag["status"])
+236:     target, target_src = tr.get("goal_id"), "transcript"
+237:     if not target:
+238:         target_src = "first goal id that became ACCEPTED/EXECUTING in the recording"
+239:         target = next((u for _, u, s in statuses if s in (1, 2)), None)
+240:     st = [e for e in statuses if target and e[1] == target]
+241:     other_ids = sorted({u for _, u, _ in statuses if u != target})
+242:     fb = [f for f in bag["feedback"] if target and f[1] == target]
+243:     t_accept = next((t for t, _, s in st if s in (1, 2)), None)
+244:     term = next(((t, s) for t, _, s in st if s in (4, 5, 6)), None)
+245:     t_end, raw_status = term if term else (None, None)
+246:     if t_accept is None and st:
+247:         t_accept = st[0][0]
+248:         inconclusive.append("the target goal's ACCEPTED/EXECUTING status was not recorded")
+249:     rejected = bool(tr.get("rejected"))
+250: 
+251:     if t_end is not None or rejected:
+252:         execution_status = "completed"
+253:     elif t_accept is not None:
+254:         execution_status = "interrupted"
+255:         inconclusive.append("goal accepted but no terminal status before the recording ended")
+256:     else:
+257:         execution_status = "error"
+258:         inconclusive.append("target goal not observed in the recording")
+259: 
+260:     odom = bag["odom"]
+261:     stop = stop_still(odom, t_end, stop_lin, stop_ang, stop_hold, max_stop_gap)
+262:     if stop["state"] == "confirmed":
+263:         t_arr, arr_event = stop["confirmed_at_t_ns"], "stop_confirmed"
+264:     elif t_end is not None:
+265:         t_arr, arr_event = t_end, "terminal_status"
+266:     else:
+267:         t_arr, arr_event = (odom[-1][0] if odom else None), "recording_end"
+268:     t_last = max((seq[-1][0] for seq in bag.values() if seq), default=None)
+269: 
+270:     tf_mb = compose_map_base(bag["tf_map_odom"], bag["tf_odom_base"])
+271:     sim_traj = [(o[0], o[1], *pose_compose(tuple(spawn), (o[4], o[5], o[6]))) for o in odom] if spawn else []
+272:     at = lambda seq, t: last_at_or_before(seq, t) if (seq and t is not None) else None
+273:     positions = {
+274:         "nav2_feedback_map": {"source": "Nav2 feedback current_pose of the target goal (map frame; AMCL-based estimate)",
+275:                               "at_arrival": _pose(at(fb, t_arr), 4, 5, 6, 2, "map", goal),
+276:                               "at_recording_end": _pose(fb[-1] if fb else None, 4, 5, 6, 2, "map", goal)},
+277:         "tf_map_base_link": {"source": "/tf map->odom (AMCL) (+) odom->base_link (Isaac odometry); map frame; estimate",
+278:                              "at_arrival": _pose(at(tf_mb, t_arr), 2, 3, 4, 1, "map", goal),
+279:                              "at_recording_end": _pose(tf_mb[-1] if tf_mb else None, 2, 3, 4, 1, "map", goal)},
+280:         "odom": {"source": "ideal odometry /chassis/odom (IsaacComputeOdometry; odom frame = pose at Play start)",
+281:                  "at_arrival": _pose(at(odom, t_arr), 4, 5, 6, 1, "odom"),
+282:                  "at_recording_end": _pose(odom[-1] if odom else None, 4, 5, 6, 1, "odom")},
+283:     }
+284:     if spawn:
+285:         positions["sim_state_odom_plus_spawn"] = {
+286:             "source": f"ideal odometry /chassis/odom (+) USD spawn {list(spawn)}; independent of AMCL; see preconditions",
+287:             "at_arrival": _pose(at(sim_traj, t_arr), 2, 3, 4, 1, "map", goal),
+288:             "at_recording_end": _pose(sim_traj[-1] if sim_traj else None, 2, 3, 4, 1, "map", goal)}
+289:         arr_src = "sim_state_odom_plus_spawn"
+290:     else:
+291:         arr_src = "nav2_feedback_map"
+292:         inconclusive.append("no AMCL-independent position source (--spawn not given); the Nav2 estimate is not an independent check")
+293:     arr = positions[arr_src]["at_arrival"]
+294:     arr_err = arr["error_to_goal_m"] if arr else None
+295: 
+296:     lo = t_accept if t_accept is not None else (odom[0][0] if odom else 0)
+297:     hi = t_arr if t_arr is not None else (t_last or lo)
+298:     integrity = {name: stream_integrity(bag[name], lo, hi) for name in ("clock", "odom", "tf_odom_base", "tf_map_odom")}
+299:     integrity["feedback_target_goal"] = {"count": len(fb)}
+300:     problems = [f"{n}: no messages" for n, v in integrity.items() if v["count"] == 0]
+301:     problems += [f"{n}: gap of {v['max_wall_gap_s']} s wall > {dropout} s" for n, v in integrity.items()
+302:                  if "max_wall_gap_s" in v and v["max_wall_gap_s"] > dropout]
+303:     problems += [f"{n}: {v['backward_stamps']} backwards stamps" for n, v in integrity.items() if v.get("backward_stamps")]
+304:     data_complete = not problems
+305:     if not data_complete:
+306:         inconclusive.append("data incomplete: " + "; ".join(problems))
+307:     if raw_status == 4 and stop["state"] == "not_observed":
+308:         inconclusive.append("stop-still could not be observed after the result (recording too short or gappy)")
+309: 
+310:     if rejected:
+311:         task_outcome = "unknown"
+312:         fail_reasons.append("goal rejected by the action server")
+313:     elif raw_status == 4:
+314:         task_outcome = "reached" if (stop["state"] == "confirmed" and arr_err is not None and arr_err <= tolerance) else "unknown"
+315:         if stop["state"] == "not_still":
+316:             fail_reasons.append("Nav2 reported SUCCEEDED but the robot did not come to rest")
+317:         if arr_err is not None and arr_err > tolerance:
+318:             fail_reasons.append(f"position error {arr_err:.3f} m > tolerance {tolerance} m ({arr_src})")
+319:     elif raw_status == 5:
+320:         task_outcome = "canceled"
+321:         fail_reasons.append("goal canceled")
+322:     else:
+323:         task_outcome = "unknown"
+324:         if raw_status == 6:
+325:             fail_reasons.append("Nav2 terminal status ABORTED (kept as unknown, not interpreted as unreachable)")
+326: 
+327:     if fail_reasons:
+328:         validation = "fail"
+329:     elif task_outcome == "reached" and not inconclusive:
+330:         validation = "pass"
+
+ succeeded in 110ms:
+baseline {"validation_status": "pass", "task_outcome": "reached", "data_status": "complete", "arrival_check": {"source": "sim_state_odom_plus_spawn", "event": "stop_confirmed", "sim_time_s": 3.0, "error_to_goal_m": 0.0, "tolerance_m": 0.5}, "verdict_reasons": {"fail": [], "inconclusive": []}}
+no_tf_or_feedback_in_window {"validation_status": "pass", "task_outcome": "reached", "data_status": "complete", "arrival_check": {"source": "sim_state_odom_plus_spawn", "event": "stop_confirmed", "sim_time_s": 3.0, "error_to_goal_m": 0.0, "tolerance_m": 0.5}, "verdict_reasons": {"fail": [], "inconclusive": []}}
+integrity {"window": "goal accept .. arrival check (receive time)", "dropout_threshold_wall_s": 2.0, "clock": {"count": 41, "count_in_window": 21, "max_wall_gap_s": 0.1, "backward_stamps": 0}, "odom": {"count": 41, "count_in_window": 21, "max_wall_gap_s": 0.1, "backward_stamps": 0}, "tf_odom_base": {"count": 41, "count_in_window": 21, "max_wall_gap_s": 0.1, "backward_stamps": 0}, "tf_map_odom": {"count": 1, "count_in_window": 0, "max_wall_gap_s": 2.0, "backward_stamps": 0}, "feedback_target_goal": {"count": 1}}
+future_tf [(1000000000, 1.0, 100.0, 0.0, 0.0)]
+wrong_odom_frames {"validation_status": "pass", "task_outcome": "reached", "data_status": "complete", "arrival_check": {"source": "sim_state_odom_plus_spawn", "event": "stop_confirmed", "sim_time_s": 3.0, "error_to_goal_m": 0.0, "tolerance_m": 0.5}, "verdict_reasons": {"fail": [], "inconclusive": []}}
+nan_yaw_goal {"validation_status": "pass", "task_outcome": "reached", "data_status": "complete", "arrival_check": {"source": "sim_state_odom_plus_spawn", "event": "stop_confirmed", "sim_time_s": 3.0, "error_to_goal_m": 0.0, "tolerance_m": 0.5}, "verdict_reasons": {"fail": [], "inconclusive": []}}
+clock_frozen {"validation_status": "pass", "task_outcome": "reached", "data_status": "complete", "arrival_check": {"source": "sim_state_odom_plus_spawn", "event": "stop_confirmed", "sim_time_s": 3.0, "error_to_goal_m": 0.0, "tolerance_m": 0.5}, "verdict_reasons": {"fail": [], "inconclusive": []}}
+backward_outside_window {"validation_status": "inconclusive", "task_outcome": "reached", "data_status": "incomplete", "arrival_check": {"source": "sim_state_odom_plus_spawn", "event": "stop_confirmed", "sim_time_s": 3.0, "error_to_goal_m": 0.0, "tolerance_m": 0.5}, "verdict_reasons": {"fail": [], "inconclusive": ["data incomplete: clock: 1 backwards stamps"]}}
+pose_rotation (1.0000000000000002, 4.0, -1.5707963267948968)
+
+codex
+现有 13 项纯函数测试已在内存中通过；转录解析测试会写临时文件，因此只做静态检查。另已复现两处边界问题：评测窗口内没有 TF 消息仍可能标为数据完整，以及未来的 TF 被套用于较早的位姿。我会继续核实它们对判定的影响，并检查不完整转录能否关联错目标。
+hook: PreToolUse
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import subprocess, types, math, json, io
+from unittest.mock import patch
+src = subprocess.check_output(['git','-C',r'D:\\RoboSim-Eval','show','19203e0:scripts/wsl/analyze_attempt.py'],text=True,encoding='utf-8')
+m=types.ModuleType('review_analyzer'); exec(compile(src,'19203e0:scripts/wsl/analyze_attempt.py','exec'),m.__dict__)
+def make():
+    b={k:[] for k in ('clock','odom','cmd_vel','status','feedback','tf_map_odom','tf_odom_base')}
+    for i in range(41):
+        s=i/10; t=int(s*1e9)
+        b['clock'].append((t,s)); b['odom'].append((t,s,'odom','base_link',0.,0.,0.,0.,0.))
+        b['tf_map_odom'].append((t,s,0.,0.,0.)); b['tf_odom_base'].append((t,s,0.,0.,0.))
+        b['feedback'].append((t,'old_goal',s,'map',0.,0.,0.,0.,s,0))
+    b['status']=[(int(1e9),'old_goal',1),(int(2e9),'old_goal',4)]
+    tr={'sent_goal':[0.,0.,0.],'goal_id':'old_goal','transcript':'goal-new.txt','rejected':False}
+    return b,tr
+def show(label,b,tr):
+    r,_=m.evaluate(b,tr,(0.,0.,0.),spawn=(0.,0.,0.))
+    print(label,json.dumps({k:r[k] for k in ('execution_status','validation_status','task_outcome','data_status','target_goal','arrival_check','verdict_reasons')}))
+    return r
+b,tr=make(); tr['goal_id']=None; r=show('partial_transcript_old_goal',b,tr); assert r['validation_status']=='pass' and r['goal']['verified_against_transcript']
+b,tr=make(); b['status']=[(int(1e9),'old_goal',1),(int(8e9),'old_goal',4)]; b['odom']=[(t,s,fr,ch,5.,y,yaw,v,w) for t,s,fr,ch,x,y,yaw,v,w in b['odom'] if t<=int(3e9)]; r=show('odom_lost_before_success',b,tr); assert r['validation_status']=='fail' and r['stop_still']['state']=='not_observed'
+b,tr=make()
+class MemoryFile(io.StringIO):
+    def close(self):
+        pass
+writes=[]
+def memory_open(path, mode='r', *args, **kwargs):
+    assert mode.startswith('w'),mode
+    f=MemoryFile(); writes.append((path,f)); return f
+cases=[('pass',b,tr,['--spawn','0','0','0'],0),('without_spawn',b,tr,[],11)]
+bbad,tbad=make(); bbad['status'][-1]=(int(2e9),'old_goal',6); cases.append(('aborted',bbad,tbad,['--spawn','0','0','0'],10))
+for name,bb,tt,extra,wanted in cases:
+    writes.clear()
+    with patch.object(m,'read_bag',return_value=bb),patch.object(m,'parse_goal_transcript',return_value=tt),patch('builtins.open',side_effect=memory_open),patch('sys.stdout',new_callable=io.StringIO):
+        rc=m.main(['memory-only','--goal','0','0','0']+extra)
+    print('main',name,'exit',rc,'memory_outputs',len(writes)); assert rc==wanted and len(writes)==2
+writes.clear()
+with patch.object(m,'read_bag',return_value=b),patch.object(m,'parse_goal_transcript',return_value=tr),patch('builtins.open',side_effect=memory_open),patch('sys.stdout',new_callable=io.StringIO):
+    rc=m.main(['memory-only','--goal','10','0','0'])
+print('main mismatch exit',rc,'memory_outputs',len(writes)); assert rc==2 and not writes
+with patch.object(m,'read_bag',side_effect=RuntimeError('synthetic unreadable bag')),patch('builtins.open',side_effect=memory_open),patch('sys.stdout',new_callable=io.StringIO):
+    rc=m.main(['memory-only','--goal','0','0','0'])
+print('main unreadable exit',rc,'memory_outputs',len(writes)); assert rc==1 and not writes
+with patch.object(m.glob,'glob',return_value=['memory/goal-new.txt']),patch('builtins.open',return_value=io.StringIO('2026-09-30T00:00:00 send_goal start frame=map x=0 y=0 yaw=0\\n')):
+    partial=m.parse_goal_transcript('memory')
+print('parsed_partial',json.dumps(partial)); assert partial['sent_goal']==[0.,0.,0.] and partial['goal_id'] is None
+print('CHECKS_COMPLETED_WITHOUT_FILES')
+'@ | python -B -" in D:\RoboSim-Eval
+ succeeded in 238ms:
+partial_transcript_old_goal {"execution_status": "completed", "validation_status": "pass", "task_outcome": "reached", "data_status": "complete", "target_goal": {"id": "old_goal", "id_source": "first goal id that became ACCEPTED/EXECUTING in the recording", "other_goal_ids_in_recording": []}, "arrival_check": {"source": "sim_state_odom_plus_spawn", "event": "stop_confirmed", "sim_time_s": 3.0, "error_to_goal_m": 0.0, "tolerance_m": 0.5}, "verdict_reasons": {"fail": [], "inconclusive": []}}
+odom_lost_before_success {"execution_status": "completed", "validation_status": "fail", "task_outcome": "unknown", "data_status": "incomplete", "target_goal": {"id": "old_goal", "id_source": "transcript", "other_goal_ids_in_recording": []}, "arrival_check": {"source": "sim_state_odom_plus_spawn", "event": "terminal_status", "sim_time_s": 3.0, "error_to_goal_m": 5.0, "tolerance_m": 0.5}, "verdict_reasons": {"fail": ["position error 5.000 m > tolerance 0.5 m (sim_state_odom_plus_spawn)"], "inconclusive": ["data incomplete: clock: gap of 4.0 s wall > 2.0 s; odom: gap of 5.0 s wall > 2.0 s; tf_odom_base: gap of 4.0 s wall > 2.0 s; tf_map_odom: gap of 4.0 s wall > 2.0 s", "stop-still could not be observed after the result (recording too short or gappy)"]}}
+main pass exit 0 memory_outputs 2
+main without_spawn exit 11 memory_outputs 2
+main aborted exit 10 memory_outputs 2
+main mismatch exit 2 memory_outputs 0
+main unreadable exit 1 memory_outputs 0
+parsed_partial {"transcript": "goal-new.txt", "transcripts_found": 1, "sent_goal": [0.0, 0.0, 0.0], "goal_id": null, "accepted_wall": null, "result_wall": null, "status_text": null, "rejected": false, "error_code": null, "error_msg": null, "client_exit": null}
+CHECKS_COMPLETED_WITHOUT_FILES
+
+hook: PreToolUse
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import subprocess, types, math, json
+src=subprocess.check_output(['git','-C',r'D:\\RoboSim-Eval','show','19203e0:scripts/wsl/analyze_attempt.py'],text=True,encoding='utf-8')
+m=types.ModuleType('review_analyzer'); exec(compile(src,'19203e0:scripts/wsl/analyze_attempt.py','exec'),m.__dict__)
+def make(end=10):
+    b={k:[] for k in ('clock','odom','cmd_vel','status','feedback','tf_map_odom','tf_odom_base')}
+    for i in range(end*10+1):
+        s=i/10; t=int(s*1e9)
+        b['clock'].append((t,s)); b['odom'].append((t,s,'odom','base_link',0.,0.,0.,0.,0.))
+        b['tf_map_odom'].append((t,s,0.,0.,0.)); b['tf_odom_base'].append((t,s,0.,0.,0.))
+        b['feedback'].append((t,'target',s,'map',0.,0.,0.,0.,s,0))
+    b['status']=[(int(1e9),'target',1),(int(2e9),'target',4)]
+    return b,{'sent_goal':[0.,0.,0.],'goal_id':'target','transcript':'memory','rejected':False}
+b,tr=make(); b['status'][-1]=(int(8e9),'target',4)
+b['odom']=[(t,s,fr,ch,5.,y,yaw,v,w) for t,s,fr,ch,x,y,yaw,v,w in b['odom'] if t<=int(3e9)]
+r,_=m.evaluate(b,tr,(0.,0.,0.),spawn=(0.,0.,0.))
+print('only_odom_missing',json.dumps({k:r[k] for k in ('validation_status','data_status','arrival_check','verdict_reasons')})); assert r['validation_status']=='fail'
+# Wall-time window is short, but there is no clock message in it, or before arrival at all.
+b,tr=make(); b['clock']=[(int(10e9),10.)]
+r,_=m.evaluate(b,tr,(0.,0.,0.),spawn=(0.,0.,0.))
+print('clock_only_after_arrival',json.dumps({k:r[k] for k in ('validation_status','data_status','timing')}),json.dumps(r['data_integrity']['clock'])); assert r['validation_status']=='pass'
+# Threshold strictness and stop-window resets, using only memory tuples.
+def odo(st,v=0.,w=0.,i=0): return (i,st,'odom','base_link',0.,0.,0.,v,w)
+for name,seq in [('linear_equal',[odo(i/10,.05,0.,i) for i in range(31)]),('angular_equal',[odo(i/10,0.,.1,i) for i in range(31)]),('too_short',[odo(i/10,0.,0.,i) for i in range(10)]),('gap',[odo(s,i=i) for i,s in enumerate([0.,.2,.4,1.,1.2,1.4,1.6])]),('backward_restart',[odo(s,i=i) for i,s in enumerate([0.,.2,.4,.6,.8,.0,.2,.4,.6,.8])])]:
+    r=m.stop_still(seq,0,.05,.1,1.,.25); print('stop',name,r['state']); assert r['state']"'!='"'confirmed'
+empty={k:[] for k in ('clock','odom','cmd_vel','status','feedback','tf_map_odom','tf_odom_base')}
+r,_=m.evaluate(empty,{},(0.,0.,0.)); print('empty',r['execution_status'],r['data_status'],r['validation_status']); assert r['validation_status']=='inconclusive'
+print('EDGE_CHECKS_COMPLETED_WITHOUT_FILES')
+'@ | python -B -" in D:\RoboSim-Eval
+ succeeded in 87ms:
+only_odom_missing {"validation_status": "fail", "data_status": "incomplete", "arrival_check": {"source": "sim_state_odom_plus_spawn", "event": "terminal_status", "sim_time_s": 3.0, "error_to_goal_m": 5.0, "tolerance_m": 0.5}, "verdict_reasons": {"fail": ["position error 5.000 m > tolerance 0.5 m (sim_state_odom_plus_spawn)"], "inconclusive": ["data incomplete: odom: gap of 5.0 s wall > 2.0 s", "stop-still could not be observed after the result (recording too short or gappy)"]}}
+clock_only_after_arrival {"validation_status": "pass", "data_status": "complete", "timing": {"accepted_wall": null, "result_wall": null, "accept_to_result_wall_s": 1.0, "sim_time_at_accept_s": null, "sim_time_at_result_s": null, "accept_to_result_sim_s": null}} {"count": 1, "count_in_window": 0, "max_wall_gap_s": 2.0, "backward_stamps": 0}
+stop linear_equal not_still
+stop angular_equal not_still
+stop too_short not_observed
+stop gap not_observed
+stop backward_restart not_observed
+empty error incomplete inconclusive
+EDGE_CHECKS_COMPLETED_WITHOUT_FILES
+
+codex
+实际加载的说明来源：会话中的全局指令、用户提供的 AGENTS.md 内容、指定分片提示词、`Codex-Harness-Pack-ZH(1).md` 的独立审查章节，以及 `using-superpowers`、`code-review-excellence` 技能；未单独读取 CLAUDE.md。
+
+根据 `docs/plan.md`，当前任务是完成 D0–D5 的独立审查、核实修复与用户验收；本次仅审查 `19203e0` 的 D0 评测逻辑。
+
+**发现 3 项 Major、2 项 Minor，均已通过内存输入复现。** 以下行号均指提交 `19203e0` 的 [analyze_attempt.py](D:/RoboSim-Eval/scripts/wsl/analyze_attempt.py)。
+
+1. **Major：部分转录缺少目标 ID 时，可能把其他目标的成功判给本次尝试。**  
+   位置：`evaluate()`，226–242 行。转录只包含匹配的 `sent_goal`、没有 `goal_id` 时，代码先标记目标已核对，再选 bag 中首个 ACCEPTED/EXECUTING 目标，未增加归属不确定的原因。  
+   复现：转录只有新目标的 `send_goal start`；同一 bag 包含另一个目标的接受、成功及停稳数据，位置恰好接近所填目标。实际得到 `completed/reached/complete/pass`，`target_goal.id` 却属于另一个目标。仅有旧 SUCCEEDED 残留不会触发，必须存在其 ACCEPTED/EXECUTING 记录。  
+   预期：无法把转录目标与终态绑定时，应为 `inconclusive`。否则，新尝试可能借用旧尝试的成功。建议将坐标核对与目标 ID 归属核对分开；部分转录缺失 ID 时禁止普通通过。  
+   分类：**已复现问题**。
+
+2. **Major：评测窗口内完全缺失必需数据，仍可能判为完整并通过。**  
+   位置：`stream_integrity()`，201–208 行；`evaluate()`，296–304 行。完整性判断检查整个 bag 的 `count`，没有检查已计算的 `count_in_window`。  
+   复现：目标在现实时间 1 秒接受、2 秒成功、3 秒确认停稳；`/clock` 唯一一条消息位于 10 秒。实际得到 `count_in_window=0`、`data_status=complete`、`validation_status=pass`，接受和结果时刻的仿真时间均为 `null`。原因是窗口长度恰为 2 秒，没有超过默认断流阈值。  
+   预期：窗口内没有必需时钟证据，应保留 `incomplete/inconclusive`，符合 §A5 的关键数据缺失约束。建议要求窗口内有效样本，并区分数据存在性与断流长度检查。  
+   分类：**已复现问题**。
+
+3. **Major：里程计断流后，以陈旧位置作出确定的到达失败判定。**  
+   位置：`evaluate()`，264–272、293–318、327–328 行。未观察到停稳时，代码在终态时刻取最后一个历史位置，没有限制其新鲜度；位置超差产生的 `fail` 又优先于数据不足。  
+   复现：8 秒收到 SUCCEEDED，其他数据连续，但 odom 在 3 秒停止，最后位置距目标 5 米。实际输出 `data_status=incomplete`、`stop_still=not_observed`，同时以这份早了 5 秒的位置判 `validation_status=fail`。  
+   预期：终态位置和停稳情况都缺乏证据，应为 `unknown/incomplete/inconclusive`。当前行为会把记录故障误报为导航失败。建议先验证判卷位置的有效时间范围；仅在证据有效时生成位置超差失败。  
+   分类：**已复现问题**。
+
+4. **Minor：TF 合成会使用未来才收到的变换。**  
+   位置：`compose_map_base()`，118–125 行。索引从第一个 `map→odom` 开始，没有处理该变换晚于当前 `odom→base_link` 的情况。  
+   复现：输入 `map→odom=(接收10秒, x=100)`、`odom→base_link=(接收1秒, x=0)`，输出了“1 秒时 x=100”的合成位置。  
+   预期：没有适用的历史变换时，应跳过或标记该位置不可用。当前会污染轨迹和 AMCL 交叉核对；本版本独立到达判定不直接使用此 TF 结果，因此列为 Minor。建议明确时间对齐规则，禁止无标记地向过去套用未来变换。  
+   分类：**已复现问题**。
+
+5. **Minor：NaN 朝向可绕过目标核对并得到通过。**  
+   位置：`evaluate()`，226–230 行；`main()`，404–413 行。参数接受浮点 `nan`，而 `abs(wrap(NaN)) > 1e-6` 为假。  
+   复现：转录目标为 `(0,0,0)`，传入目标 `(0,0,NaN)`，其他数据正常。实际得到 `verified_against_transcript=True`、`validation_status=pass`。  
+   预期：无效朝向应作为参数错误拒绝，而非标记已核对；§A5 虽不独立考核朝向，仍要求有效目标朝向。建议检查参数及转录数值的有限性，返回退出码 2，并保持不写结果。  
+   分类：**已复现问题**。
+
+[现有测试](D:/RoboSim-Eval/tests/test_analyze_attempt.py)中最重要的缺失用例是：
+
+- 上述部分转录、窗口内零消息、陈旧位置、未来 TF 和非有限数值。
+- 120–124 行的“虚假成功”测试同时让所有位置来源偏离目标，不能证明独立位置核对确实有效；应增加“Nav2/AMCL 已到、odom＋spawn 未到”的反例。
+- `/clock` 与 odom 分别倒退，以及停稳窗口中的断档、倒退和速度恰等阈值。
+- 非零 `error_code`、非空 `error_msg` 原样保留。
+
+实际检查记录如下；shell 均为 Windows PowerShell，cwd 均为 `D:\RoboSim-Eval`，完整命令和输出保留在本会话工具记录中，未创建日志文件。
+
+| 检查 | 执行方式 | 退出码与结果 |
+|---|---|---|
+| 范围与代码 | `git show 19203e0:<路径>`；限定三文件的 `git diff --stat dbf67ce 19203e0` | 0；三文件均为新增，共 591 行 |
+| 现有纯函数测试 | Windows Python `-B`，从 Git 读取后在内存加载并直接调用 | 0；13 项通过 |
+| 边界反例 | Python `-B` 内存构造输入 | 0；复现上述问题 |
+| `main()` 路径 | mock bag、转录及文件输出，使用 `StringIO` | 验证退出码 0/10/11；目标不匹配返回 2 且无输出写入；bag 不可读返回 1 |
+| 停稳与空数据 | 内存固定输入 | 0；等阈值不确认停稳，短窗口、断档、倒退重启及空数据检查符合预期 |
+
+另核对了 `pose_compose()` 的旋转平移与角度归一化，未发现数学错误；`analyze_attempt.sh` 完成静态审查，未执行。
+
+未运行会写临时文件的转录解析测试；未验证真实 rosbag 反序列化、ROS 假节点或 Isaac 集成，未读取可选 `result.json`、其他分片及既有预审处理表。本机属于 **unsupported configuration**，本次固定输入检查不代表集成验收。
+
+审查版本：`19203e0`，基线：`dbf67ce`。未修改任何文件，未启动或停止任何 WSL、Isaac Sim、Nav2 进程。建议由 Claude Code 核实上述发现并补充回归测试后复核。模型：Codex／GPT-6，具体子型号未提供。
+hook: Stop
+hook: Stop Failed
+tokens used
+80,134
