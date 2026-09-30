@@ -1,0 +1,80 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "inconclusive",
+  "execution_status_analyzer": null,
+  "execution_status": "error",
+  "runner": {
+    "run_id": "fake-20260930-002738",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 100535.008498285,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 100539.892316031,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 100539.893393161,
+        "t_sim": 2.562111419,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 100539.897934389,
+        "t_sim": 2.594108196,
+        "reason": "goal accepted 5f10e82f53b841e8b137e5c776be57df"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 100541.909003844,
+        "t_sim": 3.442083169,
+        "reason": "terminal status SUCCEEDED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 100547.942267408,
+        "t_sim": 5.858143322,
+        "reason": "stop_timeout"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 100547.943597046,
+        "t_sim": 5.858143322,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [
+      "stop_timeout"
+    ],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": true,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "nav2_ready_wall_s": 0.0,
+    "terminal": {
+      "status": 4,
+      "name": "SUCCEEDED",
+      "error_code": 0,
+      "error_msg": "",
+      "feedback_count": 21,
+      "last_feedback": {
+        "distance_remaining": 0.0,
+        "recoveries": 0
+      }
+    }
+  }
+}

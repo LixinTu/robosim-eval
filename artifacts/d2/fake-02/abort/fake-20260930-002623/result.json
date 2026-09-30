@@ -1,0 +1,79 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "inconclusive",
+  "execution_status_analyzer": null,
+  "execution_status": "completed",
+  "runner": {
+    "run_id": "fake-20260930-002623",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 100465.664973948,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 100470.577992021,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 100470.578811457,
+        "t_sim": 2.626148019,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 100470.583791292,
+        "t_sim": 2.674126206,
+        "reason": "goal accepted 69344dccd0c64767aefa6610e4f0335c"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 100472.59511483,
+        "t_sim": 3.490122188,
+        "reason": "terminal status ABORTED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 100472.937753915,
+        "t_sim": 3.634120468,
+        "reason": "robot at rest (stop-still confirmed at sim 3.634)"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 100472.939184209,
+        "t_sim": 3.634120468,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "nav2_ready_wall_s": 0.0,
+    "terminal": {
+      "status": 6,
+      "name": "ABORTED",
+      "error_code": 208,
+      "error_msg": "fake: no valid path",
+      "feedback_count": 21,
+      "last_feedback": {
+        "distance_remaining": 0.0,
+        "recoveries": 0
+      }
+    },
+    "stop_confirmed_sim": 3.634230001
+  }
+}

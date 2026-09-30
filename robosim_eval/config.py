@@ -1,16 +1,18 @@
 """Load configs/baseline.yaml into frozen dataclasses, with explicit validation errors."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional, Union
+from typing import Any, Dict, Mapping, Optional, Tuple, Union
 
 import yaml
 
 from robosim_eval.doctor_checks import DoctorThresholds, StreamThresholds
-from robosim_eval.sim_math import Pose2D
+from robosim_eval.runner_fsm import Limits
+from robosim_eval.sim_math import Pose2D, validate_spawn_name
 
-__all__ = ["EnvExpect", "TopicSpec", "DoctorConfig", "SimConfig", "BaselineConfig", "load_config"]
+__all__ = ["EnvExpect", "TopicSpec", "DoctorConfig", "SimConfig", "RunConfig", "Obstacle", "Scenario",
+           "BaselineConfig", "load_config"]
 
 
 @dataclass(frozen=True)
@@ -48,11 +50,45 @@ class SimConfig:
 
 
 @dataclass(frozen=True)
+class RunConfig:
+    frame: str
+    units: Mapping[str, str]
+    position_tolerance_m: float
+    heading_assessed: bool
+    stop_linear_mps: float
+    stop_angular_radps: float
+    stop_hold_sim_s: float
+    stop_max_gap_sim_s: float
+    limits: Limits
+    dropout_wall_s: float
+    contact_filter: str
+    record_cap_s: float
+
+
+@dataclass(frozen=True)
+class Obstacle:
+    name: str
+    x: float
+    y: float
+    yaw: float = 0.0
+
+
+@dataclass(frozen=True)
+class Scenario:
+    name: str
+    goal: Pose2D
+    obstacles: Tuple[Obstacle, ...]
+    expect: str
+
+
+@dataclass(frozen=True)
 class BaselineConfig:
     env: EnvExpect
     topics: Mapping[str, TopicSpec]
     doctor: DoctorConfig
     sim: Optional[SimConfig] = None
+    run: Optional[RunConfig] = None
+    scenarios: Mapping[str, Scenario] = field(default_factory=dict)
 
 
 def _positive(section: str, key: str, value: Any) -> float:
@@ -102,7 +138,44 @@ def load_config(path: Union[str, Path]) -> BaselineConfig:
                                   streams=streams)
     doctor = DoctorConfig(discovery_timeout_s=_positive("doctor", "discovery_timeout_s", doc.get("discovery_timeout_s")),
                           window_s=_positive("doctor", "window_s", doc.get("window_s")), thresholds=thresholds)
-    return BaselineConfig(env=env, topics=topics, doctor=doctor, sim=_load_sim(raw.get("sim")))
+    return BaselineConfig(env=env, topics=topics, doctor=doctor, sim=_load_sim(raw.get("sim")),
+                          run=_load_run(raw.get("run")), scenarios=_load_scenarios(raw.get("scenarios")))
+
+
+def _load_run(run: Optional[Mapping[str, Any]]) -> Optional[RunConfig]:
+    if run is None:
+        return None
+    stop = _require(run, "stop_still", "run")
+    t = _require(run, "timeouts", "run")
+    limits = Limits(**{k: _positive("run.timeouts", k, t.get(k)) for k in
+                       ("ready_wall_s", "accept_wall_s", "nav_sim_s", "nav_wall_s", "cancel_wall_s", "stop_wall_s")})
+    return RunConfig(frame=str(_require(run, "frame", "run")), units=dict(_require(run, "units", "run")),
+                     position_tolerance_m=_positive("run", "position_tolerance_m", run.get("position_tolerance_m")),
+                     heading_assessed=bool(_require(run, "heading_assessed", "run")),
+                     stop_linear_mps=_positive("run.stop_still", "linear_mps", stop.get("linear_mps")),
+                     stop_angular_radps=_positive("run.stop_still", "angular_radps", stop.get("angular_radps")),
+                     stop_hold_sim_s=_positive("run.stop_still", "hold_sim_s", stop.get("hold_sim_s")),
+                     stop_max_gap_sim_s=_positive("run.stop_still", "max_gap_sim_s", stop.get("max_gap_sim_s")),
+                     limits=limits, dropout_wall_s=_positive("run", "dropout_wall_s", run.get("dropout_wall_s")),
+                     contact_filter=str(_require(run, "contact_filter", "run")),
+                     record_cap_s=_positive("run", "record_cap_s", run.get("record_cap_s")))
+
+
+def _load_scenarios(raw: Optional[Mapping[str, Any]]) -> Dict[str, Scenario]:
+    scenarios: Dict[str, Scenario] = {}
+    for name, sc in (raw or {}).items():
+        goal = _require(sc, "goal", f"scenarios.{name}")
+        obstacles = []
+        for i, ob in enumerate(sc.get("obstacles") or []):
+            validate_spawn_name(str(_require(ob, "name", f"scenarios.{name}.obstacles[{i}]")))  # raises outside the root
+            obstacles.append(Obstacle(name=str(ob["name"]), x=float(_require(ob, "x", f"scenarios.{name}.obstacles[{i}]")),
+                                      y=float(_require(ob, "y", f"scenarios.{name}.obstacles[{i}]")),
+                                      yaw=float(ob.get("yaw", 0.0))))
+        scenarios[name] = Scenario(name=name, goal=Pose2D(float(_require(goal, "x", f"scenarios.{name}.goal")),
+                                                          float(_require(goal, "y", f"scenarios.{name}.goal")),
+                                                          float(_require(goal, "yaw", f"scenarios.{name}.goal"))),
+                                   obstacles=tuple(obstacles), expect=str(sc.get("expect", "")))
+    return scenarios
 
 
 def _load_sim(sim: Optional[Mapping[str, Any]]) -> Optional[SimConfig]:

@@ -93,3 +93,32 @@ def test_baseline_sim_section_has_world_robot_and_spawn():
 
 def test_config_without_sim_section_has_no_sim(tmp_path: Path):
     assert load_config(write(tmp_path, GOOD)).sim is None
+
+
+def test_baseline_run_section_has_the_a5_fields():
+    run = load_config(BASELINE).run
+    assert run is not None and run.frame == "map" and run.units == {"length": "m", "angle": "rad"}
+    assert run.position_tolerance_m == 0.5 and run.heading_assessed is False
+    assert (run.stop_linear_mps, run.stop_angular_radps, run.stop_hold_sim_s) == (0.05, 0.1, 1.0)
+    lim = run.limits
+    assert (lim.accept_wall_s, lim.nav_sim_s, lim.nav_wall_s, lim.cancel_wall_s, lim.stop_wall_s) == (10, 120, 300, 10, 10)
+    assert lim.ready_wall_s > 0 and run.dropout_wall_s == 2.0 and run.contact_filter
+
+
+def test_baseline_scenarios_match_the_d3_d4_plan():
+    sc = load_config(BASELINE).scenarios
+    assert set(sc) == {"normal", "bypass", "unreachable"}
+    assert (sc["normal"].goal.x, sc["normal"].goal.y) == (0.0, -1.0) and not sc["normal"].obstacles
+    assert [(o.name, o.x, o.y) for o in sc["bypass"].obstacles] == [("box_1", -3.0, -1.3)]
+    assert (sc["unreachable"].goal.x, sc["unreachable"].goal.y) == (-10.05, -1.0)
+
+
+def test_scenario_obstacle_outside_the_tool_root_is_rejected(tmp_path: Path):
+    text = GOOD + """
+scenarios:
+  s1:
+    goal: {x: 0.0, y: 0.0, yaw: 0.0}
+    obstacles: [{name: /World/Nova_Carter_ROS, x: 0.0, y: 0.0}]
+"""
+    with pytest.raises(ValueError, match="RoboSimObstacles"):
+        load_config(write(tmp_path, text))

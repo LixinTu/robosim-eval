@@ -41,3 +41,34 @@ sim:
   spawn: {x: -6.0, y: -1.0, yaw: 3.141592653589793}    # authored USD pose of /World/Nova_Carter_ROS (D0)
   reset_check: {position_m: 0.05, yaw_rad: 0.05, speed: 0.02}
   obstacle_usd: D:/RoboSim-Eval/configs/assets/box_1m.usda   # resolved by Isaac on Windows
+
+# One run (D2, plan doc A5). Values are frozen before any formal comparison; every change needs a written reason.
+run:
+  frame: map                     # goals and positions are in the Nav2 map frame (= Isaac world frame, checked in D0/D2)
+  units: {length: m, angle: rad}
+  position_tolerance_m: 0.5      # arrival: distance to the goal at the stop-confirmation instant
+  heading_assessed: false        # a valid heading is still sent to Nav2 and recorded
+  stop_still: {linear_mps: 0.05, angular_radps: 0.1, hold_sim_s: 1.0, max_gap_sim_s: 0.25}
+  timeouts:
+    ready_wall_s: 60             # A5 candidate; to be checked against the measured Nav2 start-up on this machine
+    accept_wall_s: 10
+    nav_sim_s: 120               # at a real-time factor of about 0.32 the wall cap below binds first (about 96 s sim);
+    nav_wall_s: 300              # kept as in A5 because the scenario routes need about 15-40 s of sim time
+    cancel_wall_s: 10
+    stop_wall_s: 10
+  dropout_wall_s: 2.0            # max(5 normal periods, 2 s wall) with the measured periods (see doctor section)
+  contact_filter: "D3: ignore the ground plane and the robot's own links; count contacts with scene or spawned obstacles"
+  record_cap_s: 480              # recorder time cap, above ready + navigation wall caps
+
+# Scenarios for D3/D4 (from the read-only map analysis of 2026-09-30; predictions until a real run confirms them).
+scenarios:
+  normal:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    expect: "SUCCEEDED; about 6 m east after a 180 degree turn"
+  bypass:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    obstacles: [{name: box_1, x: -3.0, y: -1.3, yaw: 0.0}]   # 1 m box on the straight route; detour north expected
+    expect: "SUCCEEDED with a detour around box_1"
+  unreachable:
+    goal: {x: -10.05, y: -1.0, yaw: 3.141592653589793}   # free map cell in a 0.45 m slot, narrower than the robot
+    expect: "ABORTED (Nav2 error_code 208 or 207 expected); recorded as unknown, not unreachable, until D3 proves it"

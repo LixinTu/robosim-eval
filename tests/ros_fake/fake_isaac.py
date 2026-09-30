@@ -55,6 +55,8 @@ class FakeIsaac(Node):
             msg = Odometry()
             msg.header.stamp.sec, msg.header.stamp.nanosec = self.sim()
             msg.header.frame_id, msg.child_frame_id = "odom", "base_link"
+            if self.args.moving:
+                msg.twist.twist.linear.x = 0.5
             self.pub_odom.publish(msg)
 
     def on_tf(self) -> None:
@@ -86,6 +88,7 @@ def main() -> None:
     p.add_argument("--tf-hz", type=float, default=25.0)
     p.add_argument("--lidar-hz", type=float, default=2.6)
     p.add_argument("--no-lidar", action="store_true")
+    p.add_argument("--moving", action="store_true", help="publish a non-zero odometry twist (robot never at rest)")
     p.add_argument("--pause-after", type=float, default=None)
     p.add_argument("--duration", type=float, default=60.0)
     args = p.parse_args()

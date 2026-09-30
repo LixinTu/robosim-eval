@@ -142,3 +142,31 @@ class RunStateMachine:
 
     def events(self) -> List[Dict[str, object]]:
         return [{"state": h.state.name, "t_wall": h.t_wall, "t_sim": h.t_sim, "reason": h.reason} for h in self.history]
+
+
+class StopStillTracker:
+    """Online stop-still check on sim-stamped odometry twist (the same rule as analyze_attempt.stop_still): |v| below
+    `linear` and |w| below `angular` continuously for `hold_s` of simulation time. A gap between samples larger than
+    `max_gap_s` or a backward stamp restarts the window. Once confirmed, the confirmation time is kept."""
+
+    def __init__(self, linear: float, angular: float, hold_s: float, max_gap_s: float) -> None:
+        self.linear, self.angular, self.hold_s, self.max_gap_s = linear, angular, hold_s, max_gap_s
+        self._start: Optional[float] = None
+        self._prev: Optional[float] = None
+        self.confirmed_at: Optional[float] = None
+
+    def update(self, t: float, v: float, w: float) -> Optional[float]:
+        if self.confirmed_at is not None:
+            return self.confirmed_at
+        if self._prev is not None and (t - self._prev > self.max_gap_s + 1e-9 or t < self._prev):
+            self._start = None
+        self._prev = t
+        if abs(v) < self.linear and abs(w) < self.angular:
+            if self._start is None:
+                self._start = t
+            if t - self._start >= self.hold_s - 1e-9:
+                self.confirmed_at = t
+                return t
+        else:
+            self._start = None
+        return None

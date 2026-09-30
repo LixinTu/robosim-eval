@@ -146,3 +146,36 @@ def test_history_serializes():
     happy(fsm)
     rows = fsm.events()
     assert rows[0]["state"] == "PREPARE" and rows[-1]["state"] == "DONE" and "reason" in rows[1]
+
+
+def feed(tracker, samples):
+    out = None
+    for t, v, w in samples:
+        out = tracker.update(t, v, w)
+    return out
+
+
+def test_stop_still_confirms_after_the_hold_time_at_rest():
+    from robosim_eval.runner_fsm import StopStillTracker
+    tr = StopStillTracker(linear=0.05, angular=0.1, hold_s=1.0, max_gap_s=0.25)
+    assert feed(tr, [(10.0 + i * 0.05, 0.01, 0.02) for i in range(20)]) is None  # 0.95 s so far
+    assert tr.update(11.0, 0.01, 0.02) == 11.0 and tr.confirmed_at == 11.0
+
+
+def test_stop_still_restarts_on_motion_gap_or_backward_stamp():
+    from robosim_eval.runner_fsm import StopStillTracker
+    tr = StopStillTracker(linear=0.05, angular=0.1, hold_s=1.0, max_gap_s=0.25)
+    feed(tr, [(10.0 + i * 0.05, 0.0, 0.0) for i in range(15)])      # 0.7 s at rest
+    tr.update(10.75, 0.3, 0.0)                                      # moving again
+    assert feed(tr, [(10.8 + i * 0.05, 0.0, 0.0) for i in range(20)]) is None   # 0.95 s since restart
+    assert tr.update(12.1, 0.0, 0.0) is None                        # gap 0.35 s > max_gap: restart at 12.1
+    assert tr.update(12.0, 0.0, 0.0) is None                        # backward stamp: restart at 12.0
+    assert tr.confirmed_at is None
+    assert feed(tr, [(12.0 + i * 0.05, 0.0, 0.0) for i in range(1, 21)]) == pytest.approx(13.0)
+
+
+def test_stop_still_allows_a_gap_equal_to_the_maximum():
+    from robosim_eval.runner_fsm import StopStillTracker
+    tr = StopStillTracker(linear=0.05, angular=0.1, hold_s=1.0, max_gap_s=0.25)
+    feed(tr, [(10.0, 0.0, 0.0), (10.25, 0.0, 0.0), (10.5, 0.0, 0.0), (10.75, 0.0, 0.0)])
+    assert tr.update(11.0, 0.0, 0.0) == 11.0
