@@ -47,6 +47,7 @@ class SimConfig:
     reset_yaw_rad: float
     reset_speed: float
     obstacle_usd: Optional[str] = None
+    obstacle_assets: Mapping[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,10 @@ class RunConfig:
     dropout_wall_s: float
     contact_filter: str
     record_cap_s: float
+    contact_robot_root: str = "/World/Nova_Carter_ROS"
+    contact_ignore_prefixes: Tuple[str, ...] = ()
+    required_streams: Tuple[str, ...] = ("clock", "odom", "tf_odom_base")
+    informational_streams: Tuple[str, ...] = ("tf_map_odom",)
 
 
 @dataclass(frozen=True)
@@ -71,6 +76,7 @@ class Obstacle:
     x: float
     y: float
     yaw: float = 0.0
+    asset: str = "box_1m"
 
 
 @dataclass(frozen=True)
@@ -79,6 +85,11 @@ class Scenario:
     goal: Pose2D
     obstacles: Tuple[Obstacle, ...]
     expect: str
+    expect_outcome: str = "reached"
+    preset_unreachable: bool = False
+    evidence: str = ""
+    inject: Mapping[str, float] = field(default_factory=dict)
+    timeouts: Mapping[str, float] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -158,7 +169,15 @@ def _load_run(run: Optional[Mapping[str, Any]]) -> Optional[RunConfig]:
                      stop_max_gap_sim_s=_positive("run.stop_still", "max_gap_sim_s", stop.get("max_gap_sim_s")),
                      limits=limits, dropout_wall_s=_positive("run", "dropout_wall_s", run.get("dropout_wall_s")),
                      contact_filter=str(_require(run, "contact_filter", "run")),
-                     record_cap_s=_positive("run", "record_cap_s", run.get("record_cap_s")))
+                     record_cap_s=_positive("run", "record_cap_s", run.get("record_cap_s")),
+                     contact_robot_root=str((run.get("contact") or {}).get("robot_root", "/World/Nova_Carter_ROS")),
+                     contact_ignore_prefixes=tuple((run.get("contact") or {}).get("ignore_prefixes") or ()),
+                     required_streams=tuple((run.get("streams") or {}).get("required", ("clock", "odom", "tf_odom_base"))),
+                     informational_streams=tuple((run.get("streams") or {}).get("informational", ("tf_map_odom",))))
+
+
+_INJECT_KEYS = {"cancel_after_sim_s", "pause_after_sim_s", "pause_wall_s"}
+_LIMIT_KEYS = {"ready_wall_s", "accept_wall_s", "nav_sim_s", "nav_wall_s", "cancel_wall_s", "stop_wall_s"}
 
 
 def _load_scenarios(raw: Optional[Mapping[str, Any]]) -> Dict[str, Scenario]:
@@ -170,11 +189,23 @@ def _load_scenarios(raw: Optional[Mapping[str, Any]]) -> Dict[str, Scenario]:
             validate_spawn_name(str(_require(ob, "name", f"scenarios.{name}.obstacles[{i}]")))  # raises outside the root
             obstacles.append(Obstacle(name=str(ob["name"]), x=float(_require(ob, "x", f"scenarios.{name}.obstacles[{i}]")),
                                       y=float(_require(ob, "y", f"scenarios.{name}.obstacles[{i}]")),
-                                      yaw=float(ob.get("yaw", 0.0))))
+                                      yaw=float(ob.get("yaw", 0.0)), asset=str(ob.get("asset", "box_1m"))))
+        inject = {str(k): _positive(f"scenarios.{name}.inject", str(k), v) for k, v in (sc.get("inject") or {}).items()}
+        unknown = set(inject) - _INJECT_KEYS
+        if unknown:
+            raise ValueError(f"scenarios.{name}.inject: unknown key(s) {sorted(unknown)} (allowed {sorted(_INJECT_KEYS)})")
+        timeouts = {str(k): _positive(f"scenarios.{name}.timeouts", str(k), v) for k, v in (sc.get("timeouts") or {}).items()}
+        if set(timeouts) - _LIMIT_KEYS:
+            raise ValueError(f"scenarios.{name}.timeouts: unknown key(s) {sorted(set(timeouts) - _LIMIT_KEYS)}")
+        expect_outcome = str(sc.get("expect_outcome", "reached"))
+        if expect_outcome not in ("reached", "unreachable", "canceled", "timeout"):
+            raise ValueError(f"scenarios.{name}.expect_outcome: {expect_outcome!r} is not an A5 task outcome")
         scenarios[name] = Scenario(name=name, goal=Pose2D(float(_require(goal, "x", f"scenarios.{name}.goal")),
                                                           float(_require(goal, "y", f"scenarios.{name}.goal")),
                                                           float(_require(goal, "yaw", f"scenarios.{name}.goal"))),
-                                   obstacles=tuple(obstacles), expect=str(sc.get("expect", "")))
+                                   obstacles=tuple(obstacles), expect=str(sc.get("expect", "")),
+                                   expect_outcome=expect_outcome, preset_unreachable=bool(sc.get("preset_unreachable", False)),
+                                   evidence=str(sc.get("evidence", "")), inject=inject, timeouts=timeouts)
     return scenarios
 
 
@@ -190,4 +221,5 @@ def _load_sim(sim: Optional[Mapping[str, Any]]) -> Optional[SimConfig]:
                      reset_position_m=_positive("sim.reset_check", "position_m", check.get("position_m", 0.05)),
                      reset_yaw_rad=_positive("sim.reset_check", "yaw_rad", check.get("yaw_rad", 0.05)),
                      reset_speed=_positive("sim.reset_check", "speed", check.get("speed", 0.02)),
-                     obstacle_usd=sim.get("obstacle_usd"))
+                     obstacle_usd=sim.get("obstacle_usd"),
+                     obstacle_assets={str(k): str(v) for k, v in (sim.get("obstacle_assets") or {}).items()})

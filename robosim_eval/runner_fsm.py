@@ -89,6 +89,7 @@ class RunStateMachine:
         self.history: List[Transition] = [Transition(State.PREPARE, t_wall, t_sim, "run started")]
         self.errors: List[str] = []
         self.interrupted_by: Optional[str] = None
+        self.cancel_reason: Optional[str] = None  # interrupt | injected | nav_sim_timeout | nav_wall_timeout
         self.timeout_reason: Optional[str] = None
         self.abort_batch = False
 
@@ -112,7 +113,7 @@ class RunStateMachine:
     def timeout(self, name: str, t_wall: float, t_sim: Optional[float]) -> None:
         """Apply a passed deadline: navigation timeouts cancel the goal; the others end the run with an error."""
         if name in ("nav_sim_timeout", "nav_wall_timeout"):
-            self.timeout_reason = name
+            self.timeout_reason = self.cancel_reason = name
             self.go(State.CANCELING, t_wall, t_sim, name)
             return
         if name not in _ERROR_TIMEOUTS:
@@ -125,9 +126,15 @@ class RunStateMachine:
         """Operator interrupt: cancel a running goal, otherwise go straight to teardown."""
         self.interrupted_by = self.interrupted_by or why
         if self.state is State.EXECUTING:
+            self.cancel_reason = "interrupt"
             self.go(State.CANCELING, t_wall, t_sim, f"interrupt ({why})")
         elif self.state not in (State.CANCELING, State.STOP_CONFIRM, State.TEARDOWN, State.DONE):
             self.go(State.TEARDOWN, t_wall, t_sim, f"interrupt ({why})")
+
+    def cancel(self, why: str, t_wall: float, t_sim: Optional[float]) -> None:
+        """Planned cancel of a running goal (fault injection in a cancel scenario): not an operator interrupt."""
+        self.cancel_reason = "injected"
+        self.go(State.CANCELING, t_wall, t_sim, why)
 
     def fail(self, why: str, t_wall: float, t_sim: Optional[float]) -> None:
         self.errors.append(why)

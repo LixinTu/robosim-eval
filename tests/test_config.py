@@ -107,7 +107,7 @@ def test_baseline_run_section_has_the_a5_fields():
 
 def test_baseline_scenarios_match_the_d3_d4_plan():
     sc = load_config(BASELINE).scenarios
-    assert set(sc) == {"normal", "bypass", "unreachable"}
+    assert {"normal", "bypass", "unreachable"} <= set(sc)   # the three D4 batch scenarios (D3 adds fault-injection ones)
     assert (sc["normal"].goal.x, sc["normal"].goal.y) == (0.0, -1.0) and not sc["normal"].obstacles
     assert [(o.name, o.x, o.y) for o in sc["bypass"].obstacles] == [("box_1", -3.0, -1.3)]
     assert (sc["unreachable"].goal.x, sc["unreachable"].goal.y) == (-10.05, -1.0)
@@ -121,4 +121,34 @@ scenarios:
     obstacles: [{name: /World/Nova_Carter_ROS, x: 0.0, y: 0.0}]
 """
     with pytest.raises(ValueError, match="RoboSimObstacles"):
+        load_config(write(tmp_path, text))
+
+
+def test_baseline_d3_contact_policy_and_stream_classes():
+    run = load_config(BASELINE).run
+    assert run.contact_robot_root == "/World/Nova_Carter_ROS"
+    assert "/World/warehouse_with_forklifts/GroundPlane/" in run.contact_ignore_prefixes
+    assert set(run.required_streams) == {"clock", "odom", "tf_odom_base"}
+    assert set(run.informational_streams) == {"tf_map_odom"}
+
+
+def test_baseline_d3_scenarios_have_expectations_and_injections():
+    sc = load_config(BASELINE).scenarios
+    assert sc["normal"].expect_outcome == "reached" and not sc["normal"].preset_unreachable
+    assert sc["unreachable"].expect_outcome == "unreachable" and sc["unreachable"].preset_unreachable
+    assert sc["unreachable"].evidence
+    assert sc["cancel"].expect_outcome == "canceled" and sc["cancel"].inject.get("cancel_after_sim_s") > 0
+    assert sc["dropout"].inject.get("pause_after_sim_s") > 0 and sc["dropout"].inject.get("pause_wall_s") > 2
+    assert sc["timeout"].expect_outcome == "timeout" and sc["timeout"].timeouts.get("nav_sim_s") < 120
+    assert sc["collision"].obstacles[0].asset == "low_box"
+
+
+def test_unknown_injection_key_is_rejected(tmp_path: Path):
+    text = GOOD + """
+scenarios:
+  s1:
+    goal: {x: 0.0, y: 0.0, yaw: 0.0}
+    inject: {explode_after_s: 3}
+"""
+    with pytest.raises(ValueError, match="inject"):
         load_config(write(tmp_path, text))

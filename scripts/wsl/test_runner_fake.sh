@@ -64,11 +64,11 @@ echo "=== test_runner_fake.sh $(date -Is) ROS_DOMAIN_ID=$ROS_DOMAIN_ID ==="
 start isaac tests/ros_fake/fake_isaac.py --duration 600
 sleep 1.5
 start nav2-succeed tests/ros_fake/fake_nav2.py --mode succeed --duration 2
-check succeed 11 completed 'r["runner"]["terminal"]["name"] == "SUCCEEDED" and r["runner"]["states"][-1]["state"] == "DONE" and r["runner"]["stop_confirmed_sim"] - r["runner"]["terminal_sim"] >= 0.99'
+check succeed 11 completed 'r["runner"]["terminal"]["name"] == "SUCCEEDED" and r["runner"]["states"][-1]["state"] == "DONE" and r["runner"]["stop_confirmed_sim"] - r["runner"]["terminal_sim"] >= 0.99 and r["safety_status"] == "unknown"'
 stop_all
 start isaac tests/ros_fake/fake_isaac.py --duration 600; sleep 1.5
 start nav2-abort tests/ros_fake/fake_nav2.py --mode abort --duration 2
-check abort 11 completed 'r["runner"]["terminal"]["name"] == "ABORTED" and r["runner"]["terminal"]["error_code"] == 208'
+check abort 10 completed 'r["runner"]["terminal"]["name"] == "ABORTED" and r["runner"]["terminal"]["error_code"] == 208 and r["task_outcome"] == "unknown"'
 stop_all
 start isaac tests/ros_fake/fake_isaac.py --duration 600; sleep 1.5
 start nav2-never tests/ros_fake/fake_nav2.py --mode never
@@ -76,7 +76,7 @@ check nav_timeout 10 completed 'r["task_outcome"] == "timeout" and r["runner"]["
 stop_all
 start isaac tests/ros_fake/fake_isaac.py --duration 600; sleep 1.5
 start nav2-reject tests/ros_fake/fake_nav2.py --mode reject
-check reject 11 completed 'any(s["reason"] == "goal rejected" for s in r["runner"]["states"])'
+check reject 10 completed 'any(s["reason"] == "goal rejected" for s in r["runner"]["states"]) and r["task_outcome"] == "unknown"'
 stop_all
 start isaac tests/ros_fake/fake_isaac.py --duration 600; sleep 1.5
 start nav2-never2 tests/ros_fake/fake_nav2.py --mode never

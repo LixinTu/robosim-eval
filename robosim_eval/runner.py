@@ -16,6 +16,7 @@ recorders or the offline analysis; a real run uses none of them.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import math
 import signal
@@ -26,8 +27,10 @@ import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
 
+from robosim_eval import contacts as contact_client
 from robosim_eval.config import BaselineConfig, Scenario, load_config
-from robosim_eval.run_io import EventLog, Transcript, write_manifest, write_resolved_config
+from robosim_eval.evaluator import ContactPolicy, EvalInputs, evaluate_run
+from robosim_eval.run_io import EventLog, Transcript, to_plain, write_manifest, write_resolved_config
 from robosim_eval.runner_fsm import RunStateMachine, State, StopStillTracker, doctor_retry
 
 REPO = Path(__file__).resolve().parents[1]
@@ -64,6 +67,7 @@ class RunNode:
         self.rclpy = rclpy
         self.node = Node("robosim_runner")
         self.sim_time: Optional[float] = None
+        self.clock_backward = 0
         self.odom: List[tuple] = []
         self.feedback_count = 0
         self.last_feedback: Dict[str, Any] = {}
@@ -73,7 +77,10 @@ class RunNode:
         self.NavigateToPose = NavigateToPose
 
     def _on_clock(self, msg) -> None:
-        self.sim_time = msg.clock.sec + msg.clock.nanosec * 1e-9
+        t = msg.clock.sec + msg.clock.nanosec * 1e-9
+        if self.sim_time is not None and t < self.sim_time:
+            self.clock_backward += 1
+        self.sim_time = t
 
     def _on_odom(self, msg) -> None:
         t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
@@ -111,7 +118,10 @@ class Runner:
         self.cfg, self.scenario, self.run_dir, self.opts = cfg, scenario, run_dir, opts
         self.interrupt: Optional[str] = None
         self.started = {"nav2": False, "record": False}
-        self.facts: Dict[str, Any] = {"exit_codes": {}, "obstacles": [], "ground_truth": {}}
+        self.facts: Dict[str, Any] = {"exit_codes": {}, "obstacles": [], "ground_truth": {}, "injections": [],
+                                      "contacts": {"installed": False, "measured": False, "error": None}}
+        self.limits = dataclasses.replace(cfg.run.limits, **dict(scenario.timeouts))
+        self._paused_by_injection = False
 
     def _signal(self, signum, _frame) -> None:
         self.interrupt = self.interrupt or signal.Signals(signum).name
@@ -139,7 +149,7 @@ class Runner:
         from robosim_eval.sim_adapter import SimAdapter
         self.sim = SimAdapter(self.rn.node)
         self.ev = EventLog(self.run_dir / "events.jsonl", lambda: self.rn.sim_time)
-        self.fsm = RunStateMachine(self.cfg.run.limits, time.monotonic(), None)
+        self.fsm = RunStateMachine(self.limits, time.monotonic(), None)
         self._logged = 0
         self._sync()
         self.transcript: Optional[Transcript] = None
@@ -159,7 +169,8 @@ class Runner:
     # ---- PREPARE -------------------------------------------------------------------------------------------------
     def _prepare(self) -> bool:
         write_manifest(self.run_dir, self.run_dir.name, self.scenario.name, self.opts.config,
-                       {"options": {k: getattr(self.opts, k) for k in ("no_sim", "no_nav2", "no_record", "no_analyze")}})
+                       {"options": {k: getattr(self.opts, k) for k in ("no_sim", "no_nav2", "no_record", "no_analyze",
+                                                                        "no_contacts")}})
         write_resolved_config(self.run_dir, self.cfg, self.scenario, vars(self.opts))
         if not self.opts.no_sim:
             if not self._reset_sim():
@@ -189,6 +200,14 @@ class Runner:
         simcfg = self.cfg.sim
         state = self.sim.get_state()
         self.ev.write("sim_state", state=state)
+        if not self.opts.no_contacts:  # before the reset: the contact report API takes effect when physics restarts
+            try:
+                info = contact_client.install()
+                self.facts["contacts"].update(installed=True, bodies=info.get("bodies"))
+                self.ev.write("contacts_installed", bodies=len(info.get("bodies", [])))
+            except contact_client.ContactError as exc:
+                self.facts["contacts"]["error"] = str(exc)
+                self.ev.write("contacts_unavailable", error=str(exc))
         try:
             self.sim.entity_state(simcfg.robot_entity)
         except Exception as exc:  # noqa: BLE001 - robot not found: the world is not loaded yet
@@ -213,14 +232,25 @@ class Runner:
             self.fsm.fail("reset-check failed: " + "; ".join(check.reasons), *self.now())
             return False
         for ob in self.scenario.obstacles:
-            name = self.sim.spawn_box(ob.name, ob.x, ob.y, ob.yaw, simcfg.obstacle_usd)
-            self.facts["obstacles"].append({"entity": name, "x": ob.x, "y": ob.y, "yaw": ob.yaw})
-            self.ev.write("obstacle_spawned", entity=name, x=ob.x, y=ob.y, yaw=ob.yaw)
+            uri = simcfg.obstacle_assets.get(ob.asset, simcfg.obstacle_usd)
+            name = self.sim.spawn_box(ob.name, ob.x, ob.y, ob.yaw, uri)
+            self.facts["obstacles"].append({"entity": name, "x": ob.x, "y": ob.y, "yaw": ob.yaw, "asset": ob.asset,
+                                            "uri": uri})
+            self.ev.write("obstacle_spawned", entity=name, x=ob.x, y=ob.y, yaw=ob.yaw, asset=ob.asset)
+        if self.facts["contacts"]["installed"]:  # drop the contacts of the reset and the spawn (wheels on the ground)
+            try:
+                pre = contact_client.fetch()
+                self.facts["contacts"]["pre_run_events"] = len(pre.get("events", []))
+                self.ev.write("contacts_cleared", pre_run_events=len(pre.get("events", [])))
+            except contact_client.ContactError as exc:
+                self.facts["contacts"].update(installed=False, error=str(exc))
+                self.ev.write("contacts_unavailable", error=str(exc))
         return True
 
     # ---- WAIT_READY ----------------------------------------------------------------------------------------------
     def _wait_ready(self) -> bool:
         t0 = time.monotonic()
+        self.rn.clock_backward = 0  # the reset is behind us; from here a backward /clock is a data problem
         if not self.opts.no_nav2:
             rc = script("start_nav2.sh", [str(self.run_dir)], self.run_dir / "start_nav2.txt", 90)
             self.facts["exit_codes"]["start_nav2"] = rc
@@ -280,20 +310,46 @@ class Runner:
                 return False
         self.handle = fut.result()
         if not self.handle.accepted:
+            self.facts["rejected"] = True
             self.transcript.line("Goal was rejected by server")
             self.go(State.TEARDOWN, "goal rejected")
             return False
         gid = bytes(self.handle.goal_id.uuid).hex()
+        self.facts["goal_id"], self.facts["accept_sim"] = gid, self.rn.sim_time
         self.transcript.line(f"Goal accepted with ID: {gid}")
         self.result_future = self.handle.get_result_async()
         self.go(State.EXECUTING, f"goal accepted {gid}")
         return True
 
     # ---- EXECUTING / CANCELING / STOP_CONFIRM --------------------------------------------------------------------
+    def _inject(self) -> None:
+        """Scenario fault injections (labelled in events.jsonl): a planned cancel and a sim pause/resume."""
+        inj, t0, t = self.scenario.inject, self.facts.get("accept_sim"), self.rn.sim_time
+        if not inj or t0 is None or t is None:
+            return
+        done = {i["kind"] for i in self.facts["injections"]}
+        if self.fsm.state is State.EXECUTING and "cancel_after_sim_s" in inj and t - t0 >= inj["cancel_after_sim_s"]:
+            self.facts["injections"].append({"kind": "cancel", "sim": t})
+            self.ev.write("inject_cancel", after_sim_s=t - t0)
+            self.fsm.cancel(f"injected cancel {t - t0:.2f} s (sim) after acceptance", *self.now())
+            self._sync()
+        if "pause_after_sim_s" in inj and "pause" not in done and t - t0 >= inj["pause_after_sim_s"]:
+            self.ev.write("inject_pause", state=self.sim.set_state("paused"), after_sim_s=t - t0)
+            self.facts["injections"].append({"kind": "pause", "sim": t, "wall": time.monotonic()})
+            self._paused_by_injection = True
+        if self._paused_by_injection:
+            started = next(i["wall"] for i in self.facts["injections"] if i["kind"] == "pause")
+            if time.monotonic() - started >= inj.get("pause_wall_s", 0.0):
+                self.ev.write("inject_resume", state=self.sim.set_state("playing"))
+                self.facts["injections"].append({"kind": "resume", "wall": time.monotonic()})
+                self._paused_by_injection = False
+
     def _execute(self) -> bool:
         canceled = False
         while self.fsm.state in (State.EXECUTING, State.CANCELING):
             self.rn.spin(0.05)
+            if not self.opts.no_sim:
+                self._inject()
             if self.result_future.done():
                 res = self.result_future.result()
                 name = STATUS.get(res.status, f"UNKNOWN({res.status})")
@@ -359,6 +415,27 @@ class Runner:
         if self.transcript is not None:
             self.transcript.end(0)
         codes = self.facts["exit_codes"]
+        if self._paused_by_injection:  # never leave the simulator paused
+            self.ev.write("inject_resume", state=self.sim.set_state("playing"), reason="teardown")
+            self._paused_by_injection = False
+        if not self.opts.no_sim and "at_stop" not in self.facts["ground_truth"]:
+            try:
+                gt = self.sim.entity_state(self.cfg.sim.robot_entity)
+                gt["sim_time_paired"] = self.rn.sim_time
+                self.facts["ground_truth"]["at_end"] = gt
+                self.ev.write("ground_truth_at_end", **gt)
+            except Exception as exc:  # noqa: BLE001 - recorded; the verdict then has no ground truth
+                self.ev.write("ground_truth_unavailable", error=str(exc))
+        if self.facts["contacts"]["installed"]:
+            try:
+                got = contact_client.fetch()
+                self.facts["contacts"].update(measured=True, events=got.get("events", []),
+                                              found_pairs=contact_client.found_pairs(got),
+                                              dropped=got.get("dropped", 0))
+                self.ev.write("contacts_fetched", events=len(got.get("events", [])), dropped=got.get("dropped", 0))
+            except contact_client.ContactError as exc:
+                self.facts["contacts"].update(measured=False, error=str(exc))
+                self.ev.write("contacts_unavailable", error=str(exc))
         if self.started["record"] and "stop_confirmed_sim" in self.facts:
             time.sleep(STOP_SETTLE_WALL_S)  # keep recording briefly so the offline analysis sees the whole rest window
         if self.started["record"]:
@@ -381,20 +458,51 @@ class Runner:
         result = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {
             "schema": "robosim-eval run result (D2 runner; no offline analysis)", "task_outcome": "unknown",
             "safety_status": "unknown", "data_status": "incomplete", "validation_status": "inconclusive"}
-        result["execution_status_analyzer"] = result.get("execution_status")
-        result["execution_status"] = self.fsm.execution_status
-        if self.fsm.timeout_reason:
-            result["task_outcome"] = "timeout"
-            result.setdefault("verdict_reasons", {}).setdefault("fail", []).append(
-                f"navigation {self.fsm.timeout_reason}: the runner canceled the goal")
-            result["validation_status"] = "fail"
-        if self.fsm.execution_status != "completed" and result.get("validation_status") == "pass":
-            result["validation_status"] = "inconclusive"
+        keys = ("execution_status", "task_outcome", "safety_status", "data_status", "validation_status",
+                "verdict_reasons", "arrival_check")
+        result["analyzer"] = {k: result.get(k) for k in keys}  # D0 offline analysis, kept for comparison
+        verdict, inputs = self._evaluate(result)
+        result.update(execution_status=verdict.execution_status, task_outcome=verdict.task_outcome,
+                      safety_status=verdict.safety_status, data_status=verdict.data_status,
+                      validation_status=verdict.validation_status,
+                      verdict_reasons={"fail": list(verdict.fail_reasons),
+                                       "inconclusive": list(verdict.inconclusive_reasons),
+                                       "warnings": list(verdict.warnings)})
+        result["evaluator"] = verdict.to_dict()
+        result["evaluator_inputs"] = to_plain(inputs)
         result["runner"] = {"run_id": self.run_dir.name, "scenario": self.scenario.name, "states": self.fsm.events(),
                             "errors": self.fsm.errors, "interrupted_by": self.fsm.interrupted_by,
                             "timeout_reason": self.fsm.timeout_reason, "abort_batch": self.fsm.abort_batch, **self.facts}
         path.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
         self.result = result
+
+    def _evaluate(self, result: Dict[str, Any]):
+        """D3 verdict from the runner facts, ground truth, contact data and the offline data-integrity check."""
+        run, f = self.cfg.run, self.facts
+        integ = result.get("data_integrity", {}) or {}
+
+        def gap(name: str) -> Optional[float]:
+            v = integ.get(name) or {}
+            return v.get("max_wall_gap_s") if v.get("count") else None
+
+        gt = f["ground_truth"].get("at_stop") or f["ground_truth"].get("at_end")
+        term = f.get("terminal") or {}
+        g = self.scenario.goal
+        inputs = EvalInputs(
+            scenario_expect=self.scenario.expect_outcome, preset_unreachable=self.scenario.preset_unreachable,
+            tolerance_m=run.position_tolerance_m, goal=(g.x, g.y), execution_status=self.fsm.execution_status,
+            runner_errors=tuple(self.fsm.errors), accepted=bool(f.get("goal_id")), rejected=bool(f.get("rejected")),
+            terminal_status=term.get("status"), error_code=term.get("error_code"),
+            cancel_requested=self.fsm.cancel_reason is not None, cancel_reason=self.fsm.cancel_reason,
+            timeout_reason=self.fsm.timeout_reason, stop_confirmed="stop_confirmed_sim" in f,
+            gt_at_stop=(gt["x"], gt["y"]) if gt else None, contacts_measured=bool(f["contacts"].get("measured")),
+            contacts=tuple(tuple(p) for p in f["contacts"].get("found_pairs", [])),
+            required_gaps={n: gap(n) for n in run.required_streams},
+            required_backward={n: int((integ.get(n) or {}).get("backward_stamps", 0) or 0) for n in run.required_streams},
+            informational_gaps={n: gap(n) for n in run.informational_streams},
+            dropout_threshold_wall_s=run.dropout_wall_s, clock_backward_jumps=self.rn.clock_backward)
+        policy = ContactPolicy(run.contact_robot_root, tuple(run.contact_ignore_prefixes))
+        return evaluate_run(inputs, policy), inputs
 
     def _exit_code(self) -> int:
         if self.fsm.execution_status == "error":
@@ -409,7 +517,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     p.add_argument("--scenario", required=True)
     p.add_argument("--config", default=str(REPO / "configs" / "baseline.yaml"))
     p.add_argument("--out", default=str(REPO / "artifacts" / "d2" / "runs"))
-    for flag in ("no-sim", "no-nav2", "no-record", "no-analyze"):
+    for flag in ("no-sim", "no-nav2", "no-record", "no-analyze", "no-contacts"):
         p.add_argument(f"--{flag}", action="store_true")
     a = p.parse_args(argv)
     try:
@@ -420,6 +528,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if cfg.run is None or a.scenario not in cfg.scenarios:
         print(f"config has no run section or no scenario {a.scenario!r} (have: {sorted(cfg.scenarios)})", file=sys.stderr)
         return 2
+    if a.no_sim:
+        a.no_contacts = True  # contact data comes from inside Isaac
     if not a.no_sim and cfg.sim is None:
         print("config has no sim section (use --no-sim for the fake-node test)", file=sys.stderr)
         return 2

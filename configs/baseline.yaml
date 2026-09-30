@@ -41,6 +41,9 @@ sim:
   spawn: {x: -6.0, y: -1.0, yaw: 3.141592653589793}    # authored USD pose of /World/Nova_Carter_ROS (D0)
   reset_check: {position_m: 0.05, yaw_rad: 0.05, speed: 0.02}
   obstacle_usd: D:/RoboSim-Eval/configs/assets/box_1m.usda   # resolved by Isaac on Windows
+  obstacle_assets:
+    box_1m: D:/RoboSim-Eval/configs/assets/box_1m.usda      # 1.0 x 1.0 x 1.0 m, seen by the lidar
+    low_box: D:/RoboSim-Eval/configs/assets/low_box.usda    # 0.8 x 0.8 x 0.10 m, below the /scan band (fault injection)
 
 # One run (D2, plan doc A5). Values are frozen before any formal comparison; every change needs a written reason.
 run:
@@ -57,18 +60,52 @@ run:
     cancel_wall_s: 10
     stop_wall_s: 10
   dropout_wall_s: 2.0            # max(5 normal periods, 2 s wall) with the measured periods (see doctor section)
-  contact_filter: "D3: ignore the ground plane and the robot's own links; count contacts with scene or spawned obstacles"
+  contact_filter: "ignore contacts between robot bodies and with the two ground collision planes; any other contact of a robot body is a collision"
+  contact:
+    robot_root: /World/Nova_Carter_ROS
+    ignore_prefixes:                  # measured after a reset, artifacts/d3/contact-fetch-after-reset.json
+      - /World/warehouse_with_forklifts/GroundPlane/
+      - /World/warehouse_with_forklifts/Warehouse_Empty_small_realtime/GroundPlane/
+  streams:
+    required: [clock, odom, tf_odom_base]   # inputs of the verdict (with the sim_control ground truth)
+    informational: [tf_map_odom]            # AMCL estimate: its 2.3-2.5 s gaps (D2) are warnings, not missing data
   record_cap_s: 480              # recorder time cap, above ready + navigation wall caps
 
-# Scenarios for D3/D4 (from the read-only map analysis of 2026-09-30; predictions until a real run confirms them).
+# Scenarios for D3/D4. Start: the USD spawn after a sim_control reset. expect_outcome is the A5 task outcome the scenario
+# should produce; validation compares against it. Injected faults (cancel, pause, low box, short limit) are labelled.
 scenarios:
   normal:
     goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    expect_outcome: reached
     expect: "SUCCEEDED; about 6 m east after a 180 degree turn"
   bypass:
     goal: {x: 0.0, y: -1.0, yaw: 0.0}
-    obstacles: [{name: box_1, x: -3.0, y: -1.3, yaw: 0.0}]   # 1 m box on the straight route; detour north expected
+    obstacles: [{name: box_1, x: -3.0, y: -1.3, yaw: 0.0, asset: box_1m}]   # on the straight route; detour expected
+    expect_outcome: reached
     expect: "SUCCEEDED with a detour around box_1"
   unreachable:
     goal: {x: -10.05, y: -1.0, yaw: 3.141592653589793}   # free map cell in a 0.45 m slot, narrower than the robot
-    expect: "ABORTED (Nav2 error_code 208 or 207 expected); recorded as unknown, not unreachable, until D3 proves it"
+    expect_outcome: unreachable
+    preset_unreachable: true
+    evidence: "offline map analysis 2026-09-30 (read-only research): the cell is in a 0.45 m slot between the west wall and shelving; the nearest cell NavFn can reach is 1.65 m away, beyond its 0.5 m tolerance; the robot is 0.50 m wide"
+    expect: "ABORTED (error_code 208 or 207 expected) and not reached by ground truth"
+  cancel:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    inject: {cancel_after_sim_s: 5.0}     # fault injection: the runner cancels 5 s (sim) after the goal is accepted
+    expect_outcome: canceled
+    expect: "CANCELED, robot confirmed at rest within the stop deadline"
+  dropout:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    inject: {pause_after_sim_s: 5.0, pause_wall_s: 6.0}   # fault injection: sim paused 6 s wall mid-route (data stops)
+    expect_outcome: reached
+    expect: "reached, but the verdict must not be a normal pass: data incomplete (clock gap > 2 s)"
+  timeout:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    timeouts: {nav_sim_s: 6.0}            # fault injection: navigation limit far below the ~15 s the route needs
+    expect_outcome: timeout
+    expect: "the runner cancels at the sim limit; outcome timeout, robot confirmed at rest"
+  collision:
+    goal: {x: 0.0, y: -1.0, yaw: 0.0}
+    obstacles: [{name: low_box, x: -3.0, y: -1.0, yaw: 0.0, asset: low_box}]   # 0.10 m tall, below the /scan band
+    expect_outcome: reached
+    expect: "fault injection: the robot is expected to hit the unseen low box; safety must be fail, never pass"

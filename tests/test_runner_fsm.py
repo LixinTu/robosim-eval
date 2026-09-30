@@ -187,3 +187,31 @@ def test_doctor_retry_only_for_degraded_data_and_bounded():
     assert doctor_retry(12, attempt=3, max_attempts=3) is False    # bounded
     for rc in (0, 10, 11, 13, 2, 124):                              # healthy, or structural problems: never retried
         assert doctor_retry(rc, attempt=1, max_attempts=3) is False
+
+
+def test_injected_cancel_is_not_an_operator_interrupt():
+    fsm = RunStateMachine(LIM, 0.0, None)
+    fsm.go(State.WAIT_READY, 1.0, None, "prepared")
+    fsm.go(State.SEND_GOAL, 30.0, 12.0, "nav2 ready")
+    fsm.go(State.EXECUTING, 31.0, 12.4, "goal accepted")
+    fsm.cancel("injected cancel at sim 17.4", 40.0, 17.4)
+    assert fsm.state is State.CANCELING and fsm.cancel_reason == "injected"
+    fsm.go(State.STOP_CONFIRM, 41.0, 17.6, "terminal status CANCELED")
+    fsm.go(State.TEARDOWN, 43.0, 18.8, "robot at rest")
+    fsm.go(State.DONE, 45.0, 18.8, "teardown finished")
+    assert fsm.execution_status == "completed" and fsm.interrupted_by is None
+
+
+def test_cancel_reason_is_recorded_for_timeouts_and_interrupts():
+    fsm = RunStateMachine(LIM, 0.0, None)
+    fsm.go(State.WAIT_READY, 1.0, None, "prepared")
+    fsm.go(State.SEND_GOAL, 30.0, 12.0, "nav2 ready")
+    fsm.go(State.EXECUTING, 31.0, 12.4, "goal accepted")
+    fsm.timeout("nav_sim_timeout", 300.0, 132.5)
+    assert fsm.cancel_reason == "nav_sim_timeout"
+    fsm2 = RunStateMachine(LIM, 0.0, None)
+    fsm2.go(State.WAIT_READY, 1.0, None, "prepared")
+    fsm2.go(State.SEND_GOAL, 30.0, 12.0, "nav2 ready")
+    fsm2.go(State.EXECUTING, 31.0, 12.4, "goal accepted")
+    fsm2.interrupt("SIGINT", 40.0, 15.0)
+    assert fsm2.cancel_reason == "interrupt"
