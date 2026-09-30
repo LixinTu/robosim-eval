@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import os
+import re
 import subprocess
 import sys
 import types
@@ -162,3 +163,31 @@ def test_sim_sh_runs_the_adapter_of_its_own_checkout(tmp_path):
                        env=env, timeout=120, cwd=str(tmp_path))
     assert p.returncode == 0, (p.stdout, p.stderr)
     assert f"cwd={REPO}\n" in p.stdout and "args=-m robosim_eval.sim_adapter state\n" in p.stdout
+
+
+SIM_SCRIPTS = ["scripts/wsl/sim.sh", "scripts/windows/isaac_py.ps1", "scripts/windows/start_isaac_ros2.ps1",
+               "robosim_eval/contacts.py", "robosim_eval/sim_adapter.py"]
+
+
+@pytest.mark.parametrize("rel", SIM_SCRIPTS)
+def test_sim_scripts_do_not_hard_code_the_main_checkout(rel):
+    # contract C6: the repository root comes from the file's own location; the path may only appear in comments
+    code = [ln for ln in (REPO / rel).read_text(encoding="utf-8").splitlines() if not ln.lstrip().startswith("#")]
+    assert not [ln for ln in code if "RoboSim-Eval" in ln]
+
+
+# start_isaac_ros2.ps1 launches Isaac, so it is never run here: its profile expression is evaluated on its own
+DDS_LINE = re.compile(r"^\$robosimDds\s*=\s*(?P<expr>.+)$", re.MULTILINE)
+
+
+@pytest.mark.skipif(not Path("/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe").exists()
+                    or not str(REPO).startswith("/mnt/"), reason="needs Windows PowerShell through WSL interop")
+def test_isaac_launcher_takes_the_dds_profile_from_its_own_checkout():
+    m = DDS_LINE.search((REPO / "scripts" / "windows" / "start_isaac_ros2.ps1").read_text(encoding="utf-8"))
+    assert m, "no $robosimDds assignment"
+    script_dir = r"X:\some checkout\scripts\windows"
+    expr = m.group("expr").replace("$PSScriptRoot", f"'{script_dir}'")
+    p = subprocess.run(["/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe", "-NoProfile",
+                        "-NonInteractive", "-Command", f"Write-Output ({expr})"], capture_output=True, timeout=60)
+    assert p.returncode == 0, p.stderr.decode("gbk", "replace")[-600:]
+    assert p.stdout.decode("ascii").strip() == r"X:\some checkout\configs\network\fastdds.xml"
