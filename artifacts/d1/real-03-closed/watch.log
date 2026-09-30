@@ -1,0 +1,5 @@
+﻿2026-09-29T23:56:41.4906936-07:00 waiting for kit.exe pid 33104 to exit (the user closes Isaac normally)
+2026-09-30T00:07:17.0602646-07:00 kit.exe 33104 exited; waiting 15 s for DDS discovery to drop the old participants
+2026-09-30T00:07:32.0661023-07:00 doctor with Isaac closed
+2026-09-30T00:07:38.8330268-07:00 doctor exit 11
+2026-09-30T00:07:38.8715682-07:00 launcher started in a new window (Isaac with sim_control)

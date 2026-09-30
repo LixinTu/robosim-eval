@@ -1,0 +1,9 @@
+doctor 2026-09-30T00:07:33-07:00 config=/mnt/d/RoboSim-Eval/configs/baseline.yaml window=5.0s discovery<=5.0s
+env: RMW=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 ROS_DISTRO=jazzy FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml (exists=True)
+clock  /clock                           NO PUBLISHER 0 msgs   0.00 Hz  sim +0.000 s  RTF -  last never
+odom   /chassis/odom                    missing      0 msgs   0.00 Hz  max gap - s  last - s ago  stamp lag - s
+tf     /tf odom->base_link              missing      0 msgs   0.00 Hz  max gap - s  last - s ago  stamp lag - s
+lidar  /front_3d_lidar/lidar_points     missing      0 msgs   0.00 Hz  max gap - s  last - s ago  stamp lag - s
+reason: clock: no publisher for /clock (Isaac Sim closed, ROS 2 bridge not loaded, or DDS discovery broken)
+verdict: sim_data_missing (exit 11); window 0.00 s wall
+written /mnt/d/RoboSim-Eval/artifacts/d1/real-03-closed/doctor-20260930-000733.json
