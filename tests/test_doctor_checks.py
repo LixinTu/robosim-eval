@@ -24,6 +24,7 @@ from robosim_eval.doctor_checks import (
     StreamObservation,
     StreamThresholds,
     evaluate,
+    window_problem,
 )
 
 W0, W1 = 100.0, 105.0  # observation window in wall seconds
@@ -191,3 +192,19 @@ def test_report_serializes_to_plain_json_types():
     rep = run(healthy_observation())
     text = json.dumps(rep.to_dict())
     assert '"verdict": "healthy"' in text and '"exit_code": 0' in text
+
+
+# ---- observation window bounds (review round 1: doctor_config-5) ---------------------------------------------------
+
+@pytest.mark.parametrize("window,problem", [
+    (0.0, "shorter than clock_stall_s"), (-5.0, "shorter than clock_stall_s"), (0.6, "shorter than clock_stall_s"),
+    (float("nan"), "not a finite number"), (float("inf"), "not a finite number"), (True, "not a finite number"),
+    (50.5, "longer than 50.0 s"), (100.0, "longer than 50.0 s"),
+])
+def test_window_that_cannot_give_a_sound_verdict_is_refused(window, problem):
+    assert problem in window_problem(window, clock_stall_s=2.0, discovery_timeout_s=5.0)
+
+
+@pytest.mark.parametrize("window", [2.0, 3.0, 5.0, 50.0])
+def test_window_between_the_clock_stall_and_the_doctor_cap_is_accepted(window):
+    assert window_problem(window, clock_stall_s=2.0, discovery_timeout_s=5.0) is None

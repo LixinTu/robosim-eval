@@ -16,8 +16,9 @@ Verdict precedence (first match wins):
 """
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass
-from typing import Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 EXIT_HEALTHY = 0
 EXIT_NOT_ADVANCING = 10
@@ -25,7 +26,28 @@ EXIT_DATA_MISSING = 11
 EXIT_DEGRADED = 12
 EXIT_ENV = 13
 
+DOCTOR_SH_CAP_S = 60.0        # scripts/wsl/doctor.sh runs the doctor under `timeout 60`
+START_STOP_ALLOWANCE_S = 5.0  # Python/rclpy start-up and shutdown (about 3 s measured) plus margin
+
 Sample = Tuple[float, Optional[float]]  # (receive time, wall s; header stamp, sim s or None)
+
+
+def window_problem(window_s: Any, clock_stall_s: float, discovery_timeout_s: float) -> Optional[str]:
+    """Why an observation window (wall s) cannot give a sound verdict, or None when it can.
+
+    The window must be finite and at least clock_stall_s: a shorter one can never see a stall, and min_sim_progress_s is
+    not scaled with the window, so at the measured real-time factor of about 0.32 a 0.6 s window reports a healthy
+    simulation as not advancing. It must also be short enough that discovery, the window and start-up stay under the
+    60 s cap of doctor.sh, which would otherwise end the run as a hang (124)."""
+    if isinstance(window_s, bool) or not isinstance(window_s, (int, float)) or not math.isfinite(window_s):
+        return f"window {window_s!r} s is not a finite number"
+    if window_s < clock_stall_s:
+        return f"window {window_s} s is shorter than clock_stall_s ({clock_stall_s} s)"
+    longest = DOCTOR_SH_CAP_S - discovery_timeout_s - START_STOP_ALLOWANCE_S
+    if window_s > longest:
+        return (f"window {window_s} s is longer than {longest} s (doctor.sh cap {DOCTOR_SH_CAP_S:.0f} s minus "
+                f"discovery_timeout_s and {START_STOP_ALLOWANCE_S:.0f} s start-up)")
+    return None
 
 
 @dataclass(frozen=True)
