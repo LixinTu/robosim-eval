@@ -1,0 +1,10 @@
+
+===== /clock hz (10 s) =====
+CMD: timeout 10 ros2 topic hz /clock --window 50
+WARNING: topic [/clock] does not appear to be published yet
+EXIT: 124
+
+===== /clock sample =====
+CMD: timeout 10 ros2 topic echo --once /clock
+WARNING: topic [/clock] does not appear to be published yet
+EXIT: 1

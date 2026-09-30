@@ -1,0 +1,52 @@
+﻿=== check_isaac_bridge.ps1 2026-09-29 19:38:12 ===
+--- kit processes ---
+
+   Id StartTime          WorkingSetMB
+   -- ---------          ------------
+33104 2026/9/29 19:35:41         7543
+
+
+
+--- gpu ---
+name, driver_version, memory.total [MiB], memory.used [MiB], memory.free [MiB], utilization.gpu [%]
+NVIDIA GeForce RTX 4070 Laptop GPU, 591.44, 8188 MiB, 1353 MiB, 6596 MiB, 22 %
+--- ram ---
+
+FreeMemGB TotalMemGB
+--------- ----------
+     25.6       63.7
+
+
+
+--- kit log: C:\Users\Administrator\.nvidia-omniverse\logs\Kit\Isaac-Sim Full\6.1\kit_20260929_193541.log ---
+lastWrite=2026/9/29 19:36:00 sizeMB=3
+--- ros2 bridge / core startup lines ---
+17: commandLine: '"D:\isaac-sim-standalone-6.1.0-windows-x86_64\kit\kit.exe"  "D:\isaac-sim-standalone-6.1.0-windows-x86_64\apps/isaacsim.exp.full.kit"  --/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge'
+22: 2026-09-30T02:35:41Z [0ms] [Info] [omni.kit.app.plugin] Cmd: D:\isaac-sim-standalone-6.1.0-windows-x86_64\kit\kit.exe D:\isaac-sim-standalone-6.1.0-windows-x86_64\apps/isaacsim.exp.full.kit --/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge
+20410: 2026-09-30T02:35:57Z [16,096ms] [Info] [omni.ext.plugin] About to startup: [ext: isaacsim.sensors.rtx.nodes-0.1.7] (order: 0) Triggered by: isaacsim.ros2.core-1.11.0, isaacsim.ros2.nodes-1.22.7 (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.sensors.rtx.nodes)
+20469: 2026-09-30T02:35:57Z [16,194ms] [Info] [omni.ext.plugin] About to startup: [ext: isaacsim.ros2.core-1.11.0] (order: 0) Triggered by: isaacsim.ros2.bridge-5.1.4, isaacsim.ros2.nodes-1.22.7, isaacsim.ros2.control-0.1.6 (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.core)
+20470: 2026-09-30T02:35:57Z [16,194ms] [Info] [omni.kit.app.plugin] [16.289s] [ext: isaacsim.ros2.core-1.11.0] startup
+20472: 2026-09-30T02:35:57Z [16,258ms] [Info] [omni.ext._impl._internal] Found class `ROS2CoreExtension` derived from `omni.ext.IExt` in module: 'isaacsim.ros2.core' in 'd:\isaac-sim-standalone-6.1.0-windows-x86_64\exts\isaacsim.ros2.core'. Calling `on_startup`.
+20483: 2026-09-30T02:35:57Z [16,475ms] [Info] [omni.ext.plugin] [ext: isaacsim.ros2.core-1.11.0] started, startup time: 281 (ms)
+20555: 2026-09-30T02:35:57Z [16,537ms] [Info] [omni.ext.plugin] About to startup: [ext: isaacsim.ros2.nodes-1.22.7] (order: 0) Triggered by: isaacsim.ros2.bridge-5.1.4, isaacsim.ros2.examples-1.2.9, isaacsim.ros2.ui-1.9.2 (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.nodes)
+21899: 2026-09-30T02:35:58Z [17,196ms] [Info] [omni.ext.plugin] About to startup: [ext: isaacsim.ros2.examples-1.2.9] (order: 0) Triggered by: isaacsim.ros2.bridge-5.1.4 (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.examples)
+21949: 2026-09-30T02:35:58Z [17,231ms] [Info] [omni.ext.plugin] About to startup: [ext: isaacsim.ros2.ui-1.9.2] (order: 0) Triggered by: isaacsim.ros2.bridge-5.1.4 (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.ui)
+21987: 2026-09-30T02:35:58Z [17,281ms] [Info] [omni.ext.plugin] About to startup: [ext: isaacsim.ros2.bridge-5.1.4] (order: 0) Triggered by API/CLI/Config. (path: d:/isaac-sim-standalone-6.1.0-windows-x86_64/exts/isaacsim.ros2.bridge)
+21988: 2026-09-30T02:35:58Z [17,281ms] [Info] [omni.kit.app.plugin] [17.376s] [ext: isaacsim.ros2.bridge-5.1.4] startup
+21990: 2026-09-30T02:35:58Z [17,293ms] [Info] [omni.ext._impl._internal] Found class `ROS2BridgeExtension` derived from `omni.ext.IExt` in module: 'isaacsim.ros2.bridge' in 'd:\isaac-sim-standalone-6.1.0-windows-x86_64\exts\isaacsim.ros2.bridge'. Calling `on_startup`.
+21992: 2026-09-30T02:35:58Z [17,294ms] [Info] [omni.ext.plugin] [ext: isaacsim.ros2.bridge-5.1.4] started, startup time: 12 (ms)
+22016: 2026-09-30T02:35:58Z [17,327ms] [Info] [isaacsim.app.setup.startup] ROS bridge extension isaacsim.ros2.bridge enabled successfully
+--- rmw / dds mentions ---
+none
+--- first errors ---
+error/fatal lines total: 4
+6303: 2026-09-30T02:35:46Z [4,838ms] [Error] [omni.kit.stage_templates.new_stage] Failed to create directory C:\Users\Administrator\Documents\Kit\apps\Isaac-Sim Full\scripts\new_stage
+8183: 2026-09-30T02:35:49Z [7,981ms] [Error] [isaacsim.gui.menu.edit_menu.screenshot_page] Failed to create directory C:/Users/Administrator/Documents/Kit/shared/screenshots/
+9137: 2026-09-30T02:35:51Z [10,242ms] [Error] [omni.anim.behavior.ui.scripts.director_window] Failed to create recording folder: C:/Users/Administrator/Documents/NVIDIA/Omniverse/Behavior/Human/TaskRecordings: [WinError 2] 绯荤粺鎵句笉鍒版寚瀹氱殑鏂囦欢銆? 'C:/Users/Administrator/Documents/NVIDIA'
+16226: 2026-09-30T02:35:54Z [13,465ms] [Error] [rtx.neuraylib.plugin] Cannot find `Documents/Kit/shared` directory.
+--- ros2-related warnings (first 15) ---
+144: 2026-09-30T02:35:41Z [27ms] [Warning] [omni.ext.plugin] [ext: Microsoft] Extensions config 'extension.toml' doesn't exist 'C:/Users/Administrator/Microsoft' or 'C:/Users/Administrator/Microsoft/config'
+148: 2026-09-30T02:35:41Z [31ms] [Warning] [omni.ext.plugin] [ext: .ros] Extensions config 'extension.toml' doesn't exist 'C:/Users/Administrator/.ros' or 'C:/Users/Administrator/.ros/config'
+14320: 2026-09-30T02:35:53Z [12,410ms] [Warning] [omni.ext.plugin] [ext: Microsoft] Extensions config 'extension.toml' doesn't exist 'C:/Users/Administrator/Microsoft' or 'C:/Users/Administrator/Microsoft/config'
+14337: 2026-09-30T02:35:53Z [12,420ms] [Warning] [omni.ext.plugin] [ext: .ros] Extensions config 'extension.toml' doesn't exist 'C:/Users/Administrator/.ros' or 'C:/Users/Administrator/.ros/config'
+=== end ===
