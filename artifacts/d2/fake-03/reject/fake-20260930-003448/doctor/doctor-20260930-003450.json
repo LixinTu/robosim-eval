@@ -1,0 +1,63 @@
+{
+  "started": "2026-09-30T00:34:50.408092-07:00",
+  "config": "/mnt/d/RoboSim-Eval/tests/ros_fake/runner_fake.yaml",
+  "window_s_requested": 3.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "healthy",
+    "exit_code": 0,
+    "reasons": [],
+    "warnings": [],
+    "window_s": 3.0001829200045904,
+    "clock": {
+      "present": true,
+      "count": 75,
+      "rate_hz": 24.998475759566436,
+      "sim_progress_s": 1.183939697,
+      "rtf": 0.4000053031095267,
+      "last_age_s": 2.7173999114893377e-05,
+      "backward_jumps": 0,
+      "last_sim_s": 2.607127265
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_type": "nav_msgs/msg/Odometry",
+        "count": 75,
+        "rate_hz": 24.998475759566436,
+        "max_gap_s": 0.040709471999434754,
+        "last_age_s": 0.03969300900644157,
+        "stamp_lag_s": 0.015826303999999958,
+        "status": "ok",
+        "detail": "odom: 25.00 Hz, last message 0.04 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_type": "tf2_msgs/msg/TFMessage",
+        "count": 75,
+        "rate_hz": 24.998475759566436,
+        "max_gap_s": 0.040769428000203334,
+        "last_age_s": 0.03961945199989714,
+        "stamp_lag_s": 0.015769031999999683,
+        "status": "ok",
+        "detail": "tf: 25.00 Hz, last message 0.04 s old"
+      },
+      "lidar": {
+        "present": true,
+        "msg_type": "sensor_msgs/msg/PointCloud2",
+        "count": 7,
+        "rate_hz": 2.3331910708928674,
+        "max_gap_s": 0.3850768039992545,
+        "last_age_s": 0.3259210969990818,
+        "stamp_lag_s": 0.1304421269999998,
+        "status": "ok",
+        "detail": "lidar: 2.33 Hz, last message 0.33 s old"
+      }
+    }
+  }
+}

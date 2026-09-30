@@ -170,3 +170,10 @@ class StopStillTracker:
         else:
             self._start = None
         return None
+
+
+def doctor_retry(exit_code: int, attempt: int, max_attempts: int) -> bool:
+    """Retry the pre-run doctor only for 'degraded' (12): after a sim_control reset the lidar publisher is re-created
+    and its first seconds are irregular (0-1 frames in a window was measured, artifacts/d2/repro-doctor-after-reset).
+    Healthy, not advancing, missing data, environment errors and hangs are never retried; attempts are bounded."""
+    return exit_code == 12 and attempt < max_attempts

@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from robosim_eval.config import BaselineConfig, Scenario, load_config
 from robosim_eval.run_io import EventLog, Transcript, write_manifest, write_resolved_config
-from robosim_eval.runner_fsm import RunStateMachine, State, StopStillTracker
+from robosim_eval.runner_fsm import RunStateMachine, State, StopStillTracker, doctor_retry
 
 REPO = Path(__file__).resolve().parents[1]
 WSL = REPO / "scripts" / "wsl"
@@ -163,12 +163,19 @@ class Runner:
         if not self.opts.no_sim:
             if not self._reset_sim():
                 return False
-        rc = script("doctor.sh", ["--config", str(self.opts.config), "--window", "3", "--out", str(self.run_dir / "doctor")],
-                    self.run_dir / "doctor.txt", 60)
+        attempt = 0
+        while True:  # bounded re-check of a post-reset transient only (runner_fsm.doctor_retry); every attempt is kept
+            attempt += 1
+            rc = script("doctor.sh", ["--config", str(self.opts.config), "--out", str(self.run_dir / "doctor")],
+                        self.run_dir / f"doctor-{attempt}.txt", 60)
+            self.ev.write("doctor", attempt=attempt, exit_code=rc)
+            if not doctor_retry(rc, attempt, 3) or self.interrupt:
+                break
+            time.sleep(3.0)
         self.facts["exit_codes"]["doctor"] = rc
-        self.ev.write("doctor", exit_code=rc)
+        self.facts["doctor_attempts"] = attempt
         if rc != 0:
-            self.fsm.fail(f"doctor exit {rc} (see doctor.txt)", *self.now())
+            self.fsm.fail(f"doctor exit {rc} after {attempt} attempt(s) (see doctor-{attempt}.txt)", *self.now())
             return False
         if self.interrupt:
             self.fsm.interrupt(self.interrupt, *self.now())

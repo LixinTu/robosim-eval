@@ -179,3 +179,11 @@ def test_stop_still_allows_a_gap_equal_to_the_maximum():
     tr = StopStillTracker(linear=0.05, angular=0.1, hold_s=1.0, max_gap_s=0.25)
     feed(tr, [(10.0, 0.0, 0.0), (10.25, 0.0, 0.0), (10.5, 0.0, 0.0), (10.75, 0.0, 0.0)])
     assert tr.update(11.0, 0.0, 0.0) == 11.0
+
+
+def test_doctor_retry_only_for_degraded_data_and_bounded():
+    from robosim_eval.runner_fsm import doctor_retry
+    assert doctor_retry(12, attempt=1, max_attempts=3) is True     # lidar irregular for a few seconds after a reset
+    assert doctor_retry(12, attempt=3, max_attempts=3) is False    # bounded
+    for rc in (0, 10, 11, 13, 2, 124):                              # healthy, or structural problems: never retried
+        assert doctor_retry(rc, attempt=1, max_attempts=3) is False
