@@ -12,8 +12,15 @@
 # /set_simulation_state, /reset_simulation, /load_world, /spawn_entity, /delete_entity, /get_entity_state, ...) over the
 # same Fast DDS path and firewall rule as the topics. Callers must never request state QUITTING (it closes Isaac).
 #   -NoSimControl   start exactly as in D0 (bridge only)
+#   -PythonServer   also enable isaacsim.code_editor.python_server (user decision 2026-09-30, needed for Kit-side contact
+#                   sensing in D3). It executes Python inside Isaac, so it is limited to its default host 127.0.0.1 and
+#                   require_auth=true with an empty auth_token: Isaac then generates a random token at startup and prints
+#                   it to the console. The token is never passed on the command line (Kit logs its command line).
+# Console output is also copied to %LOCALAPPDATA%\RoboSimEval\isaac-console.log (outside the repository), where the
+# Windows-side client reads the generated token.
 param(
-    [switch]$NoSimControl
+    [switch]$NoSimControl,
+    [switch]$PythonServer
 )
 $ErrorActionPreference = 'Stop'
 $robosimIsaac = 'D:\isaac-sim-standalone-6.1.0-windows-x86_64'
@@ -39,8 +46,19 @@ Write-Output "FASTRTPS_DEFAULT_PROFILES_FILE=$env:FASTRTPS_DEFAULT_PROFILES_FILE
 Write-Output "Starting Isaac Sim with the ROS 2 bridge at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') (this window stays open while Isaac runs)"
 $isaacArgs = @('--/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge')
 if (-not $NoSimControl) { $isaacArgs += '--/isaac/startup/ros_sim_control_extension=true' }
+if ($PythonServer) {
+    $isaacArgs += @('--enable', 'isaacsim.code_editor.python_server', '--/exts/isaacsim.code_editor.python_server/require_auth=true')
+}
+$consoleDir = Join-Path $env:LOCALAPPDATA 'RoboSimEval'
+New-Item -ItemType Directory -Force -Path $consoleDir | Out-Null
+$consoleLog = Join-Path $consoleDir 'isaac-console.log'
 Write-Output "isaac-sim.bat $($isaacArgs -join ' ')"
-& "$robosimIsaac\isaac-sim.bat" @isaacArgs
+Write-Output "console copy: $consoleLog"
+# Only stdout is copied (the generated token is printed there). stderr is not redirected: in Windows PowerShell 5.1 a
+# 2>&1 on a native command turns stderr lines into error records, which with ErrorActionPreference=Stop would end this
+# script and break Isaac's output pipe.
+$ErrorActionPreference = 'Continue'
+& "$robosimIsaac\isaac-sim.bat" @isaacArgs | Tee-Object -FilePath $consoleLog
 $rc = $LASTEXITCODE
 Write-Output "isaac-sim.bat exited with code $rc at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 exit $rc
