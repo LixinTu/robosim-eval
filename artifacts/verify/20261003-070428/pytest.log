@@ -1,0 +1,18 @@
+........................................................................ [ 32%]
+........................................................................ [ 65%]
+.....................................................................F.. [ 97%]
+.....                                                                    [100%]
+=================================== FAILURES ===================================
+_______________________ test_angle_diff_wraps_across_pi ________________________
+
+    def test_angle_diff_wraps_across_pi():
+>       assert angle_diff(math.pi - 0.01, -math.pi + 0.01) == pytest.approx(+0.02, abs=1e-9)  # DELIBERATELY BROKEN: verify.sh failure evidence, reverted
+E       assert -0.019999999999999574 == 0.02 ± 1.0e-09
+E         comparison failed
+E         Obtained: -0.019999999999999574
+E         Expected: 0.02 ± 1.0e-09
+
+tests/test_sim_math.py:34: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_sim_math.py::test_angle_diff_wraps_across_pi - assert -0.01...
+1 failed, 220 passed in 0.66s

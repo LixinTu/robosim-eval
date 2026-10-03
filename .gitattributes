@@ -4,3 +4,5 @@
 *.xml  text eol=lf
 *.yaml text eol=lf
 *.yml  text eol=lf
+# Git hooks run under sh (Git for Windows or WSL): no extension, so they need their own rule.
+scripts/git-hooks/* text eol=lf

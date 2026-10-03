@@ -1,7 +1,7 @@
 # ---- Claude Code / agent local files (session residue, machine-local settings) ----
+# .claude/settings.json is tracked: it holds the project's PreToolUse guard (.claude/hooks/guard_commands.py).
 .claude/logs/
 .claude/settings.local.json
-.claude/settings.json
 .superpowers/
 
 # ---- Scratch / temp (project rule: temp files live in temp/) ----
@@ -12,6 +12,8 @@ __pycache__/
 
 # ---- Raw run data: bags are large; artifacts/ keeps samples, summaries and logs ----
 artifacts/**/rosbag/
+# verify.sh records (every commit makes one through the pre-commit hook); a record kept as evidence is added with -f
+artifacts/verify/
 *.db3
 *.mcap
 

@@ -1,0 +1,9 @@
+doctor 2026-10-03T07:50:16-07:00 config=/mnt/d/RoboSim-Eval/tests/ros_fake/doctor_fake.yaml window=5.0s discovery<=5.0s
+env: RMW=None ROS_DOMAIN_ID=42 ROS_DISTRO=jazzy FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml (exists=True)
+clock  /clock                           present      126 msgs  25.09 Hz  sim +2.000 s  RTF 0.40  last 0.00 s ago
+odom   /chassis/odom                    ok           125 msgs  24.89 Hz  max gap 0.043 s  last 0.04 s ago  stamp lag 0.015 s
+tf     /tf odom->base_link              ok           125 msgs  24.89 Hz  max gap 0.043 s  last 0.04 s ago  stamp lag 0.015 s
+lidar  /front_3d_lidar/lidar_points     ok           13 msgs   2.59 Hz  max gap 0.388 s  last 0.02 s ago  stamp lag 0.009 s
+reason: RMW_IMPLEMENTATION is None, expected 'rmw_fastrtps_cpp'
+verdict: env_or_interface_error (exit 13); window 5.02 s wall
+written /mnt/d/RoboSim-Eval/artifacts/verify/20261003-074935/doctor-fake/rmw_unset/doctor-20261003-075016.json
