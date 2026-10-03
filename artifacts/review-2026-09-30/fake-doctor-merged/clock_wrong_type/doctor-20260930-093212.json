@@ -1,0 +1,76 @@
+{
+  "started": "2026-09-30T09:32:12.474163-07:00",
+  "config": "/mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix/artifacts/review-2026-09-30/fake-doctor-merged/doctor_fake.yaml",
+  "window_s_requested": 5.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "43",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "env_or_interface_error",
+    "exit_code": 13,
+    "reasons": [
+      "clock: publisher message type std_msgs/msg/Float64 != expected rosgraph_msgs/msg/Clock"
+    ],
+    "warnings": [],
+    "window_s": 5.035256550996564,
+    "clock": {
+      "present": true,
+      "count": 126,
+      "rate_hz": 25.023551178353053,
+      "sim_progress_s": 1.999979544,
+      "rtf": 0.3999971029517828,
+      "last_age_s": 2.2566004190593958e-05,
+      "backward_jumps": 0,
+      "last_sim_s": 3.01029707,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock",
+        "std_msgs/msg/Float64"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 126,
+        "rate_hz": 25.023551178353053,
+        "max_gap_s": 0.040619583014631644,
+        "last_age_s": 0.03940981600317173,
+        "stamp_lag_s": 0.015754060999999986,
+        "status": "ok",
+        "detail": "odom: 25.02 Hz, last message 0.04 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 125,
+        "rate_hz": 24.82495156582644,
+        "max_gap_s": 0.04072798797278665,
+        "last_age_s": 0.03919973800657317,
+        "stamp_lag_s": 0.015645428000000017,
+        "status": "ok",
+        "detail": "tf: 24.82 Hz, last message 0.04 s old"
+      },
+      "lidar": {
+        "present": true,
+        "msg_types": [
+          "sensor_msgs/msg/PointCloud2"
+        ],
+        "count": 13,
+        "rate_hz": 2.5817949628459496,
+        "max_gap_s": 0.38504652900155634,
+        "last_age_s": 0.17208812601165846,
+        "stamp_lag_s": 0.068900191,
+        "status": "ok",
+        "detail": "lidar: 2.58 Hz, last message 0.17 s old"
+      }
+    },
+    "observed": true
+  }
+}

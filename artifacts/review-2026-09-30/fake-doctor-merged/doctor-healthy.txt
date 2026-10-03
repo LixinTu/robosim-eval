@@ -1,0 +1,8 @@
+doctor 2026-09-30T09:31:21-07:00 config=/mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix/artifacts/review-2026-09-30/fake-doctor-merged/doctor_fake.yaml window=5.0s discovery<=5.0s
+env: RMW=rmw_fastrtps_cpp ROS_DOMAIN_ID=43 ROS_DISTRO=jazzy FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml (exists=True)
+clock  /clock                           present      125 msgs  25.00 Hz  sim +1.984 s  RTF 0.40  last 0.00 s ago
+odom   /chassis/odom                    ok           125 msgs  25.00 Hz  max gap 0.041 s  last 0.04 s ago  stamp lag 0.016 s
+tf     /tf odom->base_link              ok           125 msgs  25.00 Hz  max gap 0.041 s  last 0.04 s ago  stamp lag 0.016 s
+lidar  /front_3d_lidar/lidar_points     ok           13 msgs   2.60 Hz  max gap 0.385 s  last 0.33 s ago  stamp lag 0.130 s
+verdict: healthy (exit 0); window 5.00 s wall
+written /mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix/artifacts/review-2026-09-30/fake-doctor-merged/healthy/doctor-20260930-093121.json

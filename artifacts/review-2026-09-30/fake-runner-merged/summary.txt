@@ -1,0 +1,16 @@
+=== test_runner_fake.sh 2026-09-30T09:28:00-07:00 ROS_DOMAIN_ID=42 repo=/mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix ===
+succeed              exit 11  (want 11 ) execution completed    (want completed   ) check ok     code ok   10s  PASS
+abort                exit 10  (want 10 ) execution completed    (want completed   ) check ok     code ok   11s  PASS
+nav_timeout          exit 10  (want 10 ) execution completed    (want completed   ) check ok     code ok   16s  PASS
+reject               exit 10  (want 10 ) execution completed    (want completed   ) check ok     code ok    6s  PASS
+interrupt            exit 20  (want 20 ) execution interrupted  (want interrupted ) check ok     code ok   12s  PASS
+cancel_ignored       exit 31  (want 31 ) execution error        (want error       ) check ok     code ok   19s  PASS
+never_at_rest        exit 31  (want 31 ) execution error        (want error       ) check ok     code ok   13s  PASS
+no_server            exit 30  (want 30 ) execution error        (want error       ) check ok     code ok   14s  PASS
+param_in_effect      exit 11  (want 11 ) execution completed    (want completed   ) check ok     code ok   10s  PASS
+param_not_in_effect  exit 30  (want 30 ) execution error        (want error       ) check ok     code ok    5s  PASS
+accept_late          exit 30  (want 30 ) execution error        (want error       ) check ok     code ok   15s  PASS
+internal_error       exit 30  (want 30 ) execution error        (want error       ) check ok     code ok    9s  PASS
+internal_error_ignored exit 31  (want 31 ) execution error        (want error       ) check ok     code ok   12s  PASS
+pty_ctrl_c           exit 20  (want 20 ) execution interrupted  (want interrupted ) check ok     code ok   10s  PASS
+=== result: PASS ===

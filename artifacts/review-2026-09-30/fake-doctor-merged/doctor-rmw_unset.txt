@@ -1,0 +1,6 @@
+doctor 2026-09-30T09:32:00-07:00 config=/mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix/artifacts/review-2026-09-30/fake-doctor-merged/doctor_fake.yaml window=5.0s discovery<=5.0s
+env: RMW=None ROS_DOMAIN_ID=43 ROS_DISTRO=jazzy FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml (exists=True)
+ROS graph not observed: the environment is not usable
+reason: RMW_IMPLEMENTATION is None, expected 'rmw_fastrtps_cpp'
+verdict: env_or_interface_error (exit 13)
+written /mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix/artifacts/review-2026-09-30/fake-doctor-merged/rmw_unset/doctor-20260930-093200.json

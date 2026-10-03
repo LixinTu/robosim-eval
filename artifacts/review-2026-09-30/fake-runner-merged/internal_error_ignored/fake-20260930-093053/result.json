@@ -1,0 +1,172 @@
+{
+  "schema": "robosim-eval run result (D3 runner verdict; the offline analyzer's own output is under 'analyzer', null when it did not run or failed)",
+  "execution_status": "error",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "fail",
+  "verdict_reasons": {
+    "fail": [
+      "runner errors: internal error: RuntimeError: injected test fault (--test-fault executing), safety net: goal 04a2d3ea0445a215aec57510f197cc59 has no confirmed terminal status within 5.0 s after the cancel"
+    ],
+    "inconclusive": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": []
+  },
+  "evaluator": {
+    "execution_status": "error",
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "fail",
+    "fail_reasons": [
+      "runner errors: internal error: RuntimeError: injected test fault (--test-fault executing), safety net: goal 04a2d3ea0445a215aec57510f197cc59 has no confirmed terminal status within 5.0 s after the cancel"
+    ],
+    "inconclusive_reasons": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [],
+    "arrival_error_m": null,
+    "disallowed_contacts": []
+  },
+  "evaluator_inputs": {
+    "scenario_expect": "reached",
+    "preset_unreachable": false,
+    "tolerance_m": 0.5,
+    "goal": [
+      1.0,
+      0.0
+    ],
+    "execution_status": "error",
+    "runner_errors": [
+      "internal error: RuntimeError: injected test fault (--test-fault executing)",
+      "safety net: goal 04a2d3ea0445a215aec57510f197cc59 has no confirmed terminal status within 5.0 s after the cancel"
+    ],
+    "accepted": true,
+    "rejected": false,
+    "terminal_status": null,
+    "error_code": null,
+    "cancel_requested": false,
+    "cancel_reason": null,
+    "timeout_reason": null,
+    "stop_confirmed": false,
+    "gt_at_stop": null,
+    "contacts_measured": false,
+    "contacts": [],
+    "required_gaps": {},
+    "required_backward": {},
+    "informational_gaps": {},
+    "dropout_threshold_wall_s": 2.0,
+    "clock_backward_jumps": 0,
+    "coverage_problems": [
+      "no recording: the recorders were not started (--no-record)"
+    ],
+    "contacts_dropped": 0,
+    "unreachable_evidence": null,
+    "scenario_expect_safety": null,
+    "scenario_expect_data": null
+  },
+  "goal": {
+    "frame": "map",
+    "x": 1.0,
+    "y": 0.0,
+    "yaw": 0.0,
+    "position_tolerance_m": 0.5,
+    "source": "scenario goal sent by the runner (no offline analysis)"
+  },
+  "target_goal": {
+    "id": "04a2d3ea0445a215aec57510f197cc59",
+    "id_source": "runner action client"
+  },
+  "timing": null,
+  "data_integrity": null,
+  "analyzer": null,
+  "nav2_raw": {
+    "terminal_status_code": null,
+    "terminal_status_name": "none",
+    "rejected": false,
+    "error_code": null,
+    "error_msg": null,
+    "source": "runner action client (no offline analysis)"
+  },
+  "runner": {
+    "run_id": "fake-20260930-093053",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 131363.954862325,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 131368.343577026,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 131368.345359898,
+        "t_sim": 2.433892694,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 131368.388266872,
+        "t_sim": 2.529890402,
+        "reason": "goal 04a2d3ea0445a215aec57510f197cc59 sent: the acceptance deadline starts now"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 131368.390997309,
+        "t_sim": 2.529890402,
+        "reason": "goal accepted 04a2d3ea0445a215aec57510f197cc59"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 131369.40282028,
+        "t_sim": 2.9298949420000002,
+        "reason": "failure: internal error: RuntimeError: injected test fault (--test-fault executing)"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 131374.422284941,
+        "t_sim": 4.929906302,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [
+      "internal error: RuntimeError: injected test fault (--test-fault executing)",
+      "safety net: goal 04a2d3ea0445a215aec57510f197cc59 has no confirmed terminal status within 5.0 s after the cancel"
+    ],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": true,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "injections": [],
+    "contacts": {
+      "installed": false,
+      "measured": false,
+      "error": null
+    },
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0,
+    "goal_sent": {
+      "id": "04a2d3ea0445a215aec57510f197cc59",
+      "wall": "2026-09-30T09:30:58.213-07:00"
+    },
+    "goal_id": "04a2d3ea0445a215aec57510f197cc59",
+    "accept_sim": 2.529890402,
+    "safety_net": {
+      "cancel": "not confirmed"
+    }
+  }
+}
