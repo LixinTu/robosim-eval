@@ -11,7 +11,9 @@ Exit: 0 validation pass; 10 fail; 11 inconclusive; 2 bad arguments / --goal diff
 Result contract (plan doc A5): execution_status completed|error|interrupted; task_outcome reached|canceled|unknown (this
 tool never emits unreachable or timeout: aborted/rejected goals are "unknown" with the raw Nav2 status kept; timeouts are
 D3 scope); safety_status is always "unknown" in D0 (contact not measured); data_status complete|incomplete;
-validation_status pass|fail|inconclusive for the D0 expectation "reach the goal and come to rest".
+validation_status pass|fail|inconclusive for the D0 expectation "reach the goal and come to rest". Run by the D3 runner,
+this whole output is kept under result.json "analyzer" (only timing, nav2_raw, data_integrity, goal and target_goal stay
+at the top level); the runner's verdict also checks the "coverage" block (what the bag holds) against its own times.
 
 Target goal: the goal id printed by the CLI action client (goal-*.txt); without a transcript, the first goal id that
 becomes ACCEPTED/EXECUTING inside the bag. Status and feedback of any other goal id (e.g. a finished goal that is still
@@ -119,6 +121,8 @@ def compose_map_base(map_odom, odom_base):
     if not map_odom:
         return res
     for t_ns, st, x, y, yaw in odom_base:
+        if t_ns < map_odom[0][0]:
+            continue  # no map->odom received yet: never apply a later transform to an earlier sample
         while j + 1 < len(map_odom) and map_odom[j + 1][0] <= t_ns:
             j += 1
         _, _, mx, my, myaw = map_odom[j]
@@ -222,6 +226,9 @@ def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0
     """Pure evaluation of one attempt; returns (result dict, trajectory rows). Raises GoalMismatch."""
     gx, gy, gyaw = goal
     fail_reasons, inconclusive = [], []
+    sent = tr.get("sent_goal")
+    if not all(math.isfinite(v) for v in goal) or (sent is not None and not all(math.isfinite(float(v)) for v in sent)):
+        raise GoalMismatch(f"non-finite goal values: --goal {list(goal)}, sent {sent}")
 
     if tr.get("sent_goal") is not None:
         sx, sy, syaw = tr["sent_goal"]
@@ -237,12 +244,19 @@ def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0
     if not target:
         target_src = "first goal id that became ACCEPTED/EXECUTING in the recording"
         target = next((u for _, u, s in statuses if s in (1, 2)), None)
+    if not tr.get("goal_id") and tr.get("sent_goal") is not None and not tr.get("rejected"):
+        inconclusive.append("the transcript has no goal id: the target was taken from the recording and may be another goal")
     st = [e for e in statuses if target and e[1] == target]
     other_ids = sorted({u for _, u, _ in statuses if u != target})
     fb = [f for f in bag["feedback"] if target and f[1] == target]
     t_accept = next((t for t, _, s in st if s in (1, 2)), None)
     term = next(((t, s) for t, _, s in st if s in (4, 5, 6)), None)
     t_end, raw_status = term if term else (None, None)
+    coverage = {"target_goal_observed": bool(st), "accepted_recorded": t_accept is not None,
+                "terminal_recorded": term is not None,
+                "streams": {n: {"first_sim_s": bag[n][0][1] if bag[n] else None,
+                                "last_sim_s": bag[n][-1][1] if bag[n] else None}
+                            for n in ("clock", "odom", "tf_odom_base", "tf_map_odom")}}
     if t_accept is None and st:
         t_accept = st[0][0]
         inconclusive.append("the target goal's ACCEPTED/EXECUTING status was not recorded")
@@ -292,12 +306,18 @@ def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0
         inconclusive.append("no AMCL-independent position source (--spawn not given); the Nav2 estimate is not an independent check")
     arr = positions[arr_src]["at_arrival"]
     arr_err = arr["error_to_goal_m"] if arr else None
+    if arr is not None and t_arr is not None and t_arr - arr["recv_wall_ns"] > dropout * 1e9:
+        inconclusive.append(f"no position sample within {dropout} s before the arrival check (the last one is "
+                            f"{(t_arr - arr['recv_wall_ns']) / 1e9:.1f} s older); the position error is not judged")
+        arr_err = None
 
     lo = t_accept if t_accept is not None else (odom[0][0] if odom else 0)
     hi = t_arr if t_arr is not None else (t_last or lo)
     integrity = {name: stream_integrity(bag[name], lo, hi) for name in ("clock", "odom", "tf_odom_base", "tf_map_odom")}
     integrity["feedback_target_goal"] = {"count": len(fb)}
     problems = [f"{n}: no messages" for n, v in integrity.items() if v["count"] == 0]
+    problems += [f"{n}: no messages in the evaluation window" for n, v in integrity.items()
+                 if v["count"] and v.get("count_in_window") == 0]
     problems += [f"{n}: gap of {v['max_wall_gap_s']} s wall > {dropout} s" for n, v in integrity.items()
                  if "max_wall_gap_s" in v and v["max_wall_gap_s"] > dropout]
     problems += [f"{n}: {v['backward_stamps']} backwards stamps" for n, v in integrity.items() if v.get("backward_stamps")]
@@ -376,6 +396,9 @@ def evaluate(bag, tr, goal, spawn=None, tolerance=0.5, stop_lin=0.05, stop_ang=0
         "stop_still": {"rule": f"|v|<{stop_lin} m/s and |w|<{stop_ang} rad/s for {stop_hold} s sim time after the terminal "
                                f"status (/chassis/odom twist; window restarts on gaps > {max_stop_gap} s)", **stop},
         "data_integrity": {"window": "goal accept .. arrival check (receive time)", "dropout_threshold_wall_s": dropout, **integrity},
+        "coverage": {"note": "what the recording holds: target goal status, and the first/last sim stamp per stream in "
+                             "receive order; the D3 runner compares these with its own acceptance..stop times",
+                     **coverage},
         "message_counts": {k: len(v) for k, v in bag.items()},
         "preconditions_for_sim_state_source": PRECONDITIONS if spawn else None,
         "notes": [

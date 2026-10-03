@@ -1,6 +1,6 @@
 # Codex 独立审查提示词(D3 第 1 轮分片 round1b:接触监视与 Python 执行服务)
 
-你是本次交付的独立审查者。请对 D:\RoboSim-Eval 的 D3(判定与失败处理)做只读代码审查:不修改任何文件,不启动或停止 Isaac Sim、Nav2 或任何 WSL 进程,不连接 127.0.0.1:8226。审查完把报告交回 Claude Code,由它核实和修复。流程约定见 `Codex-Harness-Pack-ZH(1).md` 的"默认:Codex 独立审查提示词"。
+你是本次交付的独立审查者。请对 D:\RoboSim-Eval 的 D3(判定与失败处理)做只读代码审查:不修改任何文件,不启动或停止 Isaac Sim、Nav2 或任何 WSL 进程,不连接 127.0.0.1:8226。审查完把报告交回 Claude Code,由它核实和修复。流程约定见 `docs/review/codex-review-prompt.md`(默认 Codex 独立审查提示词)。
 
 **额度很紧,请严格控制阅读量:**
 - 被审代码一律用 `git -C D:\RoboSim-Eval show d33d69c:<路径>` 读取;工作区可能已经在继续开发。

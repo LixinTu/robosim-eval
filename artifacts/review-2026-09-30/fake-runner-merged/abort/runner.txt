@@ -1,0 +1,2 @@
+run dir: /mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix/artifacts/review-2026-09-30/fake-runner-merged/abort/fake-20260930-092815
+{"run_dir": "/mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix/artifacts/review-2026-09-30/fake-runner-merged/abort/fake-20260930-092815", "exit": 10, "execution_status": "completed", "task_outcome": "unknown", "validation_status": "fail", "errors": []}

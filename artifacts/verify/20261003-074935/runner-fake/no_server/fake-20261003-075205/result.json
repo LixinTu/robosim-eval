@@ -1,0 +1,135 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "fail",
+  "analyzer": {
+    "execution_status": null,
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "inconclusive",
+    "verdict_reasons": null,
+    "arrival_check": null
+  },
+  "execution_status": "error",
+  "verdict_reasons": {
+    "fail": [
+      "runner errors: ready_timeout"
+    ],
+    "inconclusive": [
+      "data incomplete: clock: no data; odom: no data; tf_odom_base: no data",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [
+      "informational stream tf_map_odom: no data"
+    ]
+  },
+  "evaluator": {
+    "execution_status": "error",
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "fail",
+    "fail_reasons": [
+      "runner errors: ready_timeout"
+    ],
+    "inconclusive_reasons": [
+      "data incomplete: clock: no data; odom: no data; tf_odom_base: no data",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [
+      "informational stream tf_map_odom: no data"
+    ],
+    "arrival_error_m": null,
+    "disallowed_contacts": []
+  },
+  "evaluator_inputs": {
+    "scenario_expect": "reached",
+    "preset_unreachable": false,
+    "tolerance_m": 0.5,
+    "goal": [
+      1.0,
+      0.0
+    ],
+    "execution_status": "error",
+    "runner_errors": [
+      "ready_timeout"
+    ],
+    "accepted": false,
+    "rejected": false,
+    "terminal_status": null,
+    "error_code": null,
+    "cancel_requested": false,
+    "cancel_reason": null,
+    "timeout_reason": null,
+    "stop_confirmed": false,
+    "gt_at_stop": null,
+    "contacts_measured": false,
+    "contacts": [],
+    "required_gaps": {
+      "clock": null,
+      "odom": null,
+      "tf_odom_base": null
+    },
+    "required_backward": {
+      "clock": 0,
+      "odom": 0,
+      "tf_odom_base": 0
+    },
+    "informational_gaps": {
+      "tf_map_odom": null
+    },
+    "dropout_threshold_wall_s": 2.0,
+    "clock_backward_jumps": 0
+  },
+  "runner": {
+    "run_id": "fake-20261003-075205",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 155.601418052,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 160.346524699,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 168.520451889,
+        "t_sim": 5.763221627,
+        "reason": "ready_timeout"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 168.520637784,
+        "t_sim": 5.763221627,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [
+      "ready_timeout"
+    ],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "injections": [],
+    "contacts": {
+      "installed": false,
+      "measured": false,
+      "error": null
+    },
+    "doctor_attempts": 1
+  }
+}

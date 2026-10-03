@@ -1,0 +1,16 @@
+=== test_runner_fake.sh 2026-10-03T11:57:06-07:00 ROS_DOMAIN_ID=42 repo=/mnt/d/RoboSim-Eval ===
+succeed              exit 11  (want 11 ) execution completed    (want completed   ) check ok     code ok   24s  PASS
+abort                exit 10  (want 10 ) execution completed    (want completed   ) check ok     code ok   13s  PASS
+nav_timeout          exit 10  (want 10 ) execution completed    (want completed   ) check ok     code ok   20s  PASS
+reject               exit 10  (want 10 ) execution completed    (want completed   ) check ok     code ok    9s  PASS
+interrupt            exit 20  (want 20 ) execution interrupted  (want interrupted ) check FAILED code ok   10s  FAIL
+cancel_ignored       exit 31  (want 31 ) execution error        (want error       ) check ok     code ok   22s  PASS
+never_at_rest        exit 31  (want 31 ) execution error        (want error       ) check ok     code ok   17s  PASS
+no_server            exit 30  (want 30 ) execution error        (want error       ) check ok     code ok   18s  PASS
+param_in_effect      exit 11  (want 11 ) execution completed    (want completed   ) check ok     code ok   14s  PASS
+param_not_in_effect  exit 30  (want 30 ) execution error        (want error       ) check ok     code ok   19s  PASS
+accept_late          exit 30  (want 30 ) execution error        (want error       ) check ok     code ok   20s  PASS
+internal_error       exit 30  (want 30 ) execution error        (want error       ) check ok     code ok   13s  PASS
+internal_error_ignored exit 31  (want 31 ) execution error        (want error       ) check ok     code ok   17s  PASS
+pty_ctrl_c           exit 20  (want 20 ) execution interrupted  (want interrupted ) check ok     code ok   14s  PASS
+=== result: FAIL (1) ===

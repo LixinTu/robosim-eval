@@ -7,7 +7,9 @@ Every service call has a timeout; each command prints one JSON line. Exit 0 ok; 
 returned an error; 4 reset-check failed (robot not back at the spawn or still moving); 2 usage/config error.
 Guards (robosim_eval.sim_math): STATE_QUITTING is never requested; only entities under SPAWN_ROOT are spawned/deleted.
 Ground truth: GetEntityState on the chassis rigid body returns the live world pose and twist; its header stamp is zero,
-so callers pair it with a /clock sample when they need a time.
+so callers pair it with a /clock sample when they need a time. Isaac fills header.frame_id with the prim's name
+("nova_carter"), not with the frame of the pose, so the record says frame "world" and keeps Isaac's value as
+isaac_frame_id.
 """
 from __future__ import annotations
 
@@ -26,10 +28,16 @@ from robosim_eval.sim_math import Pose2D, check_reset, quat_from_yaw, state_code
 REPO = Path(__file__).resolve().parents[1]
 RESULT_OK = 1
 ALREADY_IN_TARGET_STATE = 101
+GROUND_TRUTH_SOURCE = "sim_control GetEntityState ground truth (world pose and twist)"
 
 
 class SimControlError(RuntimeError):
-    """A sim_control service was unavailable, timed out, or returned a non-OK result."""
+    """A sim_control service was unavailable, timed out, or returned a non-OK result. `code` is the
+    simulation_interfaces Result code when the service answered with one (e.g. 2 RESULT_NOT_FOUND), else None."""
+
+    def __init__(self, message: str, code: Optional[int] = None) -> None:
+        super().__init__(message)
+        self.code: Optional[int] = code
 
 
 class SimAdapter:
@@ -55,7 +63,7 @@ class SimAdapter:
     @staticmethod
     def _require_ok(name: str, result, extra_ok: Sequence[int] = ()) -> None:
         if result.result != RESULT_OK and result.result not in extra_ok:
-            raise SimControlError(f"{name}: result {result.result} {result.error_message!r}")
+            raise SimControlError(f"{name}: result {result.result} {result.error_message!r}", code=result.result)
 
     def get_state(self) -> str:
         from simulation_interfaces.srv import GetSimulationState
@@ -92,7 +100,10 @@ class SimAdapter:
         resp = self._call(GetEntityState, "/get_entity_state", req)
         self._require_ok("/get_entity_state", resp.result)
         p, q, t = resp.state.pose.position, resp.state.pose.orientation, resp.state.twist
-        return {"entity": entity, "frame": resp.state.header.frame_id, "x": p.x, "y": p.y, "z": p.z,
+        # Isaac's get_entity_state reads the pose and twist from RigidPrim.get_world_poses/velocities, but sets
+        # header.frame_id to the prim name; EntityState.msg defines frame_id as the frame of the pose.
+        return {"entity": entity, "frame": "world", "isaac_frame_id": resp.state.header.frame_id,
+                "source": GROUND_TRUTH_SOURCE, "x": p.x, "y": p.y, "z": p.z,
                 "yaw": yaw_from_quat(q.x, q.y, q.z, q.w), "linear_speed": math.hypot(t.linear.x, t.linear.y),
                 "angular_speed": abs(t.angular.z), "received_wall": time.time()}
 

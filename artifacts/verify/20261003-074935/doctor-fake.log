@@ -1,0 +1,8 @@
+=== test_doctor_fake.sh 2026-10-03T07:49:38-07:00 ROS_DOMAIN_ID=42 max 15s per doctor run ===
+healthy                expected 0   got 0      5.6s  PASS  (verdict: healthy (exit 0); window 5.04 s wall)
+paused                 expected 10  got 10     2.6s  PASS  (verdict: sim_not_advancing (exit 10); window 2.01 s wall)
+closed                 expected 11  got 11     5.5s  PASS  (verdict: sim_data_missing (exit 11); window 0.00 s wall)
+lidar_missing          expected 11  got 11     9.9s  PASS  (verdict: sim_data_missing (exit 11); window 5.02 s wall)
+lidar_slow             expected 12  got 12     5.5s  PASS  (verdict: degraded (exit 12); window 5.00 s wall)
+rmw_unset              expected 13  got 13     5.5s  PASS  (verdict: env_or_interface_error (exit 13); window 5.02 s wall)
+=== result: PASS ===

@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/verify/20261003-093557/runner-fake/internal_error/fake-20261003-094114
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-093557/runner-fake/internal_error/fake-20261003-094114", "exit": 30, "execution_status": "error", "task_outcome": "unknown", "validation_status": "fail", "errors": ["internal error: RuntimeError: injected test fault (--test-fault executing)"]}

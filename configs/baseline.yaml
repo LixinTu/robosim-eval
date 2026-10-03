@@ -73,6 +73,8 @@ run:
 
 # Scenarios for D3/D4. Start: the USD spawn after a sim_control reset. expect_outcome is the A5 task outcome the scenario
 # should produce; validation compares against it. Injected faults (cancel, pause, low box, short limit) are labelled.
+# A fault-injection scenario that must be caught by the safety or data check also declares expect_safety (pass | fail)
+# or expect_data (complete | incomplete): the injection passes validation only when that check catches it.
 scenarios:
   normal:
     goal: {x: 0.0, y: -1.0, yaw: 0.0}
@@ -103,6 +105,7 @@ scenarios:
     goal: {x: 0.0, y: -1.0, yaw: 0.0}
     inject: {pause_after_sim_s: 5.0, pause_wall_s: 6.0}   # fault injection: sim paused 6 s wall mid-route (data stops)
     expect_outcome: reached
+    expect_data: incomplete
     expect: "reached, but the verdict must not be a normal pass: data incomplete (clock gap > 2 s)"
   timeout:
     goal: {x: 0.0, y: -1.0, yaw: 0.0}
@@ -113,4 +116,5 @@ scenarios:
     goal: {x: 0.0, y: -1.0, yaw: 0.0}
     obstacles: [{name: low_box, x: -3.0, y: -1.0, yaw: 0.0, asset: low_box}]   # 0.10 m tall, below the /scan band
     expect_outcome: reached
+    expect_safety: fail
     expect: "fault injection: the robot is expected to hit the unseen low box; safety must be fail, never pass"

@@ -1,0 +1,6 @@
+send_goal start 2026-10-03T07:52:25.545-07:00 action=/navigate_to_pose frame=map x=1.0 y=0.0 yaw=0.0 (robosim_eval.runner, rclpy action client)
+2026-10-03T07:52:25.546-07:00 Goal accepted with ID: b47d6432ce8f479ca16a7dfb4acf0981
+2026-10-03T07:52:27.605-07:00 error_code: 0
+2026-10-03T07:52:27.606-07:00 error_msg: ''
+2026-10-03T07:52:27.607-07:00 Goal finished with status: SUCCEEDED
+send_goal end 2026-10-03T07:52:30.106-07:00 action_client_exit=0

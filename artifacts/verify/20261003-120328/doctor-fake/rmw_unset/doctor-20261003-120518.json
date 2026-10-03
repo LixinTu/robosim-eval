@@ -1,0 +1,67 @@
+{
+  "started": "2026-10-03T12:05:18.702893-07:00",
+  "config": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-120328/doctor-fake/doctor_fake.yaml",
+  "window_s_requested": 5.0,
+  "env": {
+    "rmw": null,
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "env_or_interface_error",
+    "exit_code": 13,
+    "reasons": [
+      "RMW_IMPLEMENTATION is None, expected 'rmw_fastrtps_cpp'"
+    ],
+    "warnings": [],
+    "window_s": 0.0,
+    "clock": {
+      "present": false,
+      "count": 0,
+      "rate_hz": 0.0,
+      "sim_progress_s": 0.0,
+      "rtf": null,
+      "last_age_s": null,
+      "backward_jumps": 0,
+      "last_sim_s": null,
+      "msg_types": []
+    },
+    "streams": {
+      "odom": {
+        "present": false,
+        "msg_types": [],
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "not_observed",
+        "detail": "odom: not observed"
+      },
+      "tf": {
+        "present": false,
+        "msg_types": [],
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "not_observed",
+        "detail": "tf: not observed"
+      },
+      "lidar": {
+        "present": false,
+        "msg_types": [],
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "not_observed",
+        "detail": "lidar: not observed"
+      }
+    },
+    "observed": false
+  }
+}

@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/verify/20261003-075258/runner-fake/param_in_effect/fake_slow-20261003-075605
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-075258/runner-fake/param_in_effect/fake_slow-20261003-075605", "exit": 11, "execution_status": "completed", "task_outcome": "unknown", "validation_status": "inconclusive", "errors": []}

@@ -1,0 +1,156 @@
+{
+  "schema": "robosim-eval run result (D3 runner verdict; the offline analyzer's own output is under 'analyzer', null when it did not run or failed)",
+  "execution_status": "completed",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "fail",
+  "verdict_reasons": {
+    "fail": [
+      "Nav2 REJECTED (error_code None) where the scenario expects the goal to be reached; cause not established, kept as unknown"
+    ],
+    "inconclusive": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": []
+  },
+  "evaluator": {
+    "execution_status": "completed",
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "fail",
+    "fail_reasons": [
+      "Nav2 REJECTED (error_code None) where the scenario expects the goal to be reached; cause not established, kept as unknown"
+    ],
+    "inconclusive_reasons": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [],
+    "arrival_error_m": null,
+    "disallowed_contacts": []
+  },
+  "evaluator_inputs": {
+    "scenario_expect": "reached",
+    "preset_unreachable": false,
+    "tolerance_m": 0.5,
+    "goal": [
+      1.0,
+      0.0
+    ],
+    "execution_status": "completed",
+    "runner_errors": [],
+    "accepted": false,
+    "rejected": true,
+    "terminal_status": null,
+    "error_code": null,
+    "cancel_requested": false,
+    "cancel_reason": null,
+    "timeout_reason": null,
+    "stop_confirmed": false,
+    "gt_at_stop": null,
+    "contacts_measured": false,
+    "contacts": [],
+    "required_gaps": {},
+    "required_backward": {},
+    "informational_gaps": {},
+    "dropout_threshold_wall_s": 2.0,
+    "clock_backward_jumps": 0,
+    "coverage_problems": [
+      "no recording: the recorders were not started (--no-record)"
+    ],
+    "contacts_dropped": 0,
+    "unreachable_evidence": null,
+    "scenario_expect_safety": null,
+    "scenario_expect_data": null
+  },
+  "goal": {
+    "frame": "map",
+    "x": 1.0,
+    "y": 0.0,
+    "yaw": 0.0,
+    "position_tolerance_m": 0.5,
+    "source": "scenario goal sent by the runner (no offline analysis)"
+  },
+  "target_goal": {
+    "id": null,
+    "id_source": "runner action client"
+  },
+  "timing": null,
+  "data_integrity": null,
+  "analyzer": null,
+  "nav2_raw": {
+    "terminal_status_code": null,
+    "terminal_status_name": "none",
+    "rejected": true,
+    "error_code": null,
+    "error_msg": null,
+    "source": "runner action client (no offline analysis)"
+  },
+  "runner": {
+    "run_id": "fake-20261003-115814",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 310.831685265,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 318.803568236,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 318.804762436,
+        "t_sim": 3.822422679,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 318.849402918,
+        "t_sim": 3.918508881,
+        "reason": "goal eb52fd00097907520fa91b80c82bce89 sent: the acceptance deadline starts now"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 318.851123217,
+        "t_sim": 3.918508881,
+        "reason": "goal rejected"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 318.852345517,
+        "t_sim": 3.918508881,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "injections": [],
+    "contacts": {
+      "installed": false,
+      "measured": false,
+      "error": null
+    },
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0,
+    "goal_sent": {
+      "id": "eb52fd00097907520fa91b80c82bce89",
+      "wall": "2026-10-03T11:58:22.911-07:00"
+    },
+    "rejected": true
+  }
+}

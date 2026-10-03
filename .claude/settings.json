@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "if [ \"$OS\" = Windows_NT ]; then py=python; else py=python3; fi; exec \"$py\" -B \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard_commands.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

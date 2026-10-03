@@ -1,0 +1,1 @@
+ERROR robosim_eval.doctor: usage error: --window: window 0.5 s is shorter than clock_stall_s (2.0 s)

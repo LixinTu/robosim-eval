@@ -1,0 +1,14 @@
+#!/bin/sh
+# pre-commit - RoboSim Eval: run the fast offline check (fixed-input tests) before every commit; a failure blocks it.
+# Enable once per clone (the setting is local, it is not committed):
+#   git config core.hooksPath scripts/git-hooks
+# Runs scripts/wsl/verify.sh --fast of the checkout being committed, inside WSL (distribution "Ubuntu") when the commit
+# is made from Windows; the record goes to artifacts/verify/<time>/commands.md (ignored by git unless added with -f).
+# Skipping it (git commit --no-verify) needs the user's consent.
+top=$(git rev-parse --show-toplevel) || exit 1
+case "$(uname -s)" in
+  Linux*) exec bash -l "$top/scripts/wsl/verify.sh" --fast ;;   # committing from inside WSL
+esac
+# Git for Windows gives D:/RoboSim-Eval; WSL sees it as /mnt/d/RoboSim-Eval. MSYS must not rewrite the /mnt path.
+drive=$(printf '%s' "$top" | cut -c1 | tr 'A-Z' 'a-z')
+MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' exec wsl.exe -d Ubuntu -- bash -l "/mnt/$drive${top#?:}/scripts/wsl/verify.sh" --fast

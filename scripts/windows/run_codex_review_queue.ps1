@@ -67,20 +67,24 @@ try {
         if (-not (Test-Path (Join-Path $d "codex-prompt-$round.md"))) { Write-QueueLog "stop: prompt for $tag missing"; exit 1 }
         if (Test-Path $report) { Write-QueueLog "skip $tag (report exists)"; continue }
         $done = $false
+        # attempt numbers continue after files a previous queue run left behind, so nothing is overwritten (shell-8)
+        $prev = @(Get-ChildItem $d -Filter "codex-$round-attempt*-status.txt" -ErrorAction SilentlyContinue |
+            ForEach-Object { if ($_.Name -match 'attempt(\d+)-') { [int]$Matches[1] } })
+        $base = if ($prev.Count) { ($prev | Measure-Object -Maximum).Maximum } else { 0 }
         for ($attempt = 1; $attempt -le $MaxAttempts -and -not $done; $attempt++) {
             & powershell -NoProfile -ExecutionPolicy Bypass -File $runner -Round $round -Dir $d | Out-Null
             $rc = $LASTEXITCODE
             $stderr = Join-Path $d "codex-$round-stderr.txt"
-            $limit = (Test-Path $stderr) -and [bool](Select-String -Path $stderr -Pattern 'hit your usage limit' -Quiet)
+            $limit = (Test-Path $stderr) -and (Test-UsageLimitText -Text ((Get-Content -Raw $stderr) + ''))
             Write-QueueLog "item=$tag attempt=$attempt exit=$rc report=$(Test-Path $report) usage_limit=$limit"
-            if ($rc -eq 0 -and (Test-Path $report) -and -not $limit) { $done = $true; continue }
+            if ($rc -eq 0 -and (Test-Path $report)) { $done = $true; continue }
             foreach ($kind in 'status', 'stderr', 'stdout') {
                 $f = Join-Path $d "codex-$round-$kind.txt"
-                if (Test-Path $f) { Move-Item $f (Join-Path $d "codex-$round-attempt$attempt-$kind.txt") -Force }
+                if (Test-Path $f) { Move-Item $f (Join-Path $d "codex-$round-attempt$($base + $attempt)-$kind.txt") }
             }
-            if (Test-Path $report) { Move-Item $report (Join-Path $d "codex-$round-attempt$attempt-report.md") -Force }
+            if (Test-Path $report) { Move-Item $report (Join-Path $d "codex-$round-attempt$($base + $attempt)-report.md") }
             if (-not $limit) { Write-QueueLog "stop: $tag failed without a usage-limit message"; exit 1 }
-            $when = Get-RetryTime (Join-Path $d "codex-$round-attempt$attempt-stderr.txt")
+            $when = Get-RetryTime (Join-Path $d "codex-$round-attempt$($base + $attempt)-stderr.txt")
             if ($attempt -lt $MaxAttempts) { Wait-Until $when "usage limit on $tag" }
         }
         if (-not $done) { Write-QueueLog "stop: $tag still failing after $MaxAttempts attempts"; exit 2 }

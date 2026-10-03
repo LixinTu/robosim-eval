@@ -1,0 +1,73 @@
+{
+  "started": "2026-09-30T09:31:40.031519-07:00",
+  "config": "/mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix/artifacts/review-2026-09-30/fake-doctor-merged/doctor_fake.yaml",
+  "window_s_requested": 5.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "43",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "sim_data_missing",
+    "exit_code": 11,
+    "reasons": [
+      "lidar: no publisher for the topic"
+    ],
+    "warnings": [],
+    "window_s": 5.039433382014977,
+    "clock": {
+      "present": true,
+      "count": 126,
+      "rate_hz": 25.002810921100007,
+      "sim_progress_s": 1.9999958849999997,
+      "rtf": 0.4000154968321706,
+      "last_age_s": 2.1338986698538065e-05,
+      "backward_jumps": 0,
+      "last_sim_s": 4.641105842,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 126,
+        "rate_hz": 25.002810921100007,
+        "max_gap_s": 0.04055647397763096,
+        "last_age_s": 0.039667629986070096,
+        "stamp_lag_s": 0.015879854999999665,
+        "status": "ok",
+        "detail": "odom: 25.00 Hz, last message 0.04 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 126,
+        "rate_hz": 25.002810921100007,
+        "max_gap_s": 0.04061369699775241,
+        "last_age_s": 0.039586761995451525,
+        "stamp_lag_s": 0.01582002700000018,
+        "status": "ok",
+        "detail": "tf: 25.00 Hz, last message 0.04 s old"
+      },
+      "lidar": {
+        "present": false,
+        "msg_types": [],
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "missing",
+        "detail": "lidar: no publisher for the topic"
+      }
+    },
+    "observed": true
+  }
+}

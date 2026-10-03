@@ -30,3 +30,11 @@
 2026-09-30T07:25:12.6516951-07:00 queue pid 58748 stopped by Claude: restart with the transcript-safe usage-limit detection (fix branch 156c31a, scripts from the fix worktree until merged)
 2026-09-30T07:25:13.1081950-07:00 queue start pid=35156 items=2026-09-29-d0/round1c-a,2026-09-29-d0/round1c-b,2026-09-29-d0/round1c-c,2026-09-29-d0/round1c-d,2026-09-29-d1/round1,2026-09-30-d2/round1a,2026-09-30-d2/round1b,2026-09-30-d3/round1a,2026-09-30-d3/round1b,2026-09-30-d4/round1,2026-09-30-d5/round1 max_attempts=8 not_before=2026-09-30T12:09
 2026-09-30T07:25:13.1241952-07:00 sleep until 2026-09-30T12:09:00 (17027 s): NotBefore
+2026-09-30T12:09:01.6967006-07:00 skip 2026-09-29-d0/round1c-a (report exists)
+2026-09-30T12:09:01.7076793-07:00 skip 2026-09-29-d0/round1c-b (report exists)
+2026-09-30T12:12:10.4488946-07:00 item=2026-09-29-d0/round1c-c attempt=1 exit=1 report=False usage_limit=True
+2026-09-30T12:12:10.5156965-07:00 sleep until 2026-09-30T17:10:00 (17870 s): usage limit on 2026-09-29-d0/round1c-c
+2026-09-30T17:13:57.4697777-07:00 item=2026-09-29-d0/round1c-c attempt=2 exit=1 report=False usage_limit=True
+2026-09-30T17:13:57.5067526-07:00 sleep until 2026-09-30T22:13:00 (17943 s): usage limit on 2026-09-29-d0/round1c-c
+2026-09-30T22:16:59.5786097-07:00 item=2026-09-29-d0/round1c-c attempt=3 exit=1 report=False usage_limit=True
+2026-09-30T22:16:59.6094400-07:00 sleep until 2026-10-06T14:54:00 (491821 s): usage limit on 2026-09-29-d0/round1c-c

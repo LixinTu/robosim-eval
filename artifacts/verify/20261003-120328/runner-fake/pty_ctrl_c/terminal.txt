@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/verify/20261003-120328/runner-fake/pty_ctrl_c/fake-20261003-120921
+^C{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-120328/runner-fake/pty_ctrl_c/fake-20261003-120921", "exit": 20, "execution_status": "interrupted", "task_outcome": "canceled", "validation_status": "inconclusive", "errors": []}

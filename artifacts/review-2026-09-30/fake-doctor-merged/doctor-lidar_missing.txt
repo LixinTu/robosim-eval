@@ -1,0 +1,9 @@
+doctor 2026-09-30T09:31:40-07:00 config=/mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix/artifacts/review-2026-09-30/fake-doctor-merged/doctor_fake.yaml window=5.0s discovery<=5.0s
+env: RMW=rmw_fastrtps_cpp ROS_DOMAIN_ID=43 ROS_DISTRO=jazzy FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml (exists=True)
+clock  /clock                           present      126 msgs  25.00 Hz  sim +2.000 s  RTF 0.40  last 0.00 s ago
+odom   /chassis/odom                    ok           126 msgs  25.00 Hz  max gap 0.041 s  last 0.04 s ago  stamp lag 0.016 s
+tf     /tf odom->base_link              ok           126 msgs  25.00 Hz  max gap 0.041 s  last 0.04 s ago  stamp lag 0.016 s
+lidar  /front_3d_lidar/lidar_points     missing      0 msgs   0.00 Hz  max gap - s  last - s ago  stamp lag - s
+reason: lidar: no publisher for the topic
+verdict: sim_data_missing (exit 11); window 5.04 s wall
+written /mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix/artifacts/review-2026-09-30/fake-doctor-merged/lidar_missing/doctor-20260930-093140.json

@@ -1,0 +1,15 @@
+{"t_mono": 909.699881, "wall": "2026-10-03T12:08:28.609-07:00", "t_sim": null, "event": "state", "state": "PREPARE", "reason": "run started", "fsm_t_mono": 909.699865753, "fsm_t_sim": null}
+{"t_mono": 913.622906, "wall": "2026-10-03T12:08:32.532-07:00", "t_sim": null, "event": "map_check", "skipped": "no sim section: no spawn pose to check (fake-node test)"}
+{"t_mono": 917.547326, "wall": "2026-10-03T12:08:36.456-07:00", "t_sim": null, "event": "doctor", "attempt": 1, "exit_code": 0}
+{"t_mono": 917.547565, "wall": "2026-10-03T12:08:36.457-07:00", "t_sim": null, "event": "state", "state": "WAIT_READY", "reason": "prepared", "fsm_t_mono": 917.547544523, "fsm_t_sim": null}
+{"t_mono": 917.548802, "wall": "2026-10-03T12:08:36.458-07:00", "t_sim": 3.758382729, "event": "state", "state": "SEND_GOAL", "reason": "nav2 ready after 0.0 s", "fsm_t_mono": 917.548793323, "fsm_t_sim": 3.758382729}
+{"t_mono": 917.56733, "wall": "2026-10-03T12:08:36.476-07:00", "t_sim": 3.8383591370000003, "event": "clock_refreshed", "ok": true}
+{"t_mono": 917.568834, "wall": "2026-10-03T12:08:36.478-07:00", "t_sim": 3.8383591370000003, "event": "goal_sent", "x": 1.0, "y": 0.0, "yaw": 0.0, "frame": "map", "goal_id": "990cc5712d92d2ab6346e4fc2cf4414c"}
+{"t_mono": 917.568987, "wall": "2026-10-03T12:08:36.478-07:00", "t_sim": 3.8383591370000003, "event": "state", "state": "SEND_GOAL", "reason": "goal 990cc5712d92d2ab6346e4fc2cf4414c sent: the acceptance deadline starts now", "fsm_t_mono": 917.568974714, "fsm_t_sim": 3.8383591370000003}
+{"t_mono": 922.607458, "wall": "2026-10-03T12:08:41.517-07:00", "t_sim": 5.854391592, "event": "timeout", "name": "accept_timeout"}
+{"t_mono": 922.607945, "wall": "2026-10-03T12:08:41.517-07:00", "t_sim": 5.854391592, "event": "state", "state": "TEARDOWN", "reason": "accept_timeout", "fsm_t_mono": 922.607920919, "fsm_t_sim": 5.854391592}
+{"t_mono": 924.570748, "wall": "2026-10-03T12:08:43.480-07:00", "t_sim": 6.638355823, "event": "goal_accepted_late", "goal_id": "990cc5712d92d2ab6346e4fc2cf4414c"}
+{"t_mono": 924.571041, "wall": "2026-10-03T12:08:43.480-07:00", "t_sim": 6.638355823, "event": "cancel_requested", "source": "safety net"}
+{"t_mono": 924.673089, "wall": "2026-10-03T12:08:43.582-07:00", "t_sim": 6.67035997, "event": "safety_net", "step": "cancel", "result": "confirmed", "terminal": "CANCELED", "rejected": false}
+{"t_mono": 927.16755, "wall": "2026-10-03T12:08:46.077-07:00", "t_sim": 7.678331724, "event": "safety_net", "step": "stop", "result": "confirmed", "stop_still_diagnostics": {"start_after": 6.67035997, "fed": 64, "max_gap": 0.0161841530000002, "max_v": 0.0, "max_w": 0.0, "buffer_first": 3.758478809, "buffer_last": 7.678419484}}
+{"t_mono": 927.168464, "wall": "2026-10-03T12:08:46.078-07:00", "t_sim": 7.678331724, "event": "state", "state": "DONE", "reason": "teardown finished", "fsm_t_mono": 927.168452283, "fsm_t_sim": 7.678331724}

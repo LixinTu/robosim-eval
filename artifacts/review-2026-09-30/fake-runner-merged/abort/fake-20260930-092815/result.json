@@ -1,0 +1,184 @@
+{
+  "schema": "robosim-eval run result (D3 runner verdict; the offline analyzer's own output is under 'analyzer', null when it did not run or failed)",
+  "execution_status": "completed",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "fail",
+  "verdict_reasons": {
+    "fail": [
+      "Nav2 ABORTED (error_code 208) where the scenario expects the goal to be reached; cause not established, kept as unknown"
+    ],
+    "inconclusive": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": []
+  },
+  "evaluator": {
+    "execution_status": "completed",
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "fail",
+    "fail_reasons": [
+      "Nav2 ABORTED (error_code 208) where the scenario expects the goal to be reached; cause not established, kept as unknown"
+    ],
+    "inconclusive_reasons": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [],
+    "arrival_error_m": null,
+    "disallowed_contacts": []
+  },
+  "evaluator_inputs": {
+    "scenario_expect": "reached",
+    "preset_unreachable": false,
+    "tolerance_m": 0.5,
+    "goal": [
+      1.0,
+      0.0
+    ],
+    "execution_status": "completed",
+    "runner_errors": [],
+    "accepted": true,
+    "rejected": false,
+    "terminal_status": 6,
+    "error_code": 208,
+    "cancel_requested": false,
+    "cancel_reason": null,
+    "timeout_reason": null,
+    "stop_confirmed": true,
+    "gt_at_stop": null,
+    "contacts_measured": false,
+    "contacts": [],
+    "required_gaps": {},
+    "required_backward": {},
+    "informational_gaps": {},
+    "dropout_threshold_wall_s": 2.0,
+    "clock_backward_jumps": 0,
+    "coverage_problems": [
+      "no recording: the recorders were not started (--no-record)"
+    ],
+    "contacts_dropped": 0,
+    "unreachable_evidence": null,
+    "scenario_expect_safety": null,
+    "scenario_expect_data": null
+  },
+  "goal": {
+    "frame": "map",
+    "x": 1.0,
+    "y": 0.0,
+    "yaw": 0.0,
+    "position_tolerance_m": 0.5,
+    "source": "scenario goal sent by the runner (no offline analysis)"
+  },
+  "target_goal": {
+    "id": "9689ad839c189bba5d4b8a5322c20c8c",
+    "id_source": "runner action client"
+  },
+  "timing": null,
+  "data_integrity": null,
+  "analyzer": null,
+  "nav2_raw": {
+    "terminal_status_code": 6,
+    "terminal_status_name": "ABORTED",
+    "rejected": false,
+    "error_code": 208,
+    "error_msg": "fake: no valid path",
+    "source": "runner action client (no offline analysis)"
+  },
+  "runner": {
+    "run_id": "fake-20260930-092815",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 131206.191991454,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 131210.530144989,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 131210.533136857,
+        "t_sim": 2.40345411,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 131210.574533132,
+        "t_sim": 2.4834838120000002,
+        "reason": "goal 9689ad839c189bba5d4b8a5322c20c8c sent: the acceptance deadline starts now"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 131210.576538082,
+        "t_sim": 2.4834838120000002,
+        "reason": "goal accepted 9689ad839c189bba5d4b8a5322c20c8c"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 131212.588634859,
+        "t_sim": 3.283445694,
+        "reason": "terminal status ABORTED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 131215.092129437,
+        "t_sim": 4.291446322,
+        "reason": "robot at rest (stop-still confirmed at sim 4.292)"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 131215.093112079,
+        "t_sim": 4.291446322,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "injections": [],
+    "contacts": {
+      "installed": false,
+      "measured": false,
+      "error": null
+    },
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0,
+    "goal_sent": {
+      "id": "9689ad839c189bba5d4b8a5322c20c8c",
+      "wall": "2026-09-30T09:28:20.214-07:00"
+    },
+    "goal_id": "9689ad839c189bba5d4b8a5322c20c8c",
+    "accept_sim": 2.4834838120000002,
+    "terminal_sim": 3.283445694,
+    "terminal": {
+      "status": 6,
+      "name": "ABORTED",
+      "error_code": 208,
+      "error_msg": "fake: no valid path",
+      "feedback_count": 21,
+      "last_feedback": {
+        "distance_remaining": 0.0,
+        "recoveries": 0
+      },
+      "source": "action client"
+    },
+    "stop_confirmed_sim": 4.291545812,
+    "safety_net": {}
+  }
+}

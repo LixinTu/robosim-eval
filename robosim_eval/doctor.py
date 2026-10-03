@@ -6,6 +6,10 @@ Exit codes: 0 healthy, 10 simulation not advancing, 11 simulation data missing, 
 interface error, 2 usage/config error, 1 internal error. Run time is bounded: at most discovery_timeout_s to find the
 topics plus window_s of observation (the window ends early once /clock has stalled for clock_stall_s; it is skipped
 when /clock has no publisher at all), plus about 3 s of Python/rclpy start-up and shutdown (13 s with the baseline).
+--window must be finite, at least clock_stall_s and leave room under doctor.sh's 60 s cap
+(doctor_checks.window_problem).
+The environment (RMW, domain, DDS profile, ROS distro, an installed RMW library) is checked before any ROS use; a
+mismatch, a missing rclpy or an rclpy that cannot start is 13, and a config error is 2 with a one-line message.
 """
 from __future__ import annotations
 
@@ -22,17 +26,41 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from robosim_eval.config import BaselineConfig, load_config
 from robosim_eval.doctor_checks import (
-    EXIT_ENV,
     DoctorReport,
     EnvFacts,
     Observation,
     StreamObservation,
+    env_reasons,
     evaluate,
+    not_observed_report,
+    window_problem,
 )
 
 logger = logging.getLogger("robosim_eval.doctor")
 REPO = Path(__file__).resolve().parents[1]
 EXIT_USAGE, EXIT_INTERNAL = 2, 1
+
+
+class RosStartError(RuntimeError):
+    """rclpy could not start (rclpy.init or the node failed), e.g. ROS_DOMAIN_ID is not a number: exit 13."""
+
+
+def rmw_problems(rmw: Optional[str]) -> List[str]:
+    """Environment reasons found before importing rclpy: rcl ends the whole process with status 1, without a Python
+    exception, when RMW_IMPLEMENTATION names a library that is not installed. Unset means the ROS default RMW."""
+    if not rmw:
+        return []
+    try:
+        from ament_index_python import get_resources
+    except ImportError:
+        return []  # no ROS Python environment at all: importing rclpy fails next and is reported as 13
+    try:
+        installed = get_resources("rmw_typesupport")
+    except OSError as exc:  # AMENT_PREFIX_PATH not set: the ROS environment was not sourced
+        return [f"cannot read the ament index ({exc}); source the ROS 2 environment"]
+    if rmw not in installed:
+        return [f"RMW_IMPLEMENTATION {rmw!r} is not installed (ament index lists {sorted(installed)})"]
+    return []
 
 
 def current_env() -> EnvFacts:
@@ -63,8 +91,15 @@ def observe(cfg: BaselineConfig, window_s: float, discovery_timeout_s: float) ->
     stall_s = cfg.doctor.thresholds.clock_stall_s
     qos = QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT, durability=DurabilityPolicy.VOLATILE,
                      history=HistoryPolicy.KEEP_LAST, depth=50)  # best effort matches reliable and best-effort pubs
-    rclpy.init()
-    node = Node("robosim_doctor")
+    try:
+        rclpy.init()
+    except RuntimeError as exc:  # rclpy's RCLError, e.g. ROS_DOMAIN_ID is not an integral number
+        raise RosStartError(f"rclpy.init failed: {exc}") from exc
+    try:
+        node = Node("robosim_doctor")
+    except RuntimeError as exc:
+        rclpy.shutdown()
+        raise RosStartError(f"creating the doctor node failed: {exc}") from exc
     try:
         clock: List[Tuple[float, float]] = []
         samples: Dict[str, List[Tuple[float, Optional[float]]]] = {k: [] for k in wanted if k != "clock"}
@@ -95,15 +130,16 @@ def observe(cfg: BaselineConfig, window_s: float, discovery_timeout_s: float) ->
             callback = on_tf(key) if cls is TFMessage and spec.child else on_header(key)
             node.create_subscription(cls, spec.name, callback, qos)
 
+        # Publishers only: the graph's topic types also list the doctor's own subscriptions, which hid a publisher of
+        # another type (review round 1). DDS never delivers such a publisher's messages to the subscription.
         deadline = time.monotonic() + discovery_timeout_s
         while True:
             rclpy.spin_once(node, timeout_sec=0.1)
-            graph = dict(node.get_topic_names_and_types())
-            present = {k: cfg.topics[k].name in graph and node.count_publishers(cfg.topics[k].name) > 0
-                       for k in wanted}
+            publishers = {k: node.get_publishers_info_by_topic(cfg.topics[k].name) for k in wanted}
+            present = {k: bool(publishers[k]) for k in wanted}
             if all(present.values()) or time.monotonic() >= deadline:
                 break
-        types = {k: (graph.get(cfg.topics[k].name) or [None])[0] for k in wanted}
+        types = {k: tuple(sorted({p.topic_type for p in publishers[k]})) for k in wanted}
 
         start = time.monotonic()
         end = start + (window_s if present["clock"] else 0.0)
@@ -117,13 +153,17 @@ def observe(cfg: BaselineConfig, window_s: float, discovery_timeout_s: float) ->
     finally:
         node.destroy_node()
         rclpy.shutdown()
-    streams = {k: StreamObservation(present=present[k], msg_type=types[k], samples=tuple(x for x in v if x[0] >= start))
+    streams = {k: StreamObservation(present=present[k], msg_types=types[k],
+                                    samples=tuple(x for x in v if x[0] >= start))
                for k, v in samples.items()}
-    return Observation(window_start=start, window_end=stop, clock_present=present["clock"], clock_type=types["clock"],
+    return Observation(window_start=start, window_end=stop, clock_present=present["clock"], clock_types=types["clock"],
                        clock=tuple(x for x in clock if x[0] >= start), streams=streams, env=current_env())
 
 
 def format_report(cfg: BaselineConfig, rep: DoctorReport) -> str:
+    if not rep.observed:
+        lines = ["ROS graph not observed: the environment is not usable"] + [f"reason: {r}" for r in rep.reasons]
+        return "\n".join(lines + [f"verdict: {rep.verdict} (exit {rep.exit_code})"])
     c = rep.clock
     rtf = f"{c.rtf:.2f}" if c.rtf is not None else "-"
     age = f"{c.last_age_s:.2f} s ago" if c.last_age_s is not None else "never"
@@ -142,6 +182,24 @@ def format_report(cfg: BaselineConfig, rep: DoctorReport) -> str:
     return "\n".join(lines)
 
 
+def judge(cfg: BaselineConfig, window: float, expected_env: EnvFacts, env: EnvFacts) -> Optional[DoctorReport]:
+    """The report for this run; None for a config error found while observing (unsupported message type)."""
+    reasons = env_reasons(env, expected_env) + rmw_problems(env.rmw)
+    if reasons:
+        return not_observed_report(reasons, cfg.doctor.thresholds)  # before any ROS use
+    try:
+        obs = observe(cfg, window, cfg.doctor.discovery_timeout_s)
+    except ImportError as exc:
+        return not_observed_report([f"ROS 2 Python environment not available: {exc}"], cfg.doctor.thresholds)
+    except RosStartError as exc:
+        return not_observed_report([f"ROS 2 could not start: {exc}"], cfg.doctor.thresholds)
+    except ValueError as exc:
+        logger.error("config error: %s", exc)
+        return None
+    types = {k: t.msg_type for k, t in cfg.topics.items()}
+    return evaluate(obs, cfg.doctor.thresholds, types, expected_env)
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="RoboSim Eval D1 doctor (bounded ROS 2 data check)")
     parser.add_argument("--config", default=str(REPO / "configs" / "baseline.yaml"))
@@ -153,9 +211,13 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     try:
         cfg = load_config(args.config)
     except (OSError, ValueError) as exc:
-        logger.error("config error: %s", exc)
+        logger.error("config error: %s", " ".join(str(exc).split()))
         return EXIT_USAGE
     window = args.window if args.window is not None else cfg.doctor.window_s
+    problem = window_problem(window, cfg.doctor.thresholds.clock_stall_s, cfg.doctor.discovery_timeout_s)
+    if problem:
+        logger.error("usage error: --window: %s", problem)
+        return EXIT_USAGE
     expected_env = EnvFacts(rmw=cfg.env.rmw, domain_id=cfg.env.domain_id,
                             dds_profile_exists=cfg.env.require_dds_profile, ros_distro=cfg.env.ros_distro)
     env = current_env()
@@ -164,16 +226,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                      f"env: RMW={env.rmw} ROS_DOMAIN_ID={env.domain_id} ROS_DISTRO={env.ros_distro} "
                      f"FASTRTPS_DEFAULT_PROFILES_FILE={os.environ.get('FASTRTPS_DEFAULT_PROFILES_FILE', '')} "
                      f"(exists={env.dds_profile_exists})\n")
-    try:
-        obs = observe(cfg, window, cfg.doctor.discovery_timeout_s)
-    except ImportError as exc:
-        logger.error("ROS 2 Python environment not available: %s", exc)
-        return EXIT_ENV
-    except ValueError as exc:
-        logger.error("config error: %s", exc)
+    rep = judge(cfg, window, expected_env, env)
+    if rep is None:
         return EXIT_USAGE
-    types = {k: t.msg_type for k, t in cfg.topics.items()}
-    rep = evaluate(obs, cfg.doctor.thresholds, types, expected_env)
     sys.stdout.write(format_report(cfg, rep) + "\n")
     if args.out:
         out = Path(args.out)

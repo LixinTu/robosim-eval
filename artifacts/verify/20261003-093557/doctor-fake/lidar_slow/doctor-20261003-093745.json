@@ -1,0 +1,75 @@
+{
+  "started": "2026-10-03T09:37:45.396154-07:00",
+  "config": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-093557/doctor-fake/doctor_fake.yaml",
+  "window_s_requested": 5.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "degraded",
+    "exit_code": 12,
+    "reasons": [
+      "lidar: 0.60 Hz < 1.0 Hz"
+    ],
+    "warnings": [],
+    "window_s": 5.000137890000019,
+    "clock": {
+      "present": true,
+      "count": 125,
+      "rate_hz": 24.999310569013034,
+      "sim_progress_s": 1.9840452809999998,
+      "rtf": 0.3999998513340935,
+      "last_age_s": 0.0002970640000228286,
+      "backward_jumps": 0,
+      "last_sim_s": 2.633531068,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 126,
+        "rate_hz": 25.199305053565137,
+        "max_gap_s": 0.0415467450000051,
+        "last_age_s": 1.1140000026443886e-05,
+        "stamp_lag_s": -7.52689999998779e-05,
+        "status": "ok",
+        "detail": "odom: 25.20 Hz, last message 0.00 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 125,
+        "rate_hz": 24.999310569013034,
+        "max_gap_s": 0.04167610799999011,
+        "last_age_s": 0.039628372000009904,
+        "stamp_lag_s": 0.01583380599999984,
+        "status": "ok",
+        "detail": "tf: 25.00 Hz, last message 0.04 s old"
+      },
+      "lidar": {
+        "present": true,
+        "msg_types": [
+          "sensor_msgs/msg/PointCloud2"
+        ],
+        "count": 3,
+        "rate_hz": 0.5999834536563128,
+        "max_gap_s": 2.000135440000008,
+        "last_age_s": 0.5598189990000151,
+        "stamp_lag_s": 0.22381098199999983,
+        "status": "slow",
+        "detail": "lidar: 0.60 Hz < 1.0 Hz"
+      }
+    },
+    "observed": true
+  }
+}

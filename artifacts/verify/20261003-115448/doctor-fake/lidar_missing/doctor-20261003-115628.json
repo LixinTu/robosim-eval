@@ -1,0 +1,73 @@
+{
+  "started": "2026-10-03T11:56:28.067861-07:00",
+  "config": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-115448/doctor-fake/doctor_fake.yaml",
+  "window_s_requested": 5.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "sim_data_missing",
+    "exit_code": 11,
+    "reasons": [
+      "lidar: no publisher for the topic"
+    ],
+    "warnings": [],
+    "window_s": 5.000146292000011,
+    "clock": {
+      "present": true,
+      "count": 125,
+      "rate_hz": 24.99926856140067,
+      "sim_progress_s": 1.9840053430000002,
+      "rtf": 0.3999969862001798,
+      "last_age_s": 0.0003817000000196913,
+      "backward_jumps": 0,
+      "last_sim_s": 4.620557379,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 126,
+        "rate_hz": 25.199262709891876,
+        "max_gap_s": 0.04076313199999504,
+        "last_age_s": 0.00024310000000582477,
+        "stamp_lag_s": -8.855000000007607e-05,
+        "status": "ok",
+        "detail": "odom: 25.20 Hz, last message 0.00 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 126,
+        "rate_hz": 25.199262709891876,
+        "max_gap_s": 0.04083749399998737,
+        "last_age_s": 1.0174999999890133e-05,
+        "stamp_lag_s": -0.0001355930000004335,
+        "status": "ok",
+        "detail": "tf: 25.20 Hz, last message 0.00 s old"
+      },
+      "lidar": {
+        "present": false,
+        "msg_types": [],
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "missing",
+        "detail": "lidar: no publisher for the topic"
+      }
+    },
+    "observed": true
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "started": "2026-10-03T07:49:50.528943-07:00",
+  "config": "/mnt/d/RoboSim-Eval/tests/ros_fake/doctor_fake.yaml",
+  "window_s_requested": 5.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "sim_data_missing",
+    "exit_code": 11,
+    "reasons": [
+      "clock: no publisher for /clock (Isaac Sim closed, ROS 2 bridge not loaded, or DDS discovery broken)"
+    ],
+    "warnings": [],
+    "window_s": 1.1999999998124622e-06,
+    "clock": {
+      "present": false,
+      "count": 0,
+      "rate_hz": 0.0,
+      "sim_progress_s": 0.0,
+      "rtf": null,
+      "last_age_s": null,
+      "backward_jumps": 0,
+      "last_sim_s": null
+    },
+    "streams": {
+      "odom": {
+        "present": false,
+        "msg_type": "nav_msgs/msg/Odometry",
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "missing",
+        "detail": "odom: no publisher for the topic"
+      },
+      "tf": {
+        "present": false,
+        "msg_type": "tf2_msgs/msg/TFMessage",
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "missing",
+        "detail": "tf: no publisher for the topic"
+      },
+      "lidar": {
+        "present": false,
+        "msg_type": "sensor_msgs/msg/PointCloud2",
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "missing",
+        "detail": "lidar: no publisher for the topic"
+      }
+    }
+  }
+}

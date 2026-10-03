@@ -1,0 +1,47 @@
+=== diag_discovery.sh 2026-10-03T11:39:01-07:00 RMW=rmw_fastrtps_cpp DOMAIN=0 profile=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml ===
+WSL eth0 ip=172.28.211.14 gateway(windows host)=172.28.208.1
+
+===== ufw config =====
+CMD: bash -c grep -H ENABLED /etc/ufw/ufw.conf 2>/dev/null || echo "ufw not present"
+ufw not present
+EXIT: 0
+
+===== ping windows host (3 pkts) =====
+CMD: timeout 6 ping -c 3 -W 1 172.28.208.1
+PING 172.28.208.1 (172.28.208.1) 56(84) bytes of data.
+
+--- 172.28.208.1 ping statistics ---
+3 packets transmitted, 0 received, 100% packet loss, time 2227ms
+
+EXIT: 1
+
+===== passive multicast capture 239.255.0.1:7400 for 12 s =====
+packets by source ip: {'172.28.208.1': 5}
+RTPS-magic packets by source ip: {'172.28.208.1': 5}
+EXIT: 0
+
+===== discovery with 10 s wait after daemon restart =====
+
+===== node list (daemon) =====
+CMD: timeout 15 ros2 node list
+EXIT: 0
+
+===== topic list (daemon) =====
+CMD: timeout 15 ros2 topic list
+/parameter_events
+/rosout
+EXIT: 0
+
+===== topic list (no daemon, spin 8 s) =====
+CMD: timeout 20 ros2 topic list --no-daemon --spin-time 8
+/parameter_events
+/rosout
+EXIT: 0
+
+===== wsl own dds sockets =====
+CMD: bash -c ss -ulnp 2>/dev/null | grep -E ":74[0-9]{2} |:7[0-9]{3} " || echo "no 7xxx udp sockets listed"
+UNCONN 0      0            0.0.0.0:7000       0.0.0.0:*    users:(("python3",pid=499,fd=49))        
+UNCONN 0      0            0.0.0.0:7400       0.0.0.0:*    users:(("python3",pid=499,fd=45))        
+UNCONN 0      0            0.0.0.0:7410       0.0.0.0:*    users:(("python3",pid=499,fd=44))        
+UNCONN 0      0            0.0.0.0:7411       0.0.0.0:*    users:(("python3",pid=499,fd=46))        
+EXIT: 0

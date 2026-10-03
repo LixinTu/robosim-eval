@@ -1,0 +1,14 @@
+{"t_mono": 807.130627, "wall": "2026-10-03T12:06:42.601-07:00", "t_sim": null, "event": "state", "state": "PREPARE", "reason": "run started", "fsm_t_mono": 807.130613605, "fsm_t_sim": null}
+{"t_mono": 811.131223, "wall": "2026-10-03T12:06:47.482-07:00", "t_sim": null, "event": "map_check", "skipped": "no sim section: no spawn pose to check (fake-node test)"}
+{"t_mono": 815.210682, "wall": "2026-10-03T12:06:51.562-07:00", "t_sim": null, "event": "doctor", "attempt": 1, "exit_code": 0}
+{"t_mono": 815.210878, "wall": "2026-10-03T12:06:51.562-07:00", "t_sim": null, "event": "state", "state": "WAIT_READY", "reason": "prepared", "fsm_t_mono": 815.210859308, "fsm_t_sim": null}
+{"t_mono": 815.217989, "wall": "2026-10-03T12:06:51.569-07:00", "t_sim": 3.852416615, "event": "state", "state": "SEND_GOAL", "reason": "nav2 ready after 0.0 s", "fsm_t_mono": 815.217980309, "fsm_t_sim": 3.852416615}
+{"t_mono": 815.272617, "wall": "2026-10-03T12:06:51.624-07:00", "t_sim": 3.948417298, "event": "clock_refreshed", "ok": true}
+{"t_mono": 815.274084, "wall": "2026-10-03T12:06:51.625-07:00", "t_sim": 3.948417298, "event": "goal_sent", "x": 1.0, "y": 0.0, "yaw": 0.0, "frame": "map", "goal_id": "da4fbb3014392f758b79b0fb2b8f024e"}
+{"t_mono": 815.274212, "wall": "2026-10-03T12:06:51.625-07:00", "t_sim": 3.948417298, "event": "state", "state": "SEND_GOAL", "reason": "goal da4fbb3014392f758b79b0fb2b8f024e sent: the acceptance deadline starts now", "fsm_t_mono": 815.274199337, "fsm_t_sim": 3.948417298}
+{"t_mono": 815.275736, "wall": "2026-10-03T12:06:51.627-07:00", "t_sim": 3.948417298, "event": "state", "state": "EXECUTING", "reason": "goal accepted da4fbb3014392f758b79b0fb2b8f024e", "fsm_t_mono": 815.275727586, "fsm_t_sim": 3.948417298}
+{"t_mono": 815.552446, "wall": "2026-10-03T12:06:51.903-07:00", "t_sim": 4.060402625, "event": "state", "state": "CANCELING", "reason": "interrupt (SIGINT)", "fsm_t_mono": 815.552437241, "fsm_t_sim": 4.060402625}
+{"t_mono": 815.552906, "wall": "2026-10-03T12:06:51.904-07:00", "t_sim": 4.060402625, "event": "cancel_requested"}
+{"t_mono": 815.578122, "wall": "2026-10-03T12:06:51.929-07:00", "t_sim": 4.060402625, "event": "state", "state": "STOP_CONFIRM", "reason": "terminal status CANCELED", "fsm_t_mono": 815.578113579, "fsm_t_sim": 4.060402625}
+{"t_mono": 818.073227, "wall": "2026-10-03T12:06:54.424-07:00", "t_sim": 5.068516415, "event": "state", "state": "TEARDOWN", "reason": "robot at rest (stop-still confirmed at sim 5.069)", "fsm_t_mono": 818.073217866, "fsm_t_sim": 5.068516415}
+{"t_mono": 818.074131, "wall": "2026-10-03T12:06:54.425-07:00", "t_sim": 5.068516415, "event": "state", "state": "DONE", "reason": "teardown finished", "fsm_t_mono": 818.074122433, "fsm_t_sim": 5.068516415}

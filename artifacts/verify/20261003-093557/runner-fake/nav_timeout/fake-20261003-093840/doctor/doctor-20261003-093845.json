@@ -1,0 +1,73 @@
+{
+  "started": "2026-10-03T09:38:45.399365-07:00",
+  "config": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-093557/runner-fake/runner_fake.yaml",
+  "window_s_requested": 3.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "healthy",
+    "exit_code": 0,
+    "reasons": [],
+    "warnings": [],
+    "window_s": 3.0000514260000273,
+    "clock": {
+      "present": true,
+      "count": 75,
+      "rate_hz": 24.99957145734585,
+      "sim_progress_s": 1.184019696,
+      "rtf": 0.399969000621011,
+      "last_age_s": 0.0003849349999995866,
+      "backward_jumps": 0,
+      "last_sim_s": 3.692975766,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 76,
+        "rate_hz": 25.332899076777128,
+        "max_gap_s": 0.04120516199998292,
+        "last_age_s": 1.6623000021809275e-05,
+        "stamp_lag_s": -0.00010446500000016457,
+        "status": "ok",
+        "detail": "odom: 25.33 Hz, last message 0.00 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 75,
+        "rate_hz": 24.99957145734585,
+        "max_gap_s": 0.04157023999999865,
+        "last_age_s": 0.040054082000040125,
+        "stamp_lag_s": 0.015823957999999916,
+        "status": "ok",
+        "detail": "tf: 25.00 Hz, last message 0.04 s old"
+      },
+      "lidar": {
+        "present": true,
+        "msg_types": [
+          "sensor_msgs/msg/PointCloud2"
+        ],
+        "count": 7,
+        "rate_hz": 2.3332933360189463,
+        "max_gap_s": 0.38482516300001635,
+        "last_age_s": 0.354541772999994,
+        "stamp_lag_s": 0.1415991270000001,
+        "status": "ok",
+        "detail": "lidar: 2.33 Hz, last message 0.35 s old"
+      }
+    },
+    "observed": true
+  }
+}

@@ -1,0 +1,182 @@
+{
+  "schema": "robosim-eval run result (D3 runner verdict; the offline analyzer's own output is under 'analyzer', null when it did not run or failed)",
+  "execution_status": "completed",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "inconclusive",
+  "verdict_reasons": {
+    "fail": [],
+    "inconclusive": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "no ground truth at the stop: arrival cannot be judged independently",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": []
+  },
+  "evaluator": {
+    "execution_status": "completed",
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "inconclusive",
+    "fail_reasons": [],
+    "inconclusive_reasons": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "no ground truth at the stop: arrival cannot be judged independently",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [],
+    "arrival_error_m": null,
+    "disallowed_contacts": []
+  },
+  "evaluator_inputs": {
+    "scenario_expect": "reached",
+    "preset_unreachable": false,
+    "tolerance_m": 0.5,
+    "goal": [
+      1.0,
+      0.0
+    ],
+    "execution_status": "completed",
+    "runner_errors": [],
+    "accepted": true,
+    "rejected": false,
+    "terminal_status": 4,
+    "error_code": 0,
+    "cancel_requested": false,
+    "cancel_reason": null,
+    "timeout_reason": null,
+    "stop_confirmed": true,
+    "gt_at_stop": null,
+    "contacts_measured": false,
+    "contacts": [],
+    "required_gaps": {},
+    "required_backward": {},
+    "informational_gaps": {},
+    "dropout_threshold_wall_s": 2.0,
+    "clock_backward_jumps": 0,
+    "coverage_problems": [
+      "no recording: the recorders were not started (--no-record)"
+    ],
+    "contacts_dropped": 0,
+    "unreachable_evidence": null,
+    "scenario_expect_safety": null,
+    "scenario_expect_data": null
+  },
+  "goal": {
+    "frame": "map",
+    "x": 1.0,
+    "y": 0.0,
+    "yaw": 0.0,
+    "position_tolerance_m": 0.5,
+    "source": "scenario goal sent by the runner (no offline analysis)"
+  },
+  "target_goal": {
+    "id": "d9dcc390d8c9c56a23cc3a29339064de",
+    "id_source": "runner action client"
+  },
+  "timing": null,
+  "data_integrity": null,
+  "analyzer": null,
+  "nav2_raw": {
+    "terminal_status_code": 4,
+    "terminal_status_name": "SUCCEEDED",
+    "rejected": false,
+    "error_code": 0,
+    "error_msg": "",
+    "source": "runner action client (no offline analysis)"
+  },
+  "runner": {
+    "run_id": "fake-20260930-092802",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 131193.414198627,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 131197.879420567,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 131197.881138976,
+        "t_sim": 2.452984815,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 131197.914959415,
+        "t_sim": 2.532866716,
+        "reason": "goal d9dcc390d8c9c56a23cc3a29339064de sent: the acceptance deadline starts now"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 131197.917511825,
+        "t_sim": 2.532866716,
+        "reason": "goal accepted d9dcc390d8c9c56a23cc3a29339064de"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 131199.934721659,
+        "t_sim": 3.332860499,
+        "reason": "terminal status SUCCEEDED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 131202.432552071,
+        "t_sim": 4.340830292,
+        "reason": "robot at rest (stop-still confirmed at sim 4.341)"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 131202.434029528,
+        "t_sim": 4.340830292,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "injections": [],
+    "contacts": {
+      "installed": false,
+      "measured": false,
+      "error": null
+    },
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0,
+    "goal_sent": {
+      "id": "d9dcc390d8c9c56a23cc3a29339064de",
+      "wall": "2026-09-30T09:28:07.554-07:00"
+    },
+    "goal_id": "d9dcc390d8c9c56a23cc3a29339064de",
+    "accept_sim": 2.532866716,
+    "terminal_sim": 3.332860499,
+    "terminal": {
+      "status": 4,
+      "name": "SUCCEEDED",
+      "error_code": 0,
+      "error_msg": "",
+      "feedback_count": 21,
+      "last_feedback": {
+        "distance_remaining": 0.0,
+        "recoveries": 0
+      },
+      "source": "action client"
+    },
+    "stop_confirmed_sim": 4.340938751,
+    "safety_net": {}
+  }
+}

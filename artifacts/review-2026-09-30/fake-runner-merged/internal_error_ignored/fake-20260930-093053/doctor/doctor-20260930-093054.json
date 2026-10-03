@@ -1,0 +1,73 @@
+{
+  "started": "2026-09-30T09:30:54.523056-07:00",
+  "config": "/mnt/c/Users/Administrator/AppData/Local/Temp/claude/d--RoboSim-Eval/59900d3e-5384-418b-8374-e6a8773582da/scratchpad/wt-fix/artifacts/review-2026-09-30/fake-runner-merged/runner_fake.yaml",
+  "window_s_requested": 3.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "healthy",
+    "exit_code": 0,
+    "reasons": [],
+    "warnings": [],
+    "window_s": 3.033066587988287,
+    "clock": {
+      "present": true,
+      "count": 76,
+      "rate_hz": 25.057148531120045,
+      "sim_progress_s": 1.200000198,
+      "rtf": 0.3999978364102941,
+      "last_age_s": 2.2613996407017112e-05,
+      "backward_jumps": 0,
+      "last_sim_s": 2.433892694,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 75,
+        "rate_hz": 24.72744920834215,
+        "max_gap_s": 0.04057534202001989,
+        "last_age_s": 0.039318644994637,
+        "stamp_lag_s": 0.015727018999999842,
+        "status": "ok",
+        "detail": "odom: 24.73 Hz, last message 0.04 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 75,
+        "rate_hz": 24.72744920834215,
+        "max_gap_s": 0.0406655190163292,
+        "last_age_s": 0.03921524100587703,
+        "stamp_lag_s": 0.01564453499999985,
+        "status": "ok",
+        "detail": "tf: 24.73 Hz, last message 0.04 s old"
+      },
+      "lidar": {
+        "present": true,
+        "msg_types": [
+          "sensor_msgs/msg/PointCloud2"
+        ],
+        "count": 8,
+        "rate_hz": 2.6375945822231626,
+        "max_gap_s": 0.38500151500920765,
+        "last_age_s": 0.27074990098481067,
+        "stamp_lag_s": 0.10829521799999986,
+        "status": "ok",
+        "detail": "lidar: 2.64 Hz, last message 0.27 s old"
+      }
+    },
+    "observed": true
+  }
+}

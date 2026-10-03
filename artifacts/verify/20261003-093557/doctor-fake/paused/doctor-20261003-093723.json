@@ -1,0 +1,75 @@
+{
+  "started": "2026-10-03T09:37:23.753783-07:00",
+  "config": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-093557/doctor-fake/doctor_fake.yaml",
+  "window_s_requested": 5.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "sim_not_advancing",
+    "exit_code": 10,
+    "reasons": [
+      "clock: publisher present but no /clock message in 2.0 s (simulation paused or stopped)"
+    ],
+    "warnings": [],
+    "window_s": 2.021360967999982,
+    "clock": {
+      "present": true,
+      "count": 0,
+      "rate_hz": 0.0,
+      "sim_progress_s": 0.0,
+      "rtf": null,
+      "last_age_s": null,
+      "backward_jumps": 0,
+      "last_sim_s": null,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "silent",
+        "detail": "odom: publisher present but no message in 2.0 s"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "silent",
+        "detail": "tf: publisher present but no message in 2.0 s"
+      },
+      "lidar": {
+        "present": true,
+        "msg_types": [
+          "sensor_msgs/msg/PointCloud2"
+        ],
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "silent",
+        "detail": "lidar: publisher present but no message in 2.0 s"
+      }
+    },
+    "observed": true
+  }
+}

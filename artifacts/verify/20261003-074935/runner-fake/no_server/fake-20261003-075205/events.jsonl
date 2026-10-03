@@ -1,0 +1,6 @@
+{"t_mono": 155.601433, "wall": "2026-10-03T07:52:05.413-07:00", "t_sim": null, "event": "state", "state": "PREPARE", "reason": "run started", "fsm_t_mono": 155.601418052, "fsm_t_sim": null}
+{"t_mono": 160.345928, "wall": "2026-10-03T07:52:10.158-07:00", "t_sim": null, "event": "doctor", "attempt": 1, "exit_code": 0}
+{"t_mono": 160.346549, "wall": "2026-10-03T07:52:10.158-07:00", "t_sim": null, "event": "state", "state": "WAIT_READY", "reason": "prepared", "fsm_t_mono": 160.346524699, "fsm_t_sim": null}
+{"t_mono": 168.51837, "wall": "2026-10-03T07:52:17.668-07:00", "t_sim": 5.763221627, "event": "not_ready", "pending": ["action server"]}
+{"t_mono": 168.520474, "wall": "2026-10-03T07:52:17.671-07:00", "t_sim": 5.763221627, "event": "state", "state": "TEARDOWN", "reason": "ready_timeout", "fsm_t_mono": 168.520451889, "fsm_t_sim": 5.763221627}
+{"t_mono": 168.520646, "wall": "2026-10-03T07:52:17.671-07:00", "t_sim": 5.763221627, "event": "state", "state": "DONE", "reason": "teardown finished", "fsm_t_mono": 168.520637784, "fsm_t_sim": 5.763221627}

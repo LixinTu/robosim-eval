@@ -1,0 +1,163 @@
+{
+  "schema": "robosim-eval run result (D2 runner; no offline analysis)",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "inconclusive",
+  "analyzer": {
+    "execution_status": null,
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "inconclusive",
+    "verdict_reasons": null,
+    "arrival_check": null
+  },
+  "execution_status": "completed",
+  "verdict_reasons": {
+    "fail": [],
+    "inconclusive": [
+      "data incomplete: clock: no data; odom: no data; tf_odom_base: no data",
+      "no ground truth at the stop: arrival cannot be judged independently",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [
+      "informational stream tf_map_odom: no data"
+    ]
+  },
+  "evaluator": {
+    "execution_status": "completed",
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "inconclusive",
+    "fail_reasons": [],
+    "inconclusive_reasons": [
+      "data incomplete: clock: no data; odom: no data; tf_odom_base: no data",
+      "no ground truth at the stop: arrival cannot be judged independently",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [
+      "informational stream tf_map_odom: no data"
+    ],
+    "arrival_error_m": null,
+    "disallowed_contacts": []
+  },
+  "evaluator_inputs": {
+    "scenario_expect": "reached",
+    "preset_unreachable": false,
+    "tolerance_m": 0.5,
+    "goal": [
+      1.0,
+      0.0
+    ],
+    "execution_status": "completed",
+    "runner_errors": [],
+    "accepted": true,
+    "rejected": false,
+    "terminal_status": 4,
+    "error_code": 0,
+    "cancel_requested": false,
+    "cancel_reason": null,
+    "timeout_reason": null,
+    "stop_confirmed": true,
+    "gt_at_stop": null,
+    "contacts_measured": false,
+    "contacts": [],
+    "required_gaps": {
+      "clock": null,
+      "odom": null,
+      "tf_odom_base": null
+    },
+    "required_backward": {
+      "clock": 0,
+      "odom": 0,
+      "tf_odom_base": 0
+    },
+    "informational_gaps": {
+      "tf_map_odom": null
+    },
+    "dropout_threshold_wall_s": 2.0,
+    "clock_backward_jumps": 0
+  },
+  "runner": {
+    "run_id": "fake-20261003-075354",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 267.029464591,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 271.834172845,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 271.834962066,
+        "t_sim": 2.522548566,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 271.881700559,
+        "t_sim": 2.6025451950000003,
+        "reason": "goal accepted e8ccd8bbf0ae4c0da9eba8b6492a2eb0"
+      },
+      {
+        "state": "STOP_CONFIRM",
+        "t_wall": 273.930675199,
+        "t_sim": 3.418521145,
+        "reason": "terminal status SUCCEEDED"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 277.873061658,
+        "t_sim": 5.002423418,
+        "reason": "robot at rest (stop-still confirmed at sim 5.003)"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 277.875156227,
+        "t_sim": 5.002423418,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "injections": [],
+    "contacts": {
+      "installed": false,
+      "measured": false,
+      "error": null
+    },
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0,
+    "goal_id": "e8ccd8bbf0ae4c0da9eba8b6492a2eb0",
+    "accept_sim": 2.6025451950000003,
+    "terminal_sim": 3.418521145,
+    "terminal": {
+      "status": 4,
+      "name": "SUCCEEDED",
+      "error_code": 0,
+      "error_msg": "",
+      "feedback_count": 21,
+      "last_feedback": {
+        "distance_remaining": 0.0,
+        "recoveries": 0
+      }
+    },
+    "stop_confirmed_sim": 5.002510123
+  }
+}

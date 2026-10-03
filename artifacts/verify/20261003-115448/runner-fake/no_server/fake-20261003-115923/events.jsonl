@@ -1,0 +1,7 @@
+{"t_mono": 379.032396, "wall": "2026-10-03T11:59:23.845-07:00", "t_sim": null, "event": "state", "state": "PREPARE", "reason": "run started", "fsm_t_mono": 379.03237755, "fsm_t_sim": null}
+{"t_mono": 383.201984, "wall": "2026-10-03T11:59:29.093-07:00", "t_sim": null, "event": "map_check", "skipped": "no sim section: no spawn pose to check (fake-node test)"}
+{"t_mono": 387.327823, "wall": "2026-10-03T11:59:33.219-07:00", "t_sim": null, "event": "doctor", "attempt": 1, "exit_code": 0}
+{"t_mono": 387.328131, "wall": "2026-10-03T11:59:33.220-07:00", "t_sim": null, "event": "state", "state": "WAIT_READY", "reason": "prepared", "fsm_t_mono": 387.328112143, "fsm_t_sim": null}
+{"t_mono": 395.342644, "wall": "2026-10-03T11:59:41.234-07:00", "t_sim": 7.166479133, "event": "not_ready", "pending": ["action server"]}
+{"t_mono": 395.34294, "wall": "2026-10-03T11:59:41.234-07:00", "t_sim": 7.166479133, "event": "state", "state": "TEARDOWN", "reason": "ready_timeout", "fsm_t_mono": 395.342916078, "fsm_t_sim": 7.166479133}
+{"t_mono": 395.343145, "wall": "2026-10-03T11:59:41.235-07:00", "t_sim": 7.166479133, "event": "state", "state": "DONE", "reason": "teardown finished", "fsm_t_mono": 395.343136613, "fsm_t_sim": 7.166479133}
