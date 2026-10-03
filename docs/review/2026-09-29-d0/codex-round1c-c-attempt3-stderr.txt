@@ -1,0 +1,1450 @@
+OpenAI Codex v0.157.0
+--------
+workdir: D:\RoboSim-Eval
+model: gpt-6-astra
+provider: openai
+approval: on-request
+sandbox: read-only
+reasoning effort: ultra
+reasoning summaries: none
+session id: 01a0f4cb-f140-70c2-83e3-53f720305843
+--------
+user
+Read the file D:\RoboSim-Eval\docs\review\2026-09-29-d0\codex-prompt-round1c-c.md (UTF-8, Chinese) and carry out exactly the review it describes. Do not modify any file. Write the final report in Chinese.
+2026-10-01T00:10:02.160499Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer error=\"invalid_request\", error_description=\"No access token was provided in this request\", resource_metadata=\"https://api.githubcopilot.com/.well-known/oauth-protected-resource/mcp/\"" })
+hook: SessionStart
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Failed
+2026-10-01T00:10:05.674276Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer error=\"invalid_request\", error_description=\"No access token was provided in this request\", resource_metadata=\"https://api.githubcopilot.com/.well-known/oauth-protected-resource/mcp/\"" })
+codex
+我会先读取指定的 UTF-8 审查提示词和相关审查规范，按其范围进行只读核查，不修改任何文件，最后用中文给出报告。
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+2026-10-01T00:10:11.282665Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"Failed to create unified exec process: helper_unknown_error: apply deny-read ACLs\")" }
+2026-10-01T00:10:11.282664Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"Failed to create unified exec process: helper_unknown_error: apply deny-read ACLs\")" }
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+2026-10-01T00:10:11.284666Z ERROR codex_core::tools::router: error=exec_command failed: CreateProcess { message: "Rejected(\"Failed to create unified exec process: helper_unknown_error: apply deny-read ACLs\")" }
+hook: PreToolUse
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'D:\\RoboSim-Eval\\docs\\review\\2026-09-29-d0\\codex-prompt-round1c-c.md' -Encoding UTF8" in D:\RoboSim-Eval
+ succeeded in 0ms:
+# Codex 独立审查提示词(第 1 轮分片 round1c-c:Windows 侧、环境与安全)
+
+背景:第 1 轮完整审查两次因账户用量上限中止(round1 用了 82,531 tokens,round1b 用了 102,685 tokens,都没有产出报告)。为在额度内完成,同一范围(基线 `dbf67ce` 到被审版本 `19203e0`)拆成 4 个分片,每片只审一组文件。内部预审的处理记录在 `docs/review/2026-09-29-d0/REVIEW.md`,请独立判断,不要只核对那张表。
+
+你是独立审查者。只读审查:不修改任何文件,不启动或停止 Isaac Sim、Nav2 或任何 WSL 进程。审查完把报告交回 Claude Code,由它核实和修复。流程约定见 `Codex-Harness-Pack-ZH(1).md` 的"默认:Codex 独立审查提示词"。
+
+**额度很紧,请严格控制阅读量:**
+- 被审代码一律用 `git -C D:\RoboSim-Eval show 19203e0:<路径>` 读取。工作区可能已有后续提交,不代表被审版本。
+- 只读"本片文件"列出的文件和"需求"列出的章节(用 Select-String 或 findstr 定位章节,只读那一段)。
+- 不要读 `docs/review/` 下的 task.diff、changed-files.json、*-stderr.txt;不要整份读取 artifacts/ 下超过 200 行的日志,需要证据时只定位几行。
+
+## 第 0 步(各一句话,写在报告开头)
+1. 列出本会话实际加载的项目说明来源(例如 AGENTS.md、CLAUDE.md、全局说明)。
+2. 根据 docs/plan.md 写出"当前任务"。
+
+## 本片文件(3/4:Windows 侧、环境与安装、安全)
+- `scripts/windows/start_isaac_ros2.ps1`、`allow_wsl_to_isaac_firewall.ps1`、`check_isaac_bridge.ps1`、`probe_env.ps1`、`run_codex_review.ps1`、`inspect_usd.py`
+- `scripts/wsl/ros_env.sh`、`dds_env.sh`、`install_ros2_jazzy.sh`、`setup_workspace.sh`、`probe_env.sh`、`probe_topics.sh`、`diag_discovery.sh`
+- `configs/network/fastdds.xml`
+
+## 需求
+`RoboSim-Eval-Plan-and-Setup-ZH(1).md` 的 §0.2 与 §B0–§B4。
+
+## 本片审查重点
+1. 防火墙规则的范围是否最小(协议、程序、接口),能否重复运行,有无破坏性操作。
+2. 是否修改了第三方工作区、Isaac 安装、用户的 shell 配置或全局系统设置;安装脚本是否做了无关升级。
+3. 环境脚本:`set -u` 与 source 的配合、模式参数校验、失败时是否非零返回。
+4. 启动脚本:中间件与 DDS 配置是否对 Isaac 子进程生效;重复启动的防护。
+5. 有无硬编码的密钥、令牌或越权操作。
+
+## 报告格式(中文)
+每个发现写清:严重程度(Blocker / Major / Minor);文件、函数或行号;触发条件;预期行为与实际行为;依据(代码行、可复现命令或失败用例);用户影响与修复方向;分类(已复现问题 / 有代码依据的问题 / 待确认疑点)。不设最低数量,没有发现就如实说明;不写纯风格偏好。
+
+最后记录:审查版本 19203e0、实际执行过的检查、没读或没验证的部分、剩余风险、使用的模型名称(若可见)。
+
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'C:\\Users\\Administrator\\.agents\\skills\\code-review-excellence\\SKILL.md' -Encoding UTF8" in D:\RoboSim-Eval
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'C:\\Users\\Administrator\\.codex\\plugins\\cache\\claude-plugins-official\\superpowers\\6.4.1\\skills\\using-superpowers\\SKILL.md' -Encoding UTF8" in D:\RoboSim-Eval
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git -C D:\\RoboSim-Eval status --short; git -C D:\\RoboSim-Eval log -1 --format='%h %s'; Get-Content -LiteralPath 'D:\\RoboSim-Eval\\docs\\plan.md' -Encoding UTF8 -TotalCount 130; Select-String -LiteralPath 'D:\\RoboSim-Eval\\RoboSim-Eval-Plan-and-Setup-ZH(1).md' -Pattern '"'^#{1,6} .*0'"\\.2','"'^#{1,6} .*B[0-5]'"','"'^B[0-5]'"' -Encoding UTF8; Select-String -LiteralPath 'D:\\RoboSim-Eval\\Codex-Harness-Pack-ZH(1).md' -Pattern '默认.*Codex.*独立审查提示词' -Encoding UTF8" in D:\RoboSim-Eval
+ succeeded in 0ms:
+---
+name: code-review-excellence
+description: This skill should be used when the user asks to review a diff or pull request, write review comments, audit code quality, establish review standards, or improve how a team performs code review.
+version: 0.1.0
+---
+
+# Code Review Excellence
+
+Transform code reviews from gatekeeping to knowledge sharing through constructive feedback, systematic analysis, and collaborative improvement.
+
+## When to Use This Skill
+
+- Reviewing pull requests and code changes
+- Establishing code review standards for teams
+- Mentoring junior developers through reviews
+- Conducting architecture reviews
+- Creating review checklists and guidelines
+- Improving team collaboration
+- Reducing code review cycle time
+- Maintaining code quality standards
+
+## Core Principles
+
+### 1. The Review Mindset
+
+**Goals of Code Review:**
+- Catch bugs and edge cases
+- Ensure code maintainability
+- Share knowledge across team
+- Enforce coding standards
+- Improve design and architecture
+- Build team culture
+
+**Not the Goals:**
+- Show off knowledge
+- Nitpick formatting (use linters)
+- Block progress unnecessarily
+- Rewrite to your preference
+
+### 2. Effective Feedback
+
+**Good Feedback is:**
+- Specific and actionable
+- Educational, not judgmental
+- Focused on the code, not the person
+- Balanced (praise good work too)
+- Prioritized (critical vs nice-to-have)
+
+```markdown
+❌ Bad: "This is wrong."
+✅ Good: "This could cause a race condition when multiple users
+         access simultaneously. Consider using a mutex here."
+
+❌ Bad: "Why didn't you use X pattern?"
+✅ Good: "Have you considered the Repository pattern? It would
+         make this easier to test. Here's an example: [link]"
+
+❌ Bad: "Rename this variable."
+✅ Good: "[nit] Consider `userCount` instead of `uc` for
+         clarity. Not blocking if you prefer to keep it."
+```
+
+### 3. Review Scope
+
+**What to Review:**
+- Logic correctness and edge cases
+- Security vulnerabilities
+- Performance implications
+- Test coverage and quality
+- Error handling
+- Documentation and comments
+- API design and naming
+- Architectural fit
+
+**What Not to Review Manually:**
+- Code formatting (use Prettier, Black, etc.)
+- Import organization
+- Linting violations
+- Simple typos
+
+## Review Process
+
+### Phase 1: Context Gathering (2-3 minutes)
+
+```markdown
+Before diving into code, understand:
+
+1. Read PR description and linked issue
+2. Check PR size (>400 lines? Ask to split)
+3. Review CI/CD status (tests passing?)
+4. Understand the business requirement
+5. Note any relevant architectural decisions
+```
+
+### Phase 2: High-Level Review (5-10 minutes)
+
+```markdown
+1. **Architecture & Design**
+   - Does the solution fit the problem?
+   - Are there simpler approaches?
+   - Is it consistent with existing patterns?
+   - Will it scale?
+
+2. **File Organization**
+   - Are new files in the right places?
+   - Is code grouped logically?
+   - Are there duplicate files?
+
+3. **Testing Strategy**
+   - Are there tests?
+   - Do tests cover edge cases?
+   - Are tests readable?
+```
+
+### Phase 3: Line-by-Line Review (10-20 minutes)
+
+```markdown
+For each file:
+
+1. **Logic & Correctness**
+   - Edge cases handled?
+   - Off-by-one errors?
+   - Null/undefined checks?
+   - Race conditions?
+
+2. **Security**
+   - Input validation?
+   - SQL injection risks?
+   - XSS vulnerabilities?
+   - Sensitive data exposure?
+
+3. **Performance**
+   - N+1 queries?
+   - Unnecessary loops?
+   - Memory leaks?
+   - Blocking operations?
+
+4. **Maintainability**
+   - Clear variable names?
+   - Functions doing one thing?
+   - Complex code commented?
+   - Magic numbers extracted?
+```
+
+### Phase 4: Summary & Decision (2-3 minutes)
+
+```markdown
+1. Summarize key concerns
+2. Highlight what you liked
+3. Make clear decision:
+   - ✅ Approve
+   - 💬 Comment (minor suggestions)
+   - 🔄 Request Changes (must address)
+4. Offer to pair if complex
+```
+
+## Review Techniques
+
+### Technique 1: The Checklist Method
+
+```markdown
+## Security Checklist
+- [ ] User input validated and sanitized
+- [ ] SQL queries use parameterization
+- [ ] Authentication/authorization checked
+- [ ] Secrets not hardcoded
+- [ ] Error messages don't leak info
+
+## Performance Checklist
+- [ ] No N+1 queries
+- [ ] Database queries indexed
+- [ ] Large lists paginated
+- [ ] Expensive operations cached
+- [ ] No blocking I/O in hot paths
+
+## Testing Checklist
+- [ ] Happy path tested
+- [ ] Edge cases covered
+- [ ] Error cases tested
+- [ ] Test names are descriptive
+- [ ] Tests are deterministic
+```
+
+### Technique 2: The Question Approach
+
+Instead of stating problems, ask questions to encourage thinking:
+
+```markdown
+❌ "This will fail if the list is empty."
+✅ "What happens if `items` is an empty array?"
+
+❌ "You need error handling here."
+✅ "How should this behave if the API call fails?"
+
+❌ "This is inefficient."
+✅ "I see this loops through all users. Have we considered
+    the performance impact with 100k users?"
+```
+
+### Technique 3: Suggest, Don't Command
+
+```markdown
+## Use Collaborative Language
+
+❌ "You must change this to use async/await"
+✅ "Suggestion: async/await might make this more readable:
+    ```typescript
+    async function fetchUser(id: string) {
+        const user = await db.query('SELECT * FROM users WHERE id = ?', id);
+        return user;
+    }
+    ```
+    What do you think?"
+
+❌ "Extract this into a function"
+✅ "This logic appears in 3 places. Would it make sense to
+    extract it into a shared utility function?"
+```
+
+### Technique 4: Differentiate Severity
+
+```markdown
+Use labels to indicate priority:
+
+🔴 [blocking] - Must fix before merge
+🟡 [important] - Should fix, discuss if disagree
+🟢 [nit] - Nice to have, not blocking
+💡 [suggestion] - Alternative approach to consider
+📚 [learning] - Educational comment, no action needed
+🎉 [praise] - Good work, keep it up!
+
+Example:
+"🔴 [blocking] This SQL query is vulnerable to injection.
+ Please use parameterized queries."
+
+"🟢 [nit] Consider renaming `data` to `userData` for clarity."
+
+"🎉 [praise] Excellent test coverage! This will catch edge cases."
+```
+
+## Language-Specific Patterns
+
+### Python Code Review
+
+```python
+# Check for Python-specific issues
+
+# ❌ Mutable default arguments
+def add_item(item, items=[]):  # Bug! Shared across calls
+    items.append(item)
+    return items
+
+# ✅ Use None as default
+def add_item(item, items=None):
+    if items is None:
+        items = []
+    items.append(item)
+    return items
+
+# ❌ Catching too broad
+try:
+    result = risky_operation()
+except:  # Catches everything, even KeyboardInterrupt!
+    pass
+
+# ✅ Catch specific exceptions
+try:
+    result = risky_operation()
+except ValueError as e:
+    logger.error(f"Invalid value: {e}")
+    raise
+
+# ❌ Using mutable class attributes
+class User:
+    permissions = []  # Shared across all instances!
+
+# ✅ Initialize in __init__
+class User:
+    def __init__(self):
+        self.permissions = []
+```
+
+### TypeScript/JavaScript Code Review
+
+```typescript
+// Check for TypeScript-specific issues
+
+// ❌ Using any defeats type safety
+function processData(data: any) {  // Avoid any
+    return data.value;
+}
+
+// ✅ Use proper types
+interface DataPayload {
+    value: string;
+}
+function processData(data: DataPayload) {
+    return data.value;
+}
+
+// ❌ Not handling async errors
+async function fetchUser(id: string) {
+    const response = await fetch(`/api/users/${id}`);
+    return response.json();  // What if network fails?
+}
+
+// ✅ Handle errors properly
+async function fetchUser(id: string): Promise<User> {
+    try {
+        const response = await fetch(`/api/users/${id}`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to fetch user:', error);
+        throw error;
+    }
+}
+
+// ❌ Mutation of props
+function UserProfile({ user }: Props) {
+    user.lastViewed = new Date();  // Mutating prop!
+    return <div>{user.name}</div>;
+}
+
+// ✅ Don't mutate props
+function UserProfile({ user, onView }: Props) {
+    useEffect(() => {
+        onView(user.id);  // Notify parent to update
+    }, [user.id]);
+    return <div>{user.name}</div>;
+}
+```
+
+## Advanced Review Patterns
+
+### Pattern 1: Architectural Review
+
+```markdown
+When reviewing significant changes:
+
+1. **Design Document First**
+   - For large features, request design doc before code
+   - Review design with team before implementation
+   - Agree on approach to avoid rework
+
+2. **Review in Stages**
+   - First PR: Core abstractions and interfaces
+   - Second PR: Implementation
+   - Third PR: Integration and tests
+   - Easier to review, faster to iterate
+
+3. **Consider Alternatives**
+   - "Have we considered using [pattern/library]?"
+   - "What's the tradeoff vs. the simpler approach?"
+   - "How will this evolve as requirements change?"
+```
+
+### Pattern 2: Test Quality Review
+
+```typescript
+// ❌ Poor test: Implementation detail testing
+test('increments counter variable', () => {
+    const component = render(<Counter />);
+    const button = component.getByRole('button');
+    fireEvent.click(button);
+    expect(component.state.counter).toBe(1);  // Testing internal state
+});
+
+// ✅ Good test: Behavior testing
+test('displays incremented count when clicked', () => {
+    render(<Counter />);
+    const button = screen.getByRole('button', { name: /increment/i });
+    fireEvent.click(button);
+    expect(screen.getByText('Count: 1')).toBeInTheDocument();
+});
+
+// Review questions for tests:
+// - Do tests describe behavior, not implementation?
+// - Are test names clear and descriptive?
+// - Do tests cover edge cases?
+// - Are tests independent (no shared state)?
+// - Can tests run in any order?
+```
+
+### Pattern 3: Security Review
+
+```markdown
+## Security Review Checklist
+
+### Authentication & Authorization
+- [ ] Is authentication required where needed?
+- [ ] Are authorization checks before every action?
+- [ ] Is JWT validation proper (signature, expiry)?
+- [ ] Are API keys/secrets properly secured?
+
+### Input Validation
+- [ ] All user inputs validated?
+- [ ] File uploads restricted (size, type)?
+- [ ] SQL queries parameterized?
+- [ ] XSS protection (escape output)?
+
+### Data Protection
+- [ ] Passwords hashed (bcrypt/argon2)?
+- [ ] Sensitive data encrypted at rest?
+- [ ] HTTPS enforced for sensitive data?
+- [ ] PII handled according to regulations?
+
+### Common Vulnerabilities
+- [ ] No eval() or similar dynamic execution?
+- [ ] No hardcoded secrets?
+- [ ] CSRF protection for state-changing operations?
+- [ ] Rate limiting on public endpoints?
+```
+
+## Giving Difficult Feedback
+
+### Pattern: The Sandwich Method (Modified)
+
+```markdown
+Traditional: Praise + Criticism + Praise (feels fake)
+
+Better: Context + Specific Issue + Helpful Solution
+
+Example:
+"I noticed the payment processing logic is inline in the
+controller. This makes it harder to test and reuse.
+
+[Specific Issue]
+The calculateTotal() function mixes tax calculation,
+discount logic, and database queries, making it difficult
+to unit test and reason about.
+
+[Helpful Solution]
+Could we extract this into a PaymentService class? That
+would make it testable and reusable. I can pair with you
+on this if helpful."
+```
+
+### Handling Disagreements
+
+```markdown
+When author disagrees with your feedback:
+
+1. **Seek to Understand**
+   "Help me understand your approach. What led you to
+    choose this pattern?"
+
+2. **Acknowledge Valid Points**
+   "That's a good point about X. I hadn't considered that."
+
+3. **Provide Data**
+   "I'm concerned about performance. Can we add a benchmark
+    to validate the approach?"
+
+4. **Escalate if Needed**
+   "Let's get [architect/senior dev] to weigh in on this."
+
+5. **Know When to Let Go**
+   If it's working and not a critical issue, approve it.
+   Perfection is the enemy of progress.
+```
+
+## Best Practices
+
+1. **Review Promptly**: Within 24 hours, ideally same day
+2. **Limit PR Size**: 200-400 lines max for effective review
+3. **Review in Time Blocks**: 60 minutes max, take breaks
+4. **Use Review Tools**: GitHub, GitLab, or dedicated tools
+5. **Automate What You Can**: Linters, formatters, security scans
+6. **Build Rapport**: Emoji, praise, and empathy matter
+7. **Be Available**: Offer to pair on complex issues
+8. **Learn from Others**: Review others' review comments
+
+## Common Pitfalls
+
+- **Perfectionism**: Blocking PRs for minor style preferences
+- **Scope Creep**: "While you're at it, can you also..."
+- **Inconsistency**: Different standards for different people
+- **Delayed Reviews**: Letting PRs sit for days
+- **Ghosting**: Requesting changes then disappearing
+- **Rubber Stamping**: Approving without actually reviewing
+- **Bike Shedding**: Debating trivial details extensively
+
+## Templates
+
+### PR Review Comment Template
+
+```markdown
+## Summary
+[Brief overview of what was reviewed]
+
+## Strengths
+- [What was done well]
+- [Good patterns or approaches]
+
+## Required Changes
+🔴 [Blocking issue 1]
+🔴 [Blocking issue 2]
+
+## Suggestions
+💡 [Improvement 1]
+💡 [Improvement 2]
+
+## Questions
+❓ [Clarification needed on X]
+❓ [Alternative approach consideration]
+
+## Verdict
+✅ Approve after addressing required changes
+```
+
+## Resources
+
+- **references/code-review-best-practices.md**: Comprehensive review guidelines
+- **references/common-bugs-checklist.md**: Language-specific bugs to watch for
+- **references/security-review-guide.md**: Security-focused review checklist
+- **assets/pr-review-template.md**: Standard review comment template
+- **assets/review-checklist.md**: Quick reference checklist
+- **scripts/pr-analyzer.py**: Analyze PR complexity and suggest reviewers
+
+ succeeded in 0ms:
+---
+name: using-superpowers
+description: Use when starting any conversation - establishes how to find and use skills, requiring skill invocation before ANY response including clarifying questions
+---
+
+<SUBAGENT-STOP>
+If you were dispatched as a subagent to execute a specific task, ignore this skill.
+</SUBAGENT-STOP>
+
+<EXTREMELY-IMPORTANT>
+If you think there is even a 1% chance a skill might apply to what you are doing, you ABSOLUTELY MUST invoke the skill.
+
+IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
+
+This is not negotiable. You cannot rationalize your way out of this.
+</EXTREMELY-IMPORTANT>
+
+## The Rule
+
+**Invoke relevant or requested skills BEFORE any response or action** — including clarifying questions, exploring the codebase, or checking files. If it turns out wrong for the situation, you don't have to use it.
+
+**Before entering plan mode:** if you haven't already brainstormed, invoke the brainstorming skill first.
+
+Then announce "Using [skill] to [purpose]" and follow the skill exactly. If it has a checklist, create a todo per item.
+
+## Skill Priority
+
+When multiple skills apply, process skills come first — they set the approach, then implementation skills (frontend-design, etc.) carry it out. Brainstorming and systematic-debugging are Superpowers' most common process skills, but the rule holds for any of them.
+
+- "Let's build X" → superpowers:brainstorming first, then implementation skills.
+- "Fix this bug" → superpowers:systematic-debugging first, then domain skills.
+
+## Red Flags
+
+These thoughts mean STOP—you're rationalizing:
+
+| Thought | Reality |
+|---------|---------|
+| "This is just a simple question" | Questions are tasks. Check for skills. |
+| "I need more context first" | Skill check comes BEFORE clarifying questions. |
+| "Let me explore the codebase first" | Skills tell you HOW to explore. Check first. |
+| "I can check git/files quickly" | Files lack conversation context. Check for skills. |
+| "Let me gather information first" | Skills tell you HOW to gather information. |
+| "This doesn't need a formal skill" | If a skill exists, use it. |
+| "I remember this skill" | Skills evolve. Read current version. |
+| "This doesn't count as a task" | Action = task. Check for skills. |
+| "The skill is overkill" | Simple things become complex. Use it. |
+| "I'll just do this one thing first" | Check BEFORE doing anything. |
+| "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
+| "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
+
+## Platform Adaptation
+
+If your harness appears here, read its reference file for special instructions:
+
+- Claude Code: `references/claude-code-tools.md`
+- Codex: `references/codex-tools.md`
+- Pi: `references/pi-tools.md`
+- Antigravity: `references/antigravity-tools.md`
+- Hermes Agent: `references/hermes-tools.md`
+- Muse: `references/muse-tools.md`
+
+## User Instructions
+
+User instructions (CLAUDE.md, AGENTS.md, GEMINI.md, etc, direct requests) take precedence over skills, which in turn override default behavior. Only skip skill workflows or instructions when your human partner has explicitly told you to.
+
+ succeeded in 252ms:
+ M docs/review/codex-queue.log
+?? artifacts/practice-01/
+?? docs/review/2026-09-29-d0/codex-round1c-c-attempt2-status.txt
+?? docs/review/2026-09-29-d0/codex-round1c-c-attempt2-stderr.txt
+?? docs/review/2026-09-29-d0/codex-round1c-c-attempt2-stdout.txt
+?? docs/review/2026-09-29-d0/codex-round1c-c-status.txt
+?? docs/review/2026-09-29-d0/codex-round1c-c-stderr.txt
+?? docs/review/2026-09-29-d0/codex-round1c-c-stdout.txt
+cb7c6a4 docs(review): keep the Codex D0 round1c-a and round1c-b reports and the queue logs
+# RoboSim Eval — 执行计划与状态(唯一活计划)
+
+> 这是项目唯一维护状态的计划。需求、验收方法、状态合同的原文在根目录 `RoboSim-Eval-Plan-and-Setup-ZH(1).md`(2026-09-29 冻结参考),其中的"当前状态"列已作废,状态只看本文件。开发流程约定见两份 harness pack(同样冻结参考)。
+
+## 1. 状态总览
+
+| 交付 | 状态 | 证据 | 阻塞 / 备注 |
+| --- | --- | --- | --- |
+| 阶段 0 · 唯一计划与入口 | 完成(2026-09-29) | 基线 commit `dbf67ce`(master);分支 `feature/d0-environment`;AGENTS.md / CLAUDE.md / docs/plan.md / docs/harness-sources.md / artifacts/README.md | — |
+| D0a · 环境证据 | 完成(2026-09-29 19:02–19:04) | docs/environment.md;artifacts/d0a/(两侧探测原始输出 + commands.md) | 门槛 1→2 通过;发现:WSL 内无 ROS 2,sudo 需密码 |
+| D0b · ROS 2 Jazzy + 6.1.0 示例工作区 | 完成(2026-09-29 19:16–19:30) | artifacts/d0b/commands.md(安装日志、check-ros-install、talker/listener ×2、rviz2 测试、setup-workspace.log) | 门槛 2→3 通过。工作区 `~/robotics/vendor/isaac-ros-6.1`,HEAD a9e8471…;安装脚本首跑退出码 1 是校验步骤的 `set -u` 缺陷(已修),安装本身成功 |
+| D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 完成(2026-09-29 19:35–20:12) | artifacts/d0c/commands.md;probe-04-playing/(/clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、tf2_echo odom→base_link);clock-continuity-01;clock-pause-test-02(暂停 29 s 时钟停、恢复后继续);bridge-check-01/02;kit-udp-endpoints-01;diag-01 | 门槛 3→4 通过。排障:Windows 防火墙阻断 WSL→kit.exe 入站(用户以管理员加一条限定规则后解决);首次 Play 后 7 s 时间线被停止(重新 Play 解决)。发现:示例场景不发布 2D 雷达扫描(params 的局部代价地图两路来源无数据,D0d 记偏差);USD 动画时间线每 ~41 s 循环但仿真时钟不受影响;显存为几次点采样(空场景 3124–3128 MiB、Play 后 5 s 3754 MiB、Nav2 运行时 Isaac 界面显示 3.9 GiB),未做连续测量 |
+| D0d · 一次真实 A→B | 完成(2026-09-29 20:13–20:52) | artifacts/d0d/commands.md;run-01/(nav2-launch.log、ready-check-01、map-overview、rviz 截图、usd-inspection);run-01/attempt-01/(goal-202437.txt、result.json、trajectory.csv、bag-info、文本流);run-02/03/04-stoptest(停止路径验证) | 目标 map (-4.0,-1.0,yaw 0) 由 CLI action client 发送:SUCCEEDED、error_code 0、0 次恢复、8.47 s 仿真时间、停稳确认;**AMCL 独立来源**(理想里程计 + USD 出生位姿)在停稳确认时刻误差 0.091 m,AMCL 估计 0.231 m → validation=pass(内部预审后用新分析脚本重算)。发现见 §9 |
+| D0 交付 + 独立审查 | 进行中:**待独立审查** | docs/setup.md;docs/review/2026-09-29-d0-handoff.md;docs/review/2026-09-29-d0/REVIEW.md | Codex 第 1 轮两次因账户用量上限中止、无意见(20:59 用 82,531 tokens;23:23 重跑用 102,685 tokens);同一范围已拆成 4 个分片,由排队脚本从 2026-09-30 03:38 起自动运行,见 REVIEW.md;Claude 内部预审第 2 次完成(38 条,确认 35 条),有效项已修复并回归,见 REVIEW.md |
+| D1 doctor | 实现与验证完成(2026-09-29 23:3x–23:49),**待独立审查**与用户验收 | 分支 `feature/d1-doctor`;`robosim_eval/doctor*.py`、`configs/baseline.yaml`、`scripts/wsl/doctor.sh`;证据 `artifacts/d1/commands.md` | 固定输入测试 37 passed、改坏检查 7/7、假节点测试 6/6;真实 Isaac:运行时退出 0,用户按 ⏸ 后 2 s 窗口判"不推进"退出 10,恢复后退出 0 |
+| D2 单次运行器 | 实现与验证完成(2026-09-30 00:1x–00:47),**待独立审查**与用户验收 | 分支 `feature/d2-runner`;`robosim_eval/runner*.py`、`sim_adapter.py`、`run_io.py`;`scripts/wsl/run_scenario.sh`、`sim.sh`;证据 `artifacts/d2/commands.md` | 固定输入测试 77 passed;运行器假节点测试 8/8;真实 Isaac:正常 A→B reached(真值误差 0.264 m),导航中 SIGINT → 取消、停车、收尾(interrupted);Isaac 由 sim_control 复位、加载场景、读真值,不再需要 GUI 点击 |
+| D3 判定与失败处理 | 实现与验证完成(2026-09-30 00:5x–01:29),**待独立审查**与用户验收 | 分支 `feature/d3-verdicts`;`robosim_eval/evaluator.py`、`contacts.py`、`kit/contact_monitor.py`;证据 `artifacts/d3/commands.md`;缺陷记录 `docs/defect-record.md` | 固定输入测试 109 passed;判定模块改坏检查 8/8(含 4 种必做的坏数据);真实 Isaac:正常、绕行、不可达、取消、超时 pass,断流正确判 inconclusive,碰撞抓到轮子与矮箱子的接触判 fail;修复一个运行器缺陷(复位前 odom 残留) |
+| D4 批量复跑 | 实现与验证完成(2026-09-30 01:30–02:0x),**待独立审查**与用户验收 | 分支 `feature/d4-batch`;`robosim_eval/batch.py`、`report.py`、`scripts/wsl/run_batch.sh`;证据 `artifacts/d4/commands.md`、`artifacts/d4/batch-20260930-013010/runs/report.html` | 9 次全部留档、全部 pass(normal 3/3 到达、bypass 3/3 到达且未碰箱子、unreachable 3/3 判不可达);每次复位后真值距出生点 0.07 mm;报告改进 1 处(列出全部 commit、恢复次数列);"开头卡住"查到大部分机制(见 §9) |
+| D5 作品交付 | 实现与演示完成(2026-09-30 01:3x–02:3x),**待独立审查**与用户验收 | 分支 `feature/d5-demo`;`README.md`、`docs/demo.md`、`robosim_eval/nav2_params.py`;证据 `artifacts/d5/commands.md` | README 按新终端逐字执行通过;三个演示:正常导航并打开记录(pass)、取消案例及解释(pass)、参数改动 max_vel_x 0.8→0.4 的事先预测与复跑对比(峰值速度、平均速度、行驶段、到达误差符合预测;路程与最大角速度两条预测不成立,见 docs/demo.md);修复缺陷 3(场景未加载时接触监视装不上)与缺陷 4(接受目标时的仿真时间是旧的);固定输入测试 128 passed,运行器假节点测试 10/10 |
+
+**当前任务:** D0–D5 都已实现并在真实 Isaac 上验证,剩下审查与验收:Codex 分片审查排队中(2026-09-30 03:38 起)→ 逐条核实、修复有效项、重跑受影响检查 → 用户验收 → 本地按顺序合并分支(d0 → d1 → … → d5 → master,不推送)。分支是叠加的:每个交付分支从上一个分出;某个交付的审查修复在它自己的分支上做,再向后合并。
+
+**D0b 结果(2026-09-29 19:16–19:30):** ROS 2 Jazzy desktop + Nav2 + 闭包依赖装好(用户执行);WSL 内 talker/listener 默认与加载 fastdds.xml 均通;rviz2 在 WSLg 下存活 20 s(OpenGL 4.5);工作区 `~/robotics/vendor/isaac-ros-6.1` @ a9e8471…,`colcon build --packages-up-to carter_navigation` 成功;launch 参数 map / params_file / use_sim_time 可查询。
+
+**D0a 新增事实(2026-09-29 19:02–19:04,详见 docs/environment.md):** WSL 里完全没有 ROS 2(无 /opt/ros、无 apt 源、无 colcon/rosdep);`sudo -n true` 失败(需密码);WSLg 变量在非交互 shell 也存在;WSL eth0 172.28.211.14/20,网关 172.28.208.1 = Windows vEthernet (WSL);Windows 与 WSL 均无 ROS/DDS 残留配置;`extension_examples` 链接已存在;Claude 的 shell 未提权;Codex 0.157.0 已登录,`codex exec --sandbox read-only` 可用;`isaac-sim.bat` 自动调用 `setup_ros_env.bat`(默认 RMW = rmw_zenoh_cpp,仅当 ROS_DISTRO 未设时才把自带 jazzy 库加入 PATH/AMENT_PREFIX_PATH);自带前缀含 rclpy 7.1.11 与 rmw_fastrtps_cpp.dll / rmw_zenoh_cpp.dll。
+
+**已核实的硬事实(2026-09-29):** Windows 10 Pro 10.0.19045.6466;Isaac Sim 6.1 要求页明确 "Windows 10 is not supported"、显存最低 16 GB、Windows 测试驱动 595.97(本机 591.44);官方 WSL2 路线标 deprecated 且要求 Windows 11;WSL 2.6.3.0 + WSLg 1.0.71,发行版 `Ubuntu` 与 `docker-desktop` 均在运行;`D:\isaac-sim-standalone-6.1.0-windows-x86_64\isaac-sim.bat` 与 `exts\isaacsim.ros2.core\jazzy\lib` 存在;Isaac GUI 进程 `kit`(PID 29036)自 16:22 运行中;Codex CLI 已装(npm);IsaacSim-6.1.0 标签下存在 `jazzy_ws/fastdds.xml` 与 `carter_navigation.launch.xml`(参数 map / params_file / use_sim_time)。
+
+## 2. 决定记录
+
+| 日期 | 决定 | 由谁 | 依据 |
+| --- | --- | --- | --- |
+| 2026-09-29 | 在官方不支持的配置(Windows 10 + 8 GB)上继续做完 D0,升级留到项目之后;所有记录标注 unsupported configuration | 用户 | GUI 已能开;用户明确指示 |
+| 2026-09-29 | `git init` 本地仓库;master = 三份文档基线;D0 在 `feature/d0-environment` 上做 | Claude(默认做法,用户未反对) | harness pack 需要基线与可比对 diff;Codex `/review` 需要 Git |
+| 2026-09-29 | fastdds.xml 放仓库内 `configs/network/`,而非计划文档建议的 `D:\robosim-assets\network` | Claude(默认做法,用户未反对) | 受版本管理、单一副本;计划文档 A2 的路径只是建议 |
+| 2026-09-29 | 独立审查用 `codex exec`(新进程、只读),与 Apu 项目一致 | Claude(默认做法,用户未反对) | harness pack 默认分工 |
+| 2026-09-29 | 三份文档保留带 "(1)" 的原名,不改名 | Claude | 不擅自改用户文件;入口写真实路径 |
+| 2026-09-29 | 本轮不绑定 Obsidian 知识库 | Claude | 避免出现第四份计划;触发条件 = D1 之后需要跨会话知识库 |
+| 2026-09-30 | 打开 Isaac 的 Python 执行服务(只监听 127.0.0.1、需要令牌),用于在 Isaac 内做接触检测 | 用户("要打开") | 计划 A5 要求碰撞判定;自动模式分类器曾拦下这项改动,用户明确同意后才做 |
+| 2026-09-30 | 不等审查,D1–D5 连续做完;每个交付一个叠加分支,各自一份审查材料进队列 | 用户("先做D1吧 等审查太拖慢效率了""然后做完");分支与排队做法由 Claude 定 | Codex 额度窗口有限;各分片用 `git show <冻结提交>:<路径>` 读被审版本,不受后续提交影响 |
+| 2026-09-30 | D5 的参数改动选 DWB `max_vel_x` 0.8→0.4,并新增情形 `normal_slow`;参数文件在运行目录派生,不复制进仓库 | Claude | 预测可证伪(峰值速度、行驶段时长);不修改 NVIDIA 文件;运行器从运行中的节点读回核对 |
+| 2026-09-30 | 批量运行期间的开发改在独立的 git worktree 里做 | Claude | 批量的每次运行都会记录 git 是否有未提交改动;不能让运行器正在用的文件在批量中途变化 |
+| 2026-09-29 | D0 的 Codex 审查拆成 4 个分片排队(`run_codex_review_queue.ps1`);等待期间先做 D1,分支 `feature/d1-doctor` 从 `feature/d0-environment` 分出,D0 的修复之后合进来 | 用户要求加速("赶紧审查下 然后做完");具体做法由 Claude 定 | Codex 额度每个窗口约 10 万 token,两次整轮审查都没读完;分片提示词一律用 `git show 19203e0:<路径>` 读被审版本,不受后续提交影响 |
+
+## 3. 本轮范围
+
+做:D0 剩余部分(D0a→D0d)+ 记录它所需的最小 harness + D0 交付 + Codex 独立审查交接。2026-09-30 起按用户要求扩到 D1–D5(见 §2 决定记录),每个交付仍是"实现 → 真实验证 → 独立审查材料"。
+
+不做:网页、persona/LLM/world model、重装 Isaac 或 Ubuntu、换驱动、Pixi/Zenoh 原生路线、mirrored networking、付费服务、push/deploy、删改用户文件、停 Docker、杀用户的 Isaac GUI、`wsl --shutdown`(改变 WSL IP 并影响 docker-desktop;确需时先征得同意)。
+
+## 4. 执行机制(贯穿各阶段)
+
+- 工具调用最多 10 分钟且无 tty:apt、rosdep、clone、colcon 一律后台作业(`setsid nohup bash -c 'bash -l <脚本>; echo $? > <步骤>.exit' < /dev/null > <日志> 2>&1 &`;注意整条命令都要放进后台,旧写法只把 echo 放进了后台),短查询轮询 `.exit`;证据表从 `.exit` 读退出码。
+- 所有 sudo 一律 `sudo -n`;若 `sudo -n true` 失败,只给用户一个合并命令块(apt 源 + 全部包 + rosdep init),阶段 2 标"等待用户"。
+- WSL 命令从 PowerShell 发出,或以脚本文件方式 `bash -l /mnt/d/RoboSim-Eval/scripts/wsl/<脚本>.sh` 运行,避免 Git Bash 的 MSYS 路径改写;.ps1 用 `powershell -ExecutionPolicy Bypass -File` 运行。
+- 用户回合检查点:需要 GUI 的步骤(关闭/重启 Isaac、Load Sample Scene、Play、Pause/Resume、2D Pose Estimate、Nav2 Goal)给出操作与"完成后报告什么",然后结束回合等待;不假装已点过。Windows 侧改动合并成一次重启,并在请用户重启前做完所有无 GUI 的验证。
+- 常驻进程:`setsid nohup … < /dev/null`,PID 文件,`kill -INT` 停止并有界等待(SIGKILL 会丢 bag 的 metadata.yaml、留下孤儿节点),停止后 `ros2 node list` 确认无残留;限时观察的退出码 124 记为"观察满时长"。
+- 记录格式见 artifacts/README.md;每条命令记 命令 | shell | cwd | 退出码 | 日志。
+
+## 5. 最小组合(harness pack 第 C 步)
+
+1. 已覆盖:计划文档 v2.0 已是规格、验收表和状态合同;Apu 的证据目录与审查门只借方法。
+2. 真实缺口:无 Git 基线、无入口文件、无已验证的启动顺序、无证据格式。
+3. 补的机制与验证方式:AGENTS.md / CLAUDE.md / docs/plan.md(让 Codex 列出它加载的说明来源与当前任务:已并入审查提示词第 0 步,第 1 轮中止前未输出,**尚未验证**);commands.md 格式(原计划故意记录一条失败命令;实际记录了多条真实失败及其非零退出码,如 `sudo -n true` 1、安装脚本 1、probe 1、stop_nav2 5,另有分析脚本的固定输入测试与改坏检查,见 REVIEW.md);审查交接(第 1 轮因额度中止,**待重跑**)。
+4. 暂缓及触发条件:R09 Codex 插件(文件交接 + codex exec 够用;两次交接丢材料再考虑)、R12/R13 规格工具(计划文档已是规格)、R14/R06/C07 Skills/Hooks/CI(同一检查漏两次再上)、R15/R16/R18 多任务调度(D1–D5 出现可并行任务再考虑)、R17 BMAD(单人工具)、C10/C11(无需求)、Obsidian 绑定(见决定记录)。
+
+## 6. 阶段
+
+### 阶段 0 · 唯一计划与入口
+- [x] `git init`;.gitignore / .gitattributes;基线提交(三份文档原样)
+- [x] 分支 `feature/d0-environment`
+- [x] AGENTS.md、CLAUDE.md、docs/plan.md、docs/harness-sources.md、artifacts/README.md、只读探测脚本;提交(c4fa3d8)
+- 资料阅读不阻塞探测:S1/S2/S6 在阶段 2 前、S3/S4/S7 在阶段 3 前、C02/C05/C08/C12 在阶段 5 前由主会话读全文;其余 R/C 只读入口页;台账区分 全文 / 摘录 / 仅入口页 / 不可访问。
+
+### 阶段 1 · D0a 环境证据(只读,不装任何东西,不需要用户)
+- Windows(scripts/windows/probe_env.ps1):OS/build、nvidia-smi、内存、磁盘、wsl 版本与发行版、Isaac 路径、post_install.bat 会建的链接 vs 实际存在(只查;确缺当前需要的链接才按官方说明修一次)、.wslconfig、防火墙配置文件、vEthernet (WSL) 连接配置文件与 IP、已有 kit.exe 规则、用户/系统环境变量中的 ROS/RMW/FASTRTPS/CYCLONE、执行策略、是否提权、codex 版本/登录/exec 参数、kit 日志位置。
+- WSL(scripts/wsl/probe_env.sh,`bash -l` 与 `bash --noprofile --norc` 各跑一次):用户/HOME、os-release、内核、python3/git/colcon、ros2 source 前后、/opt/ros/jazzy、七个目标包逐个状态与 apt 候选、rosdep 状态、`sudo -n true`、DISPLAY/WAYLAND_DISPLAY、eth0 IP、free、磁盘、有无现成工作区、残留 ROS 环境变量与 rc 文件行。
+- 输出 → artifacts/d0a/ + docs/environment.md。门槛 1→2:两个探测都有完整输出;Isaac 两个路径存在。
+
+### 阶段 2 · D0b ROS 2 Jazzy + 官方 6.1.0 示例工作区
+- 缺 /opt/ros/jazzy 才按 S6 配 noble 源;七个包逐个 `apt-cache policy` 后只补缺项;不做无关升级;后台作业 + 轮询。
+- rosdep 未初始化才 init/update。talker/listener 各 `timeout 20`,只标"WSL 内部通信"。
+- RViz 提前测试:`timeout 20 rviz2` 记退出码与 GL/Qt 错误;失败试 `LIBGL_ALWAYS_SOFTWARE=1` / `QT_QPA_PLATFORM=xcb`;仍失败则查 launch.xml 中 RViz 退出是否连带关 Nav2,阶段 4 改 CLI 路线并标"RViz 未验证"。
+- 克隆 IsaacSim-6.1.0 标签到 `~/robotics/vendor/isaac-ros-6.1`(WSL ext4);`git rev-parse HEAD` 对照 `a9e8471ee901bc2332c1e4aca94ac580713ca3ab`,不一致先报告。已有 checkout 则查 branch/commit/dirty/submodule,干净且匹配才复用。
+- jazzy_ws:`colcon list --packages-up-to carter_navigation` → rosdep 只解析这些包(先 `--simulate`)→ `colcon build --packages-up-to carter_navigation`;不改 vendor 文件;rosdep/colcon 失败查源、网络、版本,绝不改 package.xml。
+- `ros2 pkg prefix`、`--show-args`;读 launch.xml 与 params,记录 map yaml/pgm、params 路径与 sha256、前后 2D 扫描 topic、amcl 的 set_initial_pose / initial_pose 设置。
+- scripts/wsl/ros_env.sh 只含基础环境 + overlay(缺路径即报错退出);跑一次记退出码再提交。
+- 门槛 2→3:colcon 退出码 0;`--show-args` 列出 map / params_file / use_sim_time;talker/listener 输出已存;rviz2 测试结果已记。
+
+### 阶段 3 · D0c Windows↔WSL 桥接 + Nova Carter 场景 + 原始数据
+- 无 GUI 先做完:configs/network/fastdds.xml(取自钉住版本的 jazzy_ws/fastdds.xml 与 S2;许可放注释、单根元素;两侧 XML 解析通过)→ scripts/wsl/dds_env.sh(导出 FASTRTPS_DEFAULT_PROFILES_FILE 并 `test -f`)→ scripts/windows/start_isaac_ros2.ps1(= 计划文档 B4 块,`$robosimDds` 指向仓库内文件;PowerShell 解析器语法检查,不启动)→ 无 GUI 发现预测试:若 Isaac 的 `python.bat` 加 jazzy lib 后能 `import rclpy`,在 Windows 侧跑无头 talker,从 WSL 看能否收到;不可行则记录并直接进入重启。
+- 用户回合(一次性重启):保存 → 正常关闭当前 Isaac(不杀 PID 29036)→ 确认 `Get-Process kit` 为空 → 用户在新的普通 PowerShell 以 Bypass 方式跑脚本;若弹出防火墙对话框,对 kit.exe 允许(含公用网络)→ 用户报告"GUI 已起、控制台无红色错误" → 在 kit 日志确认 isaacsim.ros2.bridge 已加载并记第一条相关错误 → 用户:Window → Examples → Robotics Examples → ROS2 → Navigation → Nova Carter → Load Sample Scene → Play → 报告"已 Play"。只用普通 Nova Carter 示例。
+- WSL 侧全部限时:`ros2 topic list -t`;/clock、odom、3D 点云、前后 2D 扫描、/tf 的 hz 与样本;TF 时间戳对 /clock;`ros2 topic info -v` 记 odom 发布者(是否理想里程计)与速度 topic 订阅方类型;2D 扫描 topic 对 Nav2 params;nvidia-smi + 可用内存 + 仿真速度(Δsim/Δwall)+ kit 日志首个加载错误。此时没有 /scan 属正常;不为省显存关雷达。暂停测试(用户回合):Pause → /clock 与一条数据 topic 都停 → Resume → 都恢复。
+- 场景加载失败:先存 kit 日志首个错误与 nvidia-smi。OOM → Heightmap Importer(Tools → Robotics → Heightmap Importer + Nova_Carter_ROS.usd),核对分辨率/原点/尺度/碰撞/出生点//clock,地图与参数副本放 configs/,阶段 4 用 `map:=` 引用并记为偏差。
+- 发现失败升级链(预算 3 次有假设的尝试或 90 分钟;每次编号记录;Windows 侧改动 = 用户重启一次):① 两侧 domain / RMW / 残留变量 / XML 是否被加载;② `ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET` + `ROS_STATIC_PEERS=<对端 IP>`(两侧;需验证 Isaac 自带 rcl 是否遵守);③ 从受版本管理的模板生成不入库的 peers XML(UDP 单播 initialPeersList,IP 取阶段 1 记录;WSL IP 每次重启会变);④ 仅一条限定到 WSL vEthernet 子网的入站 UDP 防火墙规则(确切 `New-NetFirewallRule`,经用户同意,需管理员);⑤ 最后才按 S2 官方步骤试 `netsh portproxy`(只转 TCP;计划文档不当作通用修复;只记为"官方步骤已试")。用尽即存最小复现、与 S2 限制对照、提出可验证备选(Pixi 原生)但不执行。
+- 门槛 3→4:/clock 连续推进 ≥10 s;odom、TF、雷达 hz 已记;显存低于 8 GB 且稳定;bridge 加载证据已存。
+
+### 阶段 4 · D0d Nav2 + 一次真实 A→B
+- 先 `ros2 node list` 确认无已在跑的 lifecycle_manager;默认以 setsid/nohup + PID 文件 + pipefail 日志启动 `ros2 launch carter_navigation carter_navigation.launch.xml use_sim_time:=true`;RViz 起不来则改用户终端或 CLI 路线,谁记录退出码随之明确。
+- 就绪门槛两段:初始定位前(上限 60 s):生命周期 active、/scan 与两路 2D 扫描 hz、/map(transient_local)收到、Isaac 的 odom→基座与静态 TF 新鲜、`ros2 param get` 确认 use_sim_time、地图分辨率/原点对场景、`ros2 action list -t` 取真实 action 名与类型。map→odom→基座只在初始定位后查(params 设了 set_initial_pose 则立即查),有界等待。
+- 初始定位(用户回合):RViz 2D Pose Estimate 点在真实出生位置,报告"激光与地图贴合";检查 map→odom 出现。不用 odom 推 /initialpose;程序化只从 params 的 amcl 初始位姿或场景 prim 世界位姿取,并同样过贴合检查。
+- 发目标前定停机方式:取消 action → 10 s 内 odom twist≈0 → 否则用户在 Isaac 按 Stop;每次尝试只有一个目标发送者(RViz 或 CLI),记录是谁。起点与目标先对照地图空闲区。
+- 记录:scripts/wsl/record_d0.sh <目录>(短脚本:`ros2 bag record --include-hidden-topics` 选定 topic + action status/feedback,`timeout -s INT` 限时,无数据非零退出);也是用户验收第 2 步的入口。至少一次用 CLI action client 发目标拿 result + error_code;RViz 发的只能拿 status。
+- 时限:接受 10 s;导航 120 s 仿真时间或 300 s 现实时间先到为准;取消确认 10 s。
+- 失败分支:不动 → 查目标是否接受、cmd_vel 是否非零、类型是否匹配 Isaac 订阅方、Play 是否在跑,不重发目标掩盖;rejected/aborted → 保留原始状态码与 error_code,记 unknown 而非 unreachable。
+- 证据(artifacts/d0d/<时间>/):目标位姿 + frame;action 接受/反馈/结果原始状态码与 error_code;trajectory.csv(每列标 frame 与来源;odom 单独标注并注明是否理想里程计);到达误差在 map 系用 map→基座 TF 计算,标"定位估计,非独立真值";停稳(线速度 <0.05 m/s、角速度 <0.1 rad/s 持续 1 s 仿真时间);仿真时钟与现实时钟;失败尝试全留;明确"碰撞/安全与独立真值未验证(D3)"。
+
+### 阶段 5 · D0 交付与独立审查
+- 更新本文件、docs/environment.md;新建 docs/setup.md(已验证的启动/关闭顺序、终端类型、必要条件);未验证清单;Conventional Commits 分阶段提交。
+- 审查包 docs/review/<日期>-d0-handoff.md:需求指向、本轮验收清单、基线与被审 commit、完整 `git diff` 存 task.diff + changed-files.json + 未跟踪清单、证据目录、已知限制、AI 参与说明。
+- 审查:确切只读 `codex exec` 命令写进 AGENTS.md;先提交冻结;跑 `codex exec` + Codex pack 审查提示词(含真实文件路径);记 codex 版本/模型/被审 hash;逐条核实、只修有效项、重跑受影响检查、拒绝项留依据;第二轮复核修复后的范围;最多两轮;"无发现"不等于通过;Codex 不可用标"待独立审查"并把提示词给用户。
+- 最终报告按 pack 七项:完成范围与改动文件;启动命令与必要条件;diff、验证结果与证据位置;失败/未验证/剩余问题/审查状态;三步验收;关键文件与函数;审查材料位置与下次会话入口 + 已存入项目的规则。产品证据与过程证据分节。
+
+## 7. 本轮验收清单
+- [x] D0a:环境记录与现有改动清单;GUI 截图只证明打开。→ docs/environment.md、artifacts/d0a/
+- [x] D0b:包可发现、构建成功、launch 参数可查询;命令与退出码。→ artifacts/d0b/commands.md
+- [x] D0c:/clock 持续推进;里程计、TF、激光有样本和频率;暂停可识别。→ artifacts/d0c/probe-04-playing/、clock-pause-test-02.txt
+- [x] D0d:Nav2 接受并完成目标,轨迹显示移动,到达且停稳;原始证据保留。→ artifacts/d0d/run-01/attempt-01/result.json
+- [ ] B7 六项最低交付:环境与依赖版本记录 ✔ / 已验证启动顺序 ✔(docs/setup.md)/ 一次真实 A→B 的记录 ✔ / 最小 diff 说明 ✔(审查包)/ 未验证清单 ✔(§9)/ 独立审查材料 ✔ 但**独立审查尚未完成**(Codex 额度)
+- [ ] 用户三步验收:新终端启动看到地图与实时数据;发目标看到达并打开记录核对;暂停看数据停、恢复看数据回来。(待用户)
+- [x] D1:正常时报告真实数据;暂停或关闭后在有限时间内非零退出。→ artifacts/d1/commands.md
+- [x] D2:配置运行一次 A→B,保存接受、反馈、结果与轨迹;中断也收尾。→ artifacts/d2/commands.md
+- [x] D3:到达、超时、碰撞、取消分开判定;停止可验证;真实缺陷的复现、修复、同条件复跑。→ artifacts/d3/commands.md、docs/defect-record.md
+- [x] D4:三种情形各 3 次,每次复位,9 次全部留档与汇总。→ artifacts/d4/commands.md、report.html
+- [x] D5:README 从新终端启动;三个真实演示;来源与 AI 参与写明。→ README.md、docs/demo.md、artifacts/d5/commands.md
+- [ ] D1–D5 独立审查(排队中)与用户验收
+
+## 8. 偏差记录
+- fastdds.xml 路径:仓库内 `configs/network/` 而非 `D:\robosim-assets\network`(见决定记录)。
+- 工作分支:D0 在 `feature/d0-environment`,master 只放基线;审查范围以 docs/review/2026-09-29-d0-handoff.md §1 写明的提交为准。
+
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:33:### 0.2 给 Claude Code 的执行指令
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:234:### B0. 终端与目录
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:244:### B1. 补齐环境证据，不重装
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:276:### B2. ROS 2 Jazzy：只补缺项
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:295:### B3. 使用 6.1 对应的官方示例工作区
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:336:### B4. Windows ↔ WSL 的 ROS 通信
+RoboSim-Eval-Plan-and-Setup-ZH(1).md:373:### B5. 加载一个 Nova Carter，先看原始数据
+Codex-Harness-Pack-ZH(1).md:411:### 默认：Codex 独立审查提示词
+
+
+
+codex
+已确认本片只审查冻结版本 `19203e0` 的 Windows、环境安装和安全相关文件；工作区已有后续提交，我会通过 `git show` 读取被审代码。此次使用 `code-review-excellence` 技能核查具体缺陷，并按文件组并行审查；不会启动或停止 Isaac、Nav2 或 WSL 进程。
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'D:\\RoboSim-Eval\\docs\\plan.md' -Encoding UTF8 -TotalCount 35; Get-Content -LiteralPath 'C:\\Users\\Administrator\\.codex\\plugins\\cache\\claude-plugins-official\\superpowers\\6.4.1\\skills\\using-superpowers\\references\\codex-tools.md' -Encoding UTF8" in D:\RoboSim-Eval
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$p = Get-Content -LiteralPath '"'D:\\RoboSim-Eval\\RoboSim-Eval-Plan-and-Setup-ZH(1).md' -Encoding UTF8; "'$p[32..63]; $p[233..371]; $h = Get-Content -LiteralPath '"'D:\\RoboSim-Eval\\Codex-Harness-Pack-ZH(1).md' -Encoding UTF8; "'$h[410..490]' in D:\RoboSim-Eval
+ succeeded in 0ms:
+# RoboSim Eval — 执行计划与状态(唯一活计划)
+
+> 这是项目唯一维护状态的计划。需求、验收方法、状态合同的原文在根目录 `RoboSim-Eval-Plan-and-Setup-ZH(1).md`(2026-09-29 冻结参考),其中的"当前状态"列已作废,状态只看本文件。开发流程约定见两份 harness pack(同样冻结参考)。
+
+## 1. 状态总览
+
+| 交付 | 状态 | 证据 | 阻塞 / 备注 |
+| --- | --- | --- | --- |
+| 阶段 0 · 唯一计划与入口 | 完成(2026-09-29) | 基线 commit `dbf67ce`(master);分支 `feature/d0-environment`;AGENTS.md / CLAUDE.md / docs/plan.md / docs/harness-sources.md / artifacts/README.md | — |
+| D0a · 环境证据 | 完成(2026-09-29 19:02–19:04) | docs/environment.md;artifacts/d0a/(两侧探测原始输出 + commands.md) | 门槛 1→2 通过;发现:WSL 内无 ROS 2,sudo 需密码 |
+| D0b · ROS 2 Jazzy + 6.1.0 示例工作区 | 完成(2026-09-29 19:16–19:30) | artifacts/d0b/commands.md(安装日志、check-ros-install、talker/listener ×2、rviz2 测试、setup-workspace.log) | 门槛 2→3 通过。工作区 `~/robotics/vendor/isaac-ros-6.1`,HEAD a9e8471…;安装脚本首跑退出码 1 是校验步骤的 `set -u` 缺陷(已修),安装本身成功 |
+| D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 完成(2026-09-29 19:35–20:12) | artifacts/d0c/commands.md;probe-04-playing/(/clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、tf2_echo odom→base_link);clock-continuity-01;clock-pause-test-02(暂停 29 s 时钟停、恢复后继续);bridge-check-01/02;kit-udp-endpoints-01;diag-01 | 门槛 3→4 通过。排障:Windows 防火墙阻断 WSL→kit.exe 入站(用户以管理员加一条限定规则后解决);首次 Play 后 7 s 时间线被停止(重新 Play 解决)。发现:示例场景不发布 2D 雷达扫描(params 的局部代价地图两路来源无数据,D0d 记偏差);USD 动画时间线每 ~41 s 循环但仿真时钟不受影响;显存为几次点采样(空场景 3124–3128 MiB、Play 后 5 s 3754 MiB、Nav2 运行时 Isaac 界面显示 3.9 GiB),未做连续测量 |
+| D0d · 一次真实 A→B | 完成(2026-09-29 20:13–20:52) | artifacts/d0d/commands.md;run-01/(nav2-launch.log、ready-check-01、map-overview、rviz 截图、usd-inspection);run-01/attempt-01/(goal-202437.txt、result.json、trajectory.csv、bag-info、文本流);run-02/03/04-stoptest(停止路径验证) | 目标 map (-4.0,-1.0,yaw 0) 由 CLI action client 发送:SUCCEEDED、error_code 0、0 次恢复、8.47 s 仿真时间、停稳确认;**AMCL 独立来源**(理想里程计 + USD 出生位姿)在停稳确认时刻误差 0.091 m,AMCL 估计 0.231 m → validation=pass(内部预审后用新分析脚本重算)。发现见 §9 |
+| D0 交付 + 独立审查 | 进行中:**待独立审查** | docs/setup.md;docs/review/2026-09-29-d0-handoff.md;docs/review/2026-09-29-d0/REVIEW.md | Codex 第 1 轮两次因账户用量上限中止、无意见(20:59 用 82,531 tokens;23:23 重跑用 102,685 tokens);同一范围已拆成 4 个分片,由排队脚本从 2026-09-30 03:38 起自动运行,见 REVIEW.md;Claude 内部预审第 2 次完成(38 条,确认 35 条),有效项已修复并回归,见 REVIEW.md |
+| D1 doctor | 实现与验证完成(2026-09-29 23:3x–23:49),**待独立审查**与用户验收 | 分支 `feature/d1-doctor`;`robosim_eval/doctor*.py`、`configs/baseline.yaml`、`scripts/wsl/doctor.sh`;证据 `artifacts/d1/commands.md` | 固定输入测试 37 passed、改坏检查 7/7、假节点测试 6/6;真实 Isaac:运行时退出 0,用户按 ⏸ 后 2 s 窗口判"不推进"退出 10,恢复后退出 0 |
+| D2 单次运行器 | 实现与验证完成(2026-09-30 00:1x–00:47),**待独立审查**与用户验收 | 分支 `feature/d2-runner`;`robosim_eval/runner*.py`、`sim_adapter.py`、`run_io.py`;`scripts/wsl/run_scenario.sh`、`sim.sh`;证据 `artifacts/d2/commands.md` | 固定输入测试 77 passed;运行器假节点测试 8/8;真实 Isaac:正常 A→B reached(真值误差 0.264 m),导航中 SIGINT → 取消、停车、收尾(interrupted);Isaac 由 sim_control 复位、加载场景、读真值,不再需要 GUI 点击 |
+| D3 判定与失败处理 | 实现与验证完成(2026-09-30 00:5x–01:29),**待独立审查**与用户验收 | 分支 `feature/d3-verdicts`;`robosim_eval/evaluator.py`、`contacts.py`、`kit/contact_monitor.py`;证据 `artifacts/d3/commands.md`;缺陷记录 `docs/defect-record.md` | 固定输入测试 109 passed;判定模块改坏检查 8/8(含 4 种必做的坏数据);真实 Isaac:正常、绕行、不可达、取消、超时 pass,断流正确判 inconclusive,碰撞抓到轮子与矮箱子的接触判 fail;修复一个运行器缺陷(复位前 odom 残留) |
+| D4 批量复跑 | 实现与验证完成(2026-09-30 01:30–02:0x),**待独立审查**与用户验收 | 分支 `feature/d4-batch`;`robosim_eval/batch.py`、`report.py`、`scripts/wsl/run_batch.sh`;证据 `artifacts/d4/commands.md`、`artifacts/d4/batch-20260930-013010/runs/report.html` | 9 次全部留档、全部 pass(normal 3/3 到达、bypass 3/3 到达且未碰箱子、unreachable 3/3 判不可达);每次复位后真值距出生点 0.07 mm;报告改进 1 处(列出全部 commit、恢复次数列);"开头卡住"查到大部分机制(见 §9) |
+| D5 作品交付 | 实现与演示完成(2026-09-30 01:3x–02:3x),**待独立审查**与用户验收 | 分支 `feature/d5-demo`;`README.md`、`docs/demo.md`、`robosim_eval/nav2_params.py`;证据 `artifacts/d5/commands.md` | README 按新终端逐字执行通过;三个演示:正常导航并打开记录(pass)、取消案例及解释(pass)、参数改动 max_vel_x 0.8→0.4 的事先预测与复跑对比(峰值速度、平均速度、行驶段、到达误差符合预测;路程与最大角速度两条预测不成立,见 docs/demo.md);修复缺陷 3(场景未加载时接触监视装不上)与缺陷 4(接受目标时的仿真时间是旧的);固定输入测试 128 passed,运行器假节点测试 10/10 |
+
+**当前任务:** D0–D5 都已实现并在真实 Isaac 上验证,剩下审查与验收:Codex 分片审查排队中(2026-09-30 03:38 起)→ 逐条核实、修复有效项、重跑受影响检查 → 用户验收 → 本地按顺序合并分支(d0 → d1 → … → d5 → master,不推送)。分支是叠加的:每个交付分支从上一个分出;某个交付的审查修复在它自己的分支上做,再向后合并。
+
+**D0b 结果(2026-09-29 19:16–19:30):** ROS 2 Jazzy desktop + Nav2 + 闭包依赖装好(用户执行);WSL 内 talker/listener 默认与加载 fastdds.xml 均通;rviz2 在 WSLg 下存活 20 s(OpenGL 4.5);工作区 `~/robotics/vendor/isaac-ros-6.1` @ a9e8471…,`colcon build --packages-up-to carter_navigation` 成功;launch 参数 map / params_file / use_sim_time 可查询。
+
+**D0a 新增事实(2026-09-29 19:02–19:04,详见 docs/environment.md):** WSL 里完全没有 ROS 2(无 /opt/ros、无 apt 源、无 colcon/rosdep);`sudo -n true` 失败(需密码);WSLg 变量在非交互 shell 也存在;WSL eth0 172.28.211.14/20,网关 172.28.208.1 = Windows vEthernet (WSL);Windows 与 WSL 均无 ROS/DDS 残留配置;`extension_examples` 链接已存在;Claude 的 shell 未提权;Codex 0.157.0 已登录,`codex exec --sandbox read-only` 可用;`isaac-sim.bat` 自动调用 `setup_ros_env.bat`(默认 RMW = rmw_zenoh_cpp,仅当 ROS_DISTRO 未设时才把自带 jazzy 库加入 PATH/AMENT_PREFIX_PATH);自带前缀含 rclpy 7.1.11 与 rmw_fastrtps_cpp.dll / rmw_zenoh_cpp.dll。
+
+**已核实的硬事实(2026-09-29):** Windows 10 Pro 10.0.19045.6466;Isaac Sim 6.1 要求页明确 "Windows 10 is not supported"、显存最低 16 GB、Windows 测试驱动 595.97(本机 591.44);官方 WSL2 路线标 deprecated 且要求 Windows 11;WSL 2.6.3.0 + WSLg 1.0.71,发行版 `Ubuntu` 与 `docker-desktop` 均在运行;`D:\isaac-sim-standalone-6.1.0-windows-x86_64\isaac-sim.bat` 与 `exts\isaacsim.ros2.core\jazzy\lib` 存在;Isaac GUI 进程 `kit`(PID 29036)自 16:22 运行中;Codex CLI 已装(npm);IsaacSim-6.1.0 标签下存在 `jazzy_ws/fastdds.xml` 与 `carter_navigation.launch.xml`(参数 map / params_file / use_sim_time)。
+
+## 2. 决定记录
+
+| 日期 | 决定 | 由谁 | 依据 |
+| --- | --- | --- | --- |
+| 2026-09-29 | 在官方不支持的配置(Windows 10 + 8 GB)上继续做完 D0,升级留到项目之后;所有记录标注 unsupported configuration | 用户 | GUI 已能开;用户明确指示 |
+| 2026-09-29 | `git init` 本地仓库;master = 三份文档基线;D0 在 `feature/d0-environment` 上做 | Claude(默认做法,用户未反对) | harness pack 需要基线与可比对 diff;Codex `/review` 需要 Git |
+| 2026-09-29 | fastdds.xml 放仓库内 `configs/network/`,而非计划文档建议的 `D:\robosim-assets\network` | Claude(默认做法,用户未反对) | 受版本管理、单一副本;计划文档 A2 的路径只是建议 |
+## Subagent dispatch requires multi-agent support
+
+Add to your Codex config (`~/.codex/config.toml`):
+
+```toml
+[features]
+multi_agent = true
+```
+
+This enables the multi-agent tools that skills like
+`dispatching-parallel-agents` and `subagent-driven-development` use.
+Which tools you get depends on the multi-agent version your model
+preset selects (current presets run V2; older ones run V1). Trust your
+actual tool list over any table — including this one — when they
+disagree.
+
+- **Spawning:** give children a clean context with
+  `spawn_agent {fork_turns: "none"}`; the default `"all"` copies your
+  entire transcript into the child. On Codex 0.145+, role files under
+  `~/.codex/agents/` attach to isolated forks via `agent_type`.
+  Full-history forks accept `model` and `reasoning_effort` overrides
+  (only `agent_type` is refused there) — isolated forks are the SDD
+  default for context hygiene, not because overrides require them.
+- **Fix rounds:** resume the implementer with `followup_task` — it
+  delivers your message, triggers a turn, and transparently reloads a
+  child the harness evicted. Never dispatch a fresh implementer on the
+  theory that a spawned agent cannot be messaged again; on V2 it
+  always can.
+- **Lifecycle:** V2 has no `close_agent`. Finished children are
+  evicted automatically when slots are needed; leaving them unclosed
+  costs nothing. Only V1 sessions have `close_agent` — there, close
+  reviewers when their review returns, and close each implementer
+  after its task's review passes.
+- **Model names:** never copy a model name from a skill, table, or old
+  session into `spawn_agent` without checking it against your current
+  spawn allowlist — V2 accepts only V2-capable presets and hard-errors
+  on the rest.
+
+## Waiting on children
+
+`wait_agent` is an event subscription, not a poll: a long wait wakes
+the moment a child produces mailbox activity, with the same latency as
+a short one. Short-timeout polling buys nothing and costs a tool call —
+and a context rebill — per poll. In measured sessions, roughly
+two-thirds of all wait calls were short polls that timed out.
+
+- While you still have local work, do not wait at all. A completed
+  child's final answer is pushed into your mailbox and arrives with
+  your next turn.
+- When you are genuinely idle with children outstanding, wait in
+  bounded stretches: `wait_agent` with `timeout_ms` 300000-600000
+  (5-10 minutes). After each stretch — wake or timeout — post one
+  status line, run `list_agents`, and chase any child that finished
+  without reporting. Never stack polls shorter than five minutes; the
+  event subscription wakes a bounded stretch just as fast as a short
+  one.
+- Completion mail cannot wake an idle controller (it is delivered
+  without triggering a turn); covering that idle window is
+  `wait_agent`'s only job. A stretch that times out with no activity
+  is your cue to reconcile, not to shorten the next stretch.
+
+## Model routing on spawns
+
+Every `spawn_agent` you issue — including when you are yourself a
+spawned child running a fan-out — sets `model` AND `reasoning_effort`
+explicitly, per the Model Selection rules of the skill you are
+executing. Setting `model` alone is a trap: the child's effort
+silently resets to that model's default, not to yours.
+
+Ask your human partner to add a machine-level backstop to
+`~/.codex/config.toml` so any spawn that slips through still routes to
+a deliberate tier instead of silently inheriting the session's most
+expensive model:
+
+```toml
+[agents]
+default_subagent_model = "<a mid-tier model from your spawn allowlist>"
+default_subagent_reasoning_effort = "medium"
+```
+
+## Environment Detection
+
+Skills that create worktrees or finish branches should detect their
+environment with read-only git commands before proceeding:
+
+```bash
+GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
+GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
+BRANCH=$(git branch --show-current)
+```
+
+- `GIT_DIR != GIT_COMMON` → already in a linked worktree (skip creation)
+- `BRANCH` empty → detached HEAD (cannot branch/push/PR from sandbox)
+
+See `using-git-worktrees` Step 0 and `finishing-a-development-branch`
+Step 1 for how each skill uses these signals.
+
+## Codex App Finishing
+
+When the sandbox blocks branch/push operations (detached HEAD in an
+externally managed worktree), the agent commits all work and informs
+the user to use the App's native controls:
+
+- **"Create branch"** — names the branch, then commit/push/PR via App UI
+- **"Hand off to local"** — transfers work to the user's local checkout
+
+The agent can still run tests, stage files, and output suggested branch
+names, commit messages, and PR descriptions for the user to copy.
+
+ succeeded in 0ms:
+### 0.2 给 Claude Code 的执行指令
+
+请在用户电脑上按本计划继续 RoboSim Eval。先读本节、A2、A4、A7 和 B；其余按当前任务读取。
+
+1. 先确定自己的执行位置是 Windows 还是 WSL，并定位项目仓库。读取现有 `CLAUDE.md`、`AGENTS.md`、计划、启动脚本、测试和 `git status`。保留所有未提交改动。不要把 Isaac Sim 安装目录当成自己的项目仓库。
+2. 复用现有安装与代码。将本计划合并进项目唯一的执行计划，写清已完成证据、当前任务与阻塞；不要同时维护多份相互矛盾的计划。常驻说明仅保留约束、入口和真实验证命令。
+3. **当前只先完成 D0 剩余部分：ROS 环境检查 → 6.1 对应示例工作区 → Windows/WSL 通信 → Nova Carter 场景 → 一次真实 A→B 导航。** 不先搭大型框架、网页平台、persona 或 world model。
+4. 按 B 部分核对真实接口、消息类型、地图和启动参数。常规检查、必要安装、代码修改与验证自行推进；不要每步停下来等批准。需要本机 GUI 操作而你无法执行时，只给用户当前必需的具体操作，并说明完成后检查什么；不要假装已经点过。
+5. 只补当前需要的最小开发流程：简短说明、可复用启动方式、实际执行记录。先检查相关工具是否存在，再整理验证入口。不要求在机器人尚未运行时生成整套空模块。
+6. 固定输入测试、ROS 假节点测试与真实 Isaac 集成分开。记录命令、工作目录、退出码、日志和未执行项；有超时或进程中断就如实记录。不能用 `|| true`、吞异常、削弱断言或将必要检查设为跳过来制造“通过”。
+7. D0 完成后提交本地交付说明，再按顺序做 D1；D0 阻塞时先排查、保存最小复现和证据，不以 mock 代替 D0。常规实现不需要逐步确认；涉及换系统、换安装路线、删除数据、停止其他工作负载时说明具体影响。
+8. 沿用现有资源，不新增付费服务、不推送、不部署、不删除或覆盖用户文件。不购买模型 API；此阶段不需要 LLM 参与导航。
+9. 交付时给出实际 diff、验证结果、未验证部分、启动方式、关键文件与函数，以及用户可以操作的三步验收。准备可供独立只读审查的材料；确认意见有效后再修复并重跑相关验证。
+
+本次优先交付不是“安装说明写完”，而是“真实导航已经跑通并有证据”；若受硬件或通信阻塞，则准确交付阻塞定位和可复现记录，不能宣称完成。
+
+## A. 项目计划
+
+### A1. 产品目标与首版范围
+
+使用者可以选择一个场景、起点和目标，运行一次导航任务，查看轨迹、任务状态和评测结果，并按保存的条件复跑。
+
+第一版包含：
+
+- 一个 Nova Carter 机器人、一个简单场景、已有地图、一个 A→B 导航任务。
+- 激光扫描、机器人位置、速度指令、导航反馈和任务事件记录。
+- 目标发送、取消、超时、异常退出、停止确认。
+- 到达检查、接触/碰撞检查、数据完整性检查。
+- 三种预设场景：正常通路、可以绕行的障碍、不可达目标。
+- 单次结果 JSON、轨迹文件、事件记录，以及批量 HTML 报告。
+- 一次真实缺陷的复现、修复与同条件复跑记录；没有发现真实缺陷时，明确标注故障注入，不编造缺陷。
+
+### B0. 终端与目录
+
+| 终端 | 进入方式 | 做什么 |
+| --- | --- | --- |
+| Windows PowerShell | 现有 PowerShell | 检查 Windows、启动本机 Isaac、设置 Windows 侧环境变量 |
+| Ubuntu Bash | PowerShell 运行 `wsl -d Ubuntu` | Jazzy、colcon、Nav2、RViz、项目 Python |
+| 第二个 Ubuntu Bash | 另开终端，再进入同一 `Ubuntu` | 启动导航或采集数据；每个新终端都加载所需环境 |
+
+不要把 Bash 的 `source/export` 粘到 PowerShell，也不要把 Windows 路径直接当 Linux 路径。长期运行的 Isaac、Nav2 进程单独留终端，避免误开多份。处理已有进程时仅停止自己确认拥有的进程，不清空所有 Python、ROS 或 WSL 进程。
+
+### B1. 补齐环境证据，不重装
+
+Windows PowerShell：
+
+```powershell
+Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber
+nvidia-smi
+Get-PSDrive -PSProvider FileSystem | Select-Object Name, Free, Used
+wsl --version
+wsl --list --verbose
+Test-Path 'D:\isaac-sim-standalone-6.1.0-windows-x86_64\isaac-sim.bat'
+Test-Path 'D:\isaac-sim-standalone-6.1.0-windows-x86_64\exts\isaacsim.ros2.core\jazzy\lib'
+```
+
+Ubuntu Bash：
+
+```bash
+cat /etc/os-release
+uname -r
+python3 --version
+git --version
+command -v ros2
+command -v colcon
+ls -ld /opt/ros /opt/ros/jazzy
+```
+
+各命令逐条记录结果；命令不存在或路径不存在是待补信息，不能隐藏。先确认当前 shell 是否加载环境；`command -v ros2` 为空不一定表示未安装。检查已有 `/opt/ros/jazzy/setup.bash`、包数据库与项目脚本后再判断。
+
+查看项目目录的规则文件和 `git status --short`。尚无仓库才创建新项目；已有仓库不能重新初始化覆盖。VS Code 缺失不阻塞命令行检查，可按用户已有编辑器继续。
+
+`post_install.bat` 的旧权限错误单独核对：若确实缺少当前需要的链接，再记录并按官方说明执行一次必要修复。不要因为历史报错反复以管理员身份启动整个开发环境。
+
+### B2. ROS 2 Jazzy：只补缺项
+
+1. 若已有 Jazzy，先 `source /opt/ros/jazzy/setup.bash` 并验证包和基本通信。若没有，按 [ROS 官方 Jazzy 的 Ubuntu Deb 安装说明][S6] 配置 **noble / Ubuntu 24.04** 软件源与 `ros2-apt-source`，再安装。不要照旧计划添加 jammy 源。
+2. 基础需求为 `ros-jazzy-desktop` 与 `ros-dev-tools`；导航通常需要 `ros-jazzy-navigation2`、`ros-jazzy-nav2-bringup`、`ros-jazzy-nav2-simple-commander`、`ros-jazzy-pointcloud-to-laserscan` 和 `ros-jazzy-rmw-fastrtps-cpp`。先检查 apt 候选版本、已装状态和示例实际依赖，再补缺项，不将此列表视为完整依赖锁文件。
+3. 不为了教程执行无关的系统大升级。依赖解析失败先检查源、网络和版本，不能删除 package.xml 中的依赖来强行构建。
+4. 使用 Jazzy 自带 talker/listener 做一次有时限的 WSL 内通信检查。它只证明 WSL 内 ROS 通信，不证明已连接 Isaac；保留输出并清理自己启动的测试进程。
+5. 第一次 rosdep 配置先检查是否已经初始化；已有配置不重复覆盖。缺什么装什么，真实失败单独记录。
+
+当前路线各 Ubuntu 终端的基础环境：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+export ROS_DISTRO=jazzy
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+export ROS_DOMAIN_ID=0
+```
+
+先只在当前终端设置，验证通过后再整理可重复的启动脚本；不反复往 `.bashrc` 追加相同或冲突配置。
+
+### B3. 使用 6.1 对应的官方示例工作区
+
+本次核对的官方标签为 `IsaacSim-6.1.0`，其 commit 是：
+
+```text
+a9e8471ee901bc2332c1e4aca94ac580713ca3ab
+```
+
+接手时记录实际拉取的 commit；如果标签指向发生变化，说明差异，不静默采用不明版本。[S4]
+
+仅在目标目录不存在、且没有可复用的正确版本工作区时执行：
+
+```bash
+mkdir -p ~/robotics/vendor
+git clone --branch IsaacSim-6.1.0 --depth 1 --recurse-submodules \
+  https://github.com/isaac-sim/IsaacSim-ros_workspaces.git \
+  ~/robotics/vendor/isaac-ros-6.1
+cd ~/robotics/vendor/isaac-ros-6.1
+git rev-parse HEAD
+git status --short
+cd jazzy_ws
+source /opt/ros/jazzy/setup.bash
+colcon list --packages-up-to carter_navigation
+```
+
+已有 checkout 先检查 branch、commit、dirty 和 submodule；不在有用户改动的目录里强制 checkout 或清理。
+
+根据实际 `package.xml` 用 rosdep 解析依赖，并构建 `carter_navigation` 所需的依赖闭包。优先只构建当前需要的包，保留完整依赖；不默认构建无关的整套示例。构建命令和结果必须保存。不要因某个依赖名字包含 bringup 就误用它从 WSL 启动 Windows Isaac。
+
+构建成功后，在该工作区执行：
+
+```bash
+source install/setup.bash
+ros2 pkg prefix carter_navigation
+ros2 launch carter_navigation carter_navigation.launch.xml --show-args
+```
+
+**6.1 的启动文件是 `.launch.xml`。** 本次核对的参数包括 `map`、`params_file`、`use_sim_time`。不要沿用旧计划的 `.launch.py`。
+
+默认地图是包内 `maps/carter_warehouse_navigation.yaml`，参数是 `params/carter_navigation_params.yaml`。后续需要修改参数时复制到项目受版本管理的配置中，通过 launch 参数引用；不要静默改第三方工作区的原文件。
+
+### B4. Windows ↔ WSL 的 ROS 通信
+
+先读取现有 WSL 网络模式、Windows build、环境变量和 Fast DDS 配置。复用能够工作的配置；不要先修改全局网络。
+
+- 两端统一 Jazzy、Fast DDS 和 `ROS_DOMAIN_ID`。检查是否残留 `ROS_LOCALHOST_ONLY`、接口白名单、旧 domain 或不同 RMW。
+- 按 6.1 官方 WSL 说明设置 Fast DDS UDP 配置。可参考固定版本工作区的 `jazzy_ws/fastdds.xml`；最终使用文件必须通过 XML 解析检查。若整理上游文件，保留许可内容于注释，确保只有一个根元素。
+- Windows 路径可用 `D:\robosim-assets\network\fastdds.xml`，WSL 对应 `/mnt/d/robosim-assets/network/fastdds.xml`。该文件需先创建并验证；不是仅设置一个不存在的路径。
+- 若采用 mirrored networking，先核对 Windows 与 WSL 版本支持，并保存现有 `.wslconfig`。只改必要项，不覆盖用户其他设置。重启 WSL 会影响运行中的 Docker；确需重启时先处理现有工作。
+- 防火墙按必要接口、网络范围和协议最小调整，不能全局关闭；不能把 TCP portproxy 当作 DDS UDP 发现的通用修复。
+
+在全新的普通 Windows PowerShell 中，确认上述配置文件存在后启动：
+
+```powershell
+$robosimIsaac = 'D:\isaac-sim-standalone-6.1.0-windows-x86_64'
+$robosimDds = 'D:\robosim-assets\network\fastdds.xml'
+if (-not (Test-Path "$robosimIsaac\isaac-sim.bat")) { throw 'Isaac 启动文件不存在' }
+if (-not (Test-Path "$robosimIsaac\exts\isaacsim.ros2.core\jazzy\lib")) { throw 'Jazzy 库目录不存在' }
+if (-not (Test-Path $robosimDds)) { throw 'Fast DDS 配置不存在' }
+$env:ROS_DISTRO = 'jazzy'
+$env:RMW_IMPLEMENTATION = 'rmw_fastrtps_cpp'
+$env:ROS_DOMAIN_ID = '0'
+$env:FASTRTPS_DEFAULT_PROFILES_FILE = $robosimDds
+$env:PATH = "$env:PATH;$robosimIsaac\exts\isaacsim.ros2.core\jazzy\lib"
+& "$robosimIsaac\isaac-sim.bat" --/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge
+```
+
+当前 GUI 若已经打开，先保存需要的场景，正常关闭后再按新环境启动，避免打开两份；不能假定运行中的进程会读到后来设置的变量。
+
+WSL 终端在 B2 基础环境和 B3 overlay 之外设置：
+
+```bash
+export FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/robosim-assets/network/fastdds.xml
+test -f "$FASTRTPS_DEFAULT_PROFILES_FILE"
+```
+
+若桥扩展加载失败，先保存 Isaac 日志中的第一个相关错误，再检查库目录、RMW 和依赖。以实际消息验证通信，不以“扩展已启用”代替。
+
+### 默认：Codex 独立审查提示词
+
+请作为本次交付的独立审查者，对当前项目的指定交付做独立代码审查。本轮保持源码只读，不直接修复；完成后将报告交回 Claude Code，由 Claude Code 核实和修复。
+
+审查材料：[填写实现者给出的交接文件或目录]
+代码范围：[填写基线版本、目标版本或明确的改动清单]
+
+先核对代码范围，直接阅读原始需求、验收条件、实际 diff、相关完整代码和测试。覆盖新增未跟踪文件，并区分已有改动。不要只依据实现者的完成总结判断。
+
+检查用户可观察行为、边界条件、异常处理、回归和测试有效性。需要运行检查时使用临时目录或隔离副本，避免修改被审查源码。无法运行的检查明确标注。
+
+每个发现写清：
+- 严重程度及真实文件、函数或行号；
+- 触发条件、预期行为与实际行为；
+- 复现步骤、失败测试或明确的代码依据；
+- 用户影响与建议修复方向。
+
+区分已复现问题、有代码依据的问题和待确认疑点。不设最低问题数量；没有发现也如实说明。避免纯风格偏好和没有证据的大规模重构建议。
+
+最后记录实际审查版本、执行过的检查、未验证部分和剩余风险。无法访问代码或范围不清时指出缺失材料，不根据摘要给出通过结论。
+
+### 日常继续提示词
+
+请先读取本项目说明和当前计划，核对现有进度与未提交改动，继续完成最靠前且依赖已满足的小任务。沿用既定验证与审查流程，完成后更新进度并提供运行证据。只询问会影响本次交付的关键产品问题。
+
+### 根据审查修复的提示词
+
+请逐条核实这份审查意见，复现或根据实际代码确认有效后，再修复本次范围内的问题；对不成立的意见给出依据。修复后重跑受影响的检查，更新 diff、证据和计划，并准备交给原审查者复核。保留已有无关改动，遵守本项目权限与费用约束。
+
+## 完成后的最小证据
+
+- 计划与实际进度一致，来源采用决定能查到。
+- 一条真实用户流程可运行；有启动入口与操作步骤。
+- 检查记录包含实际命令、退出结果和对应代码范围。
+- 已有改动与本次改动能区分，新增文件也在审查范围内。
+- 审查工具和阅读范围如实记录；调用失败与待审查不会被写成通过。
+- 下个会话能从现有说明和记录继续，无需再次复制整份参考资料。
+
+2026-10-01T00:10:52.409779Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer error=\"invalid_request\", error_description=\"No access token was provided in this request\", resource_metadata=\"https://api.githubcopilot.com/.well-known/oauth-protected-resource/mcp/\"" })
+2026-10-01T00:10:59.022480Z ERROR rmcp::transport::worker: worker quit with fatal: Transport channel closed, when AuthRequired(AuthRequiredError { www_authenticate_header: "Bearer error=\"invalid_request\", error_description=\"No access token was provided in this request\", resource_metadata=\"https://api.githubcopilot.com/.well-known/oauth-protected-resource/mcp/\"" })
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$lines = git -C D:'"\\RoboSim-Eval show '19203e0:scripts/windows/allow_wsl_to_isaac_firewall.ps1'; if ("'$LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $i = 0; $lines | ForEach-Object { $i++; '"'{0,4}: {1}' -f "'$i, $_ }' in D:\RoboSim-Eval
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$lines = git -C D:'"\\RoboSim-Eval show '19203e0:scripts/windows/start_isaac_ros2.ps1'; if ("'$LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $i = 0; $lines | ForEach-Object { $i++; '"'{0,4}: {1}' -f "'$i, $_ }' in D:\RoboSim-Eval
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$lines = git -C D:'"\\RoboSim-Eval show '19203e0:configs/network/fastdds.xml'; if ("'$LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $i = 0; $lines | ForEach-Object { $i++; '"'{0,4}: {1}' -f "'$i, $_ }' in D:\RoboSim-Eval
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$lines = git -C D:'"\\RoboSim-Eval show '19203e0:scripts/windows/run_codex_review.ps1'; if ("'$LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $i = 0; $lines | ForEach-Object { $i++; '"'{0,4}: {1}' -f "'$i, $_ }' in D:\RoboSim-Eval
+ succeeded in 0ms:
+   1: # allow_wsl_to_isaac_firewall.ps1 — RoboSim Eval D0c: one scoped Windows Firewall rule so WSL2 can reach Isaac Sim's
+   2: # ROS 2 / Fast DDS sockets. Requires an ELEVATED (Administrator) PowerShell:
+   3: #   powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\allow_wsl_to_isaac_firewall.ps1
+   4: # To remove later:
+   5: #   Remove-NetFirewallRule -DisplayName 'RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)'
+   6: #
+   7: # Evidence (2026-09-29, artifacts/d0c/diag-01): Isaac's DDS discovery multicast reaches WSL, but WSL's replies never
+   8: # reach kit.exe (no rule, inbound default Block, NotifyOnListen off so no prompt appeared). Scope of the rule:
+   9: # inbound only, UDP only, program kit.exe only, interface 'vEthernet (WSL)' only. Nothing global is changed.
+  10: $ErrorActionPreference = 'Stop'
+  11: $ruleName  = 'RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)'
+  12: $program   = 'D:\isaac-sim-standalone-6.1.0-windows-x86_64\kit\kit.exe'
+  13: $interface = 'vEthernet (WSL)'
+  14: 
+  15: $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+  16: if (-not $isAdmin) { throw 'This script must run in an elevated (Administrator) PowerShell.' }
+  17: if (-not (Test-Path $program)) { throw "kit.exe not found: $program" }
+  18: if (-not (Get-NetAdapter | Where-Object { $_.Name -eq $interface })) { throw "network adapter '$interface' not found (run Get-NetAdapter to see the actual WSL adapter name)" }
+  19: 
+  20: $existing = Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContinue
+  21: if ($existing) {
+  22:     Write-Output "rule already exists: $ruleName (Enabled=$($existing.Enabled), Action=$($existing.Action))"
+  23: } else {
+  24:     New-NetFirewallRule -DisplayName $ruleName `
+  25:         -Description 'RoboSim Eval D0c (2026-09-29): allow ROS 2 / Fast DDS discovery and data from WSL2 to Isaac Sim. Inbound, UDP, kit.exe, vEthernet (WSL) only.' `
+  26:         -Direction Inbound -Action Allow -Protocol UDP -Program $program -InterfaceAlias $interface -Profile Any -Enabled True | Out-Null
+  27:     Write-Output "rule created: $ruleName"
+  28: }
+  29: 
+  30: Write-Output '--- rule as stored ---'
+  31: $r = Get-NetFirewallRule -DisplayName $ruleName
+  32: $r | Select-Object DisplayName, Enabled, Direction, Action, Profile | Format-List | Out-String | Write-Output
+  33: $r | Get-NetFirewallApplicationFilter | Select-Object Program | Format-List | Out-String | Write-Output
+  34: $r | Get-NetFirewallInterfaceFilter | Select-Object InterfaceAlias | Format-List | Out-String | Write-Output
+  35: $r | Get-NetFirewallPortFilter | Select-Object Protocol, LocalPort, RemotePort | Format-List | Out-String | Write-Output
+  36: Write-Output "done $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+
+ succeeded in 0ms:
+   1: <?xml version="1.0" encoding="UTF-8" ?>
+   2: <!--
+   3:   RoboSim Eval: Fast DDS profile shared by Isaac Sim 6.1 (Windows) and ROS 2 Jazzy (WSL2 Ubuntu).
+   4: 
+   5:   Derived from IsaacSim-ros_workspaces tag IsaacSim-6.1.0, file jazzy_ws/fastdds.xml, which matches the
+   6:   fastdds.xml shown in the Isaac Sim 6.1 "ROS 2 installation" WSL2 section. One change: the upstream file has a
+   7:   separate <license> element before <profiles>, i.e. two root elements, which is not well-formed XML. The license
+   8:   text is kept below as a comment so this document has a single root and passes an XML parser on both sides.
+   9: 
+  10:   Effect: UDPv4 transport only, built-in transports (including shared memory) disabled, so the Windows host and
+  11:   WSL2 can discover each other over the vEthernet (WSL) link.
+  12: 
+  13:   Windows: set FASTRTPS_DEFAULT_PROFILES_FILE=D:\RoboSim-Eval\configs\network\fastdds.xml (done by
+  14:   scripts\windows\start_isaac_ros2.ps1). WSL: source scripts/wsl/dds_env.sh, which points at
+  15:   /mnt/d/RoboSim-Eval/configs/network/fastdds.xml.
+  16: 
+  17:   Upstream license:
+  18:   SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION &amp; AFFILIATES. All rights reserved.
+  19:   SPDX-License-Identifier: Apache-2.0
+  20:   Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in
+  21:   compliance with the License. You may obtain a copy of the License at
+  22:   http://www.apache.org/licenses/LICENSE-2.0
+  23:   Unless required by applicable law or agreed to in writing, software distributed under the License is
+  24:   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  25:   See the License for the specific language governing permissions and limitations under the License.
+  26: -->
+  27: <profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles" >
+  28:     <transport_descriptors>
+  29:         <transport_descriptor>
+  30:             <transport_id>UdpTransport</transport_id>
+  31:             <type>UDPv4</type>
+  32:         </transport_descriptor>
+  33:     </transport_descriptors>
+  34: 
+  35:     <participant profile_name="udp_transport_profile" is_default_profile="true">
+  36:         <rtps>
+  37:             <userTransports>
+  38:                 <transport_id>UdpTransport</transport_id>
+  39:             </userTransports>
+  40:             <useBuiltinTransports>false</useBuiltinTransports>
+  41:         </rtps>
+  42:     </participant>
+  43: </profiles>
+
+ succeeded in 0ms:
+   1: # start_isaac_ros2.ps1 — RoboSim Eval: launch Isaac Sim 6.1 with the ROS 2 bridge (Jazzy, Fast DDS) for the WSL2 route.
+   2: # Run from a NEW, normal (non-admin) PowerShell window:
+   3: #   powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\start_isaac_ros2.ps1
+   4: #
+   5: # Based on the plan doc B4 block with one deviation: ROS_DISTRO is NOT preset here, because isaac-sim.bat calls
+   6: # setup_ros_env.bat, which adds the bundled jazzy libraries to PATH and AMENT_PREFIX_PATH only when ROS_DISTRO is
+   7: # unset (verified 2026-09-29, see docs/environment.md). RMW_IMPLEMENTATION is preset so that script's default
+   8: # (rmw_zenoh_cpp) is not applied. Refuses to start when another Isaac (kit.exe) is already running.
+   9: $ErrorActionPreference = 'Stop'
+  10: $robosimIsaac = 'D:\isaac-sim-standalone-6.1.0-windows-x86_64'
+  11: $robosimDds   = 'D:\RoboSim-Eval\configs\network\fastdds.xml'
+  12: 
+  13: if (-not (Test-Path "$robosimIsaac\isaac-sim.bat")) { throw "Isaac launcher not found: $robosimIsaac\isaac-sim.bat" }
+  14: if (-not (Test-Path "$robosimIsaac\setup_ros_env.bat")) { throw "setup_ros_env.bat not found in $robosimIsaac" }
+  15: if (-not (Test-Path "$robosimIsaac\exts\isaacsim.ros2.core\jazzy\lib\rmw_fastrtps_cpp.dll")) { throw "Bundled jazzy rmw_fastrtps_cpp.dll not found under $robosimIsaac\exts\isaacsim.ros2.core\jazzy\lib" }
+  16: if (-not (Test-Path $robosimDds)) { throw "Fast DDS profile not found: $robosimDds" }
+  17: try { [xml](Get-Content -Raw $robosimDds) | Out-Null } catch { throw "Fast DDS profile is not well-formed XML: $robosimDds ($($_.Exception.Message))" }
+  18: 
+  19: $running = Get-Process -Name kit -ErrorAction SilentlyContinue
+  20: if ($running) { throw "An Isaac Sim instance (kit.exe) is already running: PID $($running.Id -join ', '). Close it normally first; two instances must not run at once." }
+  21: if ($env:ROS_DISTRO) { Write-Warning "ROS_DISTRO is preset to '$env:ROS_DISTRO' in this shell; setup_ros_env.bat will skip the bundled-library setup." }
+  22: 
+  23: $env:RMW_IMPLEMENTATION = 'rmw_fastrtps_cpp'
+  24: $env:ROS_DOMAIN_ID = '0'
+  25: $env:FASTRTPS_DEFAULT_PROFILES_FILE = $robosimDds
+  26: if (Test-Path Env:ROS_LOCALHOST_ONLY) { Remove-Item Env:ROS_LOCALHOST_ONLY }
+  27: 
+  28: Write-Output "RMW_IMPLEMENTATION=$env:RMW_IMPLEMENTATION ROS_DOMAIN_ID=$env:ROS_DOMAIN_ID"
+  29: Write-Output "FASTRTPS_DEFAULT_PROFILES_FILE=$env:FASTRTPS_DEFAULT_PROFILES_FILE"
+  30: Write-Output "Starting Isaac Sim with the ROS 2 bridge at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') (this window stays open while Isaac runs)"
+  31: & "$robosimIsaac\isaac-sim.bat" --/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge
+  32: $rc = $LASTEXITCODE
+  33: Write-Output "isaac-sim.bat exited with code $rc at $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+  34: exit $rc
+
+ succeeded in 0ms:
+   1: # run_codex_review.ps1 — RoboSim Eval: run one read-only Codex review round, detached-friendly, with full logs.
+   2: #   powershell -NoProfile -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\run_codex_review.ps1 -Round round1
+   3: # Inputs:  <Dir>\codex-prompt-<Round>.md (UTF-8 prompt; the short command-line prompt only tells Codex to read it,
+   4: #          which avoids Windows PowerShell 5.1 re-encoding Chinese text on the pipe).
+   5: # Outputs: <Dir>\codex-<Round>-report.md (last agent message, via -o), -stdout.txt, -stderr.txt,
+   6: #          -status.txt (start/end, real exit code, duration, and whether the account usage limit was hit).
+   7: # Read-only by construction: `codex exec --sandbox read-only`; no paid options are used.
+   8: param(
+   9:     [string]$Round = 'round1',
+  10:     [string]$Dir = 'D:\RoboSim-Eval\docs\review\2026-09-29-d0'
+  11: )
+  12: $ErrorActionPreference = 'Stop'
+  13: $promptFile = Join-Path $Dir "codex-prompt-$Round.md"
+  14: if (-not (Test-Path $promptFile)) { throw "prompt file not found: $promptFile" }
+  15: $report = Join-Path $Dir "codex-$Round-report.md"
+  16: $status = Join-Path $Dir "codex-$Round-status.txt"
+  17: $stdout = Join-Path $Dir "codex-$Round-stdout.txt"
+  18: $stderr = Join-Path $Dir "codex-$Round-stderr.txt"
+  19: $prompt = "Read the file $promptFile (UTF-8, Chinese) and carry out exactly the review it describes. Do not modify any file. Write the final report in Chinese."
+  20: 
+  21: "start $(Get-Date -Format o) round=$Round prompt_file=$promptFile" | Out-File $status -Encoding utf8
+  22: $t0 = Get-Date
+  23: $p = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', "codex exec --sandbox read-only -C D:\RoboSim-Eval -o `"$report`" `"$prompt`"" `
+  24:     -RedirectStandardOutput $stdout -RedirectStandardError $stderr -NoNewWindow -Wait -PassThru
+  25: $limit = [bool](Select-String -Path $stderr -Pattern 'hit your usage limit' -Quiet)
+  26: "end $(Get-Date -Format o) exit=$($p.ExitCode) duration_s=$([int]((Get-Date) - $t0).TotalSeconds) report_written=$(Test-Path $report) usage_limit_hit=$limit" |
+  27:     Out-File $status -Append -Encoding utf8
+  28: Get-Content $status
+  29: exit $p.ExitCode
+
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Failed
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "git --no-optional-locks -C D:\\RoboSim-Eval diff --name-status dbf67ce 19203e0 -- scripts/windows/start_isaac_ros2.ps1 scripts/windows/allow_wsl_to_isaac_firewall.ps1 scripts/windows/check_isaac_bridge.ps1 scripts/windows/probe_env.ps1 scripts/windows/run_codex_review.ps1 scripts/windows/inspect_usd.py scripts/wsl/ros_env.sh scripts/wsl/dds_env.sh scripts/wsl/install_ros2_jazzy.sh scripts/wsl/setup_workspace.sh scripts/wsl/probe_env.sh scripts/wsl/probe_topics.sh scripts/wsl/diag_discovery.sh configs/network/fastdds.xml; if ("'$LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; git --no-optional-locks -C D:'"\\RoboSim-Eval rev-parse 19203e0" in D:\RoboSim-Eval
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$paths = @('"'scripts/windows/start_isaac_ros2.ps1','scripts/windows/allow_wsl_to_isaac_firewall.ps1','scripts/windows/check_isaac_bridge.ps1','scripts/windows/probe_env.ps1','scripts/windows/run_codex_review.ps1'); foreach ("'$path in $paths) { $source = (git -C D:'"\\RoboSim-Eval show \"19203e0:"'$path") -join "`n"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $tokens = $null; $parseErrors = $null; [void][System.Management.Automation.Language.Parser]::ParseInput($source,[ref]$tokens,[ref]$parseErrors); if ($parseErrors.Count -gt 0) { $parseErrors; exit 1 }; "PASS PowerShell parse: $path" }; $xmlSource = (git -C D:'"\\RoboSim-Eval show 19203e0:configs/network/fastdds.xml) -join \""'`n"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; [xml]$xmlDoc = $xmlSource; "PASS XML parse: root=$($xmlDoc.DocumentElement.LocalName) namespace=$($xmlDoc.DocumentElement.NamespaceURI)"; $PSVersionTable.PSVersion.ToString()' in D:\RoboSim-Eval
+ succeeded in 0ms:
+A	configs/network/fastdds.xml
+A	scripts/windows/allow_wsl_to_isaac_firewall.ps1
+A	scripts/windows/check_isaac_bridge.ps1
+A	scripts/windows/inspect_usd.py
+A	scripts/windows/probe_env.ps1
+A	scripts/windows/run_codex_review.ps1
+A	scripts/windows/start_isaac_ros2.ps1
+A	scripts/wsl/dds_env.sh
+A	scripts/wsl/diag_discovery.sh
+A	scripts/wsl/install_ros2_jazzy.sh
+A	scripts/wsl/probe_env.sh
+A	scripts/wsl/probe_topics.sh
+A	scripts/wsl/ros_env.sh
+A	scripts/wsl/setup_workspace.sh
+19203e0a83779fc2aa3c464328885d337a63e23c
+
+ succeeded in 66ms:
+PASS PowerShell parse: scripts/windows/probe_env.ps1
+PASS PowerShell parse: scripts/windows/run_codex_review.ps1
+PASS XML parse: root=profiles namespace=http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles
+5.1.19041.6456
+
+codex
+本片 14 个文件均是相对基线新增的文件；5 个 PowerShell 脚本和 Fast DDS XML 的内存语法解析均通过。目前正在核查安装是否只补缺项、环境加载失败是否保留非零状态，以及重复运行防火墙脚本时是否验证已有规则。语法通过不代表运行验证通过。
+hook: PreToolUse
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$ErrorActionPreference = '"'Stop'; "'$source = (git -C D:'"\\RoboSim-Eval show 19203e0:scripts/windows/start_isaac_ros2.ps1) -join \""'`n"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $profileText = (git -C D:'"\\RoboSim-Eval show 19203e0:configs/network/fastdds.xml) -join \""'`n"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; function Test-Path { param($Path) return $true }; function Get-Content { param([switch]$Raw,$Path) return $profileText }; function Get-Process { param($Name,$ErrorAction) return $null }; function Show-MockedLaunch { "MOCK bat launch: ROS_DISTRO=$env:ROS_DISTRO RMW=$env:RMW_IMPLEMENTATION DOMAIN=$env:ROS_DOMAIN_ID DDS=$env:FASTRTPS_DEFAULT_PROFILES_FILE"; $global:LASTEXITCODE = 0 }; $env:ROS_DISTRO = '"'humble'; "'$source = $source.Replace('"'& \""'$robosimIsaac'"\\isaac-sim.bat\" --/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge','Show-MockedLaunch'); if (-not "'$source.Contains('"'Show-MockedLaunch')) { throw 'Launch substitution failed' }; 'Pure-memory launcher check: file checks and bat launch are mocked; no Isaac process is started.'; & ([scriptblock]::Create("'$source))' in D:\RoboSim-Eval
+ exited 1 in 139ms:
+WARNING: ROS_DISTRO is preset to 'humble' in this shell; setup_ros_env.bat will skip the bundled-library setup.
+Remove-Item : Cannot find path 'Env:\ROS_LOCALHOST_ONLY' because it does not exist.
+At line:26 char:41
++ ... t-Path Env:ROS_LOCALHOST_ONLY) { Remove-Item Env:ROS_LOCALHOST_ONLY }
++                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Env:\ROS_LOCALHOST_ONLY:String) [Remove-Item], ItemNotFoundException
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.RemoveItemCommand
+ 
+
+hook: PreToolUse
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$ErrorActionPreference = '"'Stop'; "'$source = (git -C D:'"\\RoboSim-Eval show 19203e0:scripts/windows/start_isaac_ros2.ps1) -join \""'`n"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $profileText = (git -C D:'"\\RoboSim-Eval show 19203e0:configs/network/fastdds.xml) -join \""'`n"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; function Test-Path { param($Path) if ($Path -eq '"'Env:ROS_LOCALHOST_ONLY') { return "'$false }; return $true }; function Get-Content { param([switch]$Raw,$Path) return $profileText }; function Get-Process { param($Name,$ErrorAction) return $null }; function Show-MockedLaunch { "MOCK bat launch: ROS_DISTRO=$env:ROS_DISTRO RMW=$env:RMW_IMPLEMENTATION DOMAIN=$env:ROS_DOMAIN_ID DDS=$env:FASTRTPS_DEFAULT_PROFILES_FILE"; $global:LASTEXITCODE = 0 }; $env:ROS_DISTRO = '"'humble'; "'$source = $source.Replace('"'& \""'$robosimIsaac'"\\isaac-sim.bat\" --/isaac/startup/ros_bridge_extension=isaacsim.ros2.bridge','Show-MockedLaunch'); if (-not "'$source.Contains('"'Show-MockedLaunch')) { throw 'Launch substitution failed' }; 'Pure-memory launcher check: path checks, profile read, process lookup and bat launch are mocked; no Isaac process is started.'; & ([scriptblock]::Create("'$source))' in D:\RoboSim-Eval
+ succeeded in 36ms:
+WARNING: ROS_DISTRO is preset to 'humble' in this shell; setup_ros_env.bat will skip the bundled-library setup.
+RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0
+FASTRTPS_DEFAULT_PROFILES_FILE=D:\RoboSim-Eval\configs\network\fastdds.xml
+Starting Isaac Sim with the ROS 2 bridge at 2026-09-30 17:12:35 (this window stays open while Isaac runs)
+MOCK bat launch: ROS_DISTRO=humble RMW=rmw_fastrtps_cpp DOMAIN=0 DDS=D:\RoboSim-Eval\configs\network\fastdds.xml
+isaac-sim.bat exited with code 0 at 2026-09-30 17:12:35
+
+codex
+已找到几处有代码依据的问题：`/clock` 的发布频率被当成时钟推进、探测脚本会停止未核验归属的 ROS daemon，以及部分失败会被记录成成功。我正在区分这些问题的实际影响，并用纯内存替身核查错误传播；不会运行真实探测或安装脚本。
+hook: PreToolUse
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$source = (git -C D:'"\\RoboSim-Eval show 19203e0:scripts/windows/probe_env.ps1) -join \""'`n"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $tokens = $null; $parseErrors = $null; $ast = [System.Management.Automation.Language.Parser]::ParseInput($source,[ref]$tokens,[ref]$parseErrors); if ($parseErrors.Count -gt 0) { throw '"'Parse failure' }; "'$sectionFunction = $ast.Find({param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq '"'Section'},"'$true); if ($null -eq $sectionFunction) { throw '"'Section function not found' }; "'$ErrorActionPreference = '"'Continue'; . ([scriptblock]::Create("'$sectionFunction.Extent.Text)); Section '"'synthetic nonterminating error (memory only)' 'Write-Error \"review-only synthetic failure\"'; 'Harness completed; no probe commands or file writes executed.'" in D:\RoboSim-Eval
+ succeeded in 39ms:
+
+===== synthetic nonterminating error (memory only) =====
+CMD: Write-Error "review-only synthetic failure"
+
+EXIT: 0 (cmdlet)
+Harness completed; no probe commands or file writes executed.
+
+hook: PreToolUse
+hook: PreToolUse Failed
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$reviewBash = '"'C:\\Program Files\\Git\\bin\\bash.exe'; if (-not (Test-Path -LiteralPath "'$reviewBash)) { throw '"'Git Bash unavailable' }; foreach ("'$path in @('"'scripts/wsl/probe_env.sh','scripts/wsl/probe_topics.sh','scripts/wsl/diag_discovery.sh')) { "'$source = git -C D:'"\\RoboSim-Eval show \"19203e0:"'$path"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $source | & $reviewBash --noprofile --norc -n -s; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; "PASS Bash syntax (Git Bash, no execution): $path" }; git --no-optional-locks -C D:'"\\RoboSim-Eval status --short" in D:\RoboSim-Eval
+ succeeded in 121ms:
+PASS Bash syntax (Git Bash, no execution): scripts/wsl/probe_topics.sh
+PASS Bash syntax (Git Bash, no execution): scripts/wsl/diag_discovery.sh
+ M docs/review/codex-queue.log
+?? artifacts/practice-01/
+?? docs/review/2026-09-29-d0/codex-round1c-c-attempt2-status.txt
+?? docs/review/2026-09-29-d0/codex-round1c-c-attempt2-stderr.txt
+?? docs/review/2026-09-29-d0/codex-round1c-c-attempt2-stdout.txt
+?? docs/review/2026-09-29-d0/codex-round1c-c-status.txt
+?? docs/review/2026-09-29-d0/codex-round1c-c-stderr.txt
+?? docs/review/2026-09-29-d0/codex-round1c-c-stdout.txt
+
+ERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 10:10 PM.
+ERROR: You’ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/codex/settings/usage to purchase more credits or try again at 10:10 PM.
+tokens used
+67,191
