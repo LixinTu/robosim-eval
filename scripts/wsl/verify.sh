@@ -5,13 +5,15 @@
 #   wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/verify.sh [--fast]
 # Every check is one row "时间 | 命令 | shell | cwd | 退出码 | 日志/样本 | 备注" (artifacts/README.md format) in
 # artifacts/verify/<YYYYmmdd-HHMMSS>/commands.md, written as soon as the check ends; its output goes to a log next to it.
-# Exit: 0 every check passed; 1 at least one failed (a check stopped by its time limit counts as failed, 124);
-# 2 usage error, the record could not be created, or another full run holds the lock.
-# Note: test_doctor_fake.sh (as of D5) always tests /mnt/d/RoboSim-Eval, whichever checkout this script is in.
+# Exit: 0 every check passed; 1 at least one failed (a check stopped by its time limit counts as failed: 124, or 137
+# when it was still running 10 s after the INT and was killed); 2 usage error, the record could not be created, or
+# another full run holds the lock.
+# A terminal Ctrl-C does not stop a run: each check runs in timeout's own process group, so the INT only reaches this
+# bash, and the current and the remaining checks run to their end (tested 2026-10-03).
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # the checkout this script is in
 
-usage() { sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
 FAST=0
 for arg in "$@"; do
   case "$arg" in
@@ -60,9 +62,6 @@ git_info() {  # the same git facts the runner records in manifest.json
   fi
   echo "- 检出:$ROOT;$(git_info)"
   echo "- 环境:WSL ${WSL_DISTRO_NAME:-?};$(python3 --version 2>&1);本机是 Isaac Sim 6.1 官方不支持的配置(unsupported configuration:Windows 10 + 8 GB 显存),这些检查不需要仿真"
-  if [[ $FAST -eq 0 && "$ROOT" != "/mnt/d/RoboSim-Eval" ]]; then
-    echo "- 注意:test_doctor_fake.sh 写死了 /mnt/d/RoboSim-Eval,doctor 假节点测试测的是那份检出,不是本检出"
-  fi
   echo
   echo "| 时间 | 命令 | shell | cwd | 退出码 | 日志/样本 | 备注 |"
   echo "| --- | --- | --- | --- | --- | --- | --- |"
@@ -87,12 +86,18 @@ run_check() {  # run_check <name> <time limit s> <summary grep pattern> <extra l
     verdict="PASS"
   else
     verdict="FAIL"; FAILED+=("$name")
-    [[ $rc -eq 124 ]] && note="超过 ${limit} s 时限,检查未完成;$note"
+    if [[ $rc -eq 124 ]]; then
+      note="超过 ${limit} s 时限,检查未完成;$note"
+    elif [[ $rc -eq 137 && $((u1 - u0)) -ge $limit ]]; then
+      # KILLed 10 s after the INT: the test script's EXIT trap did not run, so fake nodes it started with setsid may
+      # still be publishing on domain 42 until their --duration ends.
+      note="超过 ${limit} s 时限,INT 之后 10 s 仍未结束被强杀,检查未完成,它起的假节点可能还在跑;$note"
+    fi
   fi
   # A sleeping Windows host pauses the WSL VM: the wall clock jumps on resume, the VM's uptime does not. The fake
   # nodes and the doctor's observation window are then cut, so a failure in such a check says nothing about the code.
   slept=$(( (s1 - s0) - (u1 - u0) ))
-  [[ $slept -gt 30 ]] && note="$note;期间墙钟比 WSL 运行时间多走 ${slept} s(Windows 休眠或 WSL 暂停),结果可能受影响,应重跑"
+  [[ $slept -gt 30 ]] && note="$note;期间墙钟比 WSL 运行时间多走 ${slept} s(Windows 睡眠或 WSL 暂停),结果可能受影响,应重跑"
   printf '| %s–%s(%ss) | `%s` | %s | %s | %s | %s%s | %s %s |\n' "$t0" "$t1" "$((s1 - s0))" "$shown" "$SHELL_DESC" \
     "$ROOT" "$rc" "$log" "${extra:+、$extra}" "$verdict" "${note//|/\\|}" >> "$REC"
   echo "verify.sh: [$name] exit $rc $verdict${note:+ ($note)}"
