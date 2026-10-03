@@ -1,6 +1,6 @@
 # 本机启动、运行与关闭(D0–D5)
 
-本机是 Isaac Sim 6.1 官方不支持的配置(Windows 10 + 8 GB 显存),下面的内容只表示"在本机实测可用"(D0、D1 于 2026-09-29,D2–D5 于 2026-09-30,verify.sh 与提交前检查于 2026-10-03),不表示普遍可用。D0–D5 每条命令的原始记录与退出码见 `artifacts/d0a..d0d`、`artifacts/d1..d5` 的 commands.md;verify.sh 每次运行自动写 `artifacts/verify/<时间>/commands.md`(默认不进 Git,入库的只有 20261003-070428、-074935、-075258 三份);提交前检查的启用和一次被它拒绝的提交见提交 2784ec5 的说明。正常使用走自动路径(`run_scenario.sh`、`run_batch.sh`);D0 时手动串脚本的流程放在文末附录,只在调试时用。
+本机是 Isaac Sim 6.1 官方不支持的配置(Windows 10 + 8 GB 显存),下面的内容只表示"在本机实测可用"(D0、D1 于 2026-09-29,D2–D5 于 2026-09-30,verify.sh 与提交前检查于 2026-10-03),不表示普遍可用。2026-10-03 合并 `fix/review-round1` 之后,运行锁、终端 Ctrl-C、收尾兜底取消、地图检查、批量中止规则等新行为主要由 verify.sh 的固定输入测试和假节点测试验证(`artifacts/verify/20261003-093557`);真实 Isaac 上只跑过一次 normal(`artifacts/review-2026-10-03/commands.md`):地图检查通过、正常收尾,退出 11,因 WSL 的墙钟被往回拨、录下的消息时间戳倒退而判数据不完整,见该记录。D0–D5 每条命令的原始记录与退出码见 `artifacts/d0a..d0d`、`artifacts/d1..d5` 的 commands.md;verify.sh 每次运行自动写 `artifacts/verify/<时间>/commands.md`(默认不进 Git,入库的只有 20261003-070428、-074935、-075258、-093557 四份);提交前检查的启用和一次被它拒绝的提交见提交 2784ec5 的说明。正常使用走自动路径(`run_scenario.sh`、`run_batch.sh`);D0 时手动串脚本的流程放在文末附录,只在调试时用。
 
 ## 一次性前提(已完成,重装时才需要)
 
@@ -20,7 +20,7 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/verify.sh          # �
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/verify.sh --fast   # 只跑固定输入测试(提交前检查跑的就是它)
 ```
 
-每项检查一结束就在 `artifacts/verify/<时间>/commands.md` 记一行(artifacts/README.md 的七栏:时间、命令、shell、cwd、退出码、日志/样本、备注;备注是 PASS/FAIL 和测试摘要),末行写结论;日志和假节点测试的样本目录(doctor-fake/、runner-fake/)放在同一目录。退出码:0 全部通过;1 至少一项失败(超时限的也算失败,记 124;SIGINT 后 10 s 仍不退出、被强杀的记 137);2 用法错误、记录建不起来,或另一个完整检查正在跑(只有完整模式加锁,`--fast` 不受影响)。测试有多少条、结果如何,以最近一次记录为准,本文不写死。假节点测试用 ROS domain 42,不影响正在运行的 Isaac;完整运行约 4 分钟。记录默认不进 Git,要作为证据保留时 `git add -f`。检查期间 Windows 休眠会打断假节点测试,记录里会注明,重跑即可。
+每项检查一结束就在 `artifacts/verify/<时间>/commands.md` 记一行(artifacts/README.md 的七栏:时间、命令、shell、cwd、退出码、日志/样本、备注;备注是 PASS/FAIL 和测试摘要),末行写结论;日志和假节点测试的样本目录(doctor-fake/、runner-fake/)放在同一目录。退出码:0 全部通过;1 至少一项失败(超时限的也算失败,记 124;SIGINT 后 10 s 仍不退出、被强杀的记 137);2 用法错误、记录建不起来,或另一个完整检查正在跑(只有完整模式加锁,`--fast` 不受影响)。测试有多少条、结果如何,以最近一次记录为准,本文不写死。假节点测试用 ROS domain 42,不影响正在运行的 Isaac;完整运行约 6 分钟(2026-10-03 合并后:固定输入测试约 1 分钟、doctor 假节点约 1 分钟、运行器假节点约 4 分钟);`--fast` 约 1 分钟,提交前检查也要等这么久。终端 Ctrl-C 停不下 verify.sh:每项检查在 `timeout` 自建的进程组里,SIGINT 只到 verify.sh 自己,正在跑的和后面的检查都会跑完(2026-10-03 实测)。记录默认不进 Git,要作为证据保留时 `git add -f`。检查期间 Windows 睡眠会打断假节点测试,记录里会注明,重跑即可。
 
 ## 终端约定
 
@@ -55,35 +55,37 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_scenario.sh normal 
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_scenario.sh collision --out /mnt/d/RoboSim-Eval/artifacts/d3/runs
 ```
 
-`run_scenario.sh <情形> [--out <目录>] [--config <yaml>]` 依次:(场景没加载时先加载)→ 复位场景并用真值核对机器人回到出生点 → doctor → 启动 Nav2 并等就绪 → 开始录制 → 发目标 → 监控超时与中断 → 确认停车 → 停止录制、离线分析、停止 Nav2。墙钟硬上限 1500 s,到时发 SIGINT,120 s 后仍在才强杀。情形与超时在 `configs/baseline.yaml` 的 `run`、`scenarios` 两节。
+`run_scenario.sh <情形> [--out <目录>] [--config <yaml>]` 依次:在钉住的 Nav2 地图上核对起点和目标在允许区域内、目标可达(不满足就按出错收尾;预设不可达情形不要求可达,改为在这里取得"无路径"证据)→(场景没加载时先加载)→ 复位场景,用真值核对机器人回到出生点,并核对 `/World/RoboSimObstacles` 下没有残留 → 放情形的障碍物并读回核对 → doctor → 启动 Nav2 并等就绪 → 开始录制 → 发目标 → 监控超时与中断 → 确认停车 → 收尾:恢复注入的暂停;发出的目标还没有终态就先取消,停车还没确认就再确认;然后取接触数据、停止录制、离线分析、停止 Nav2、写 result.json(每一步单独捕获异常,一步出错不跳过后面的步骤)。墙钟硬上限 1500 s,到时发 SIGINT,120 s 后仍在才强杀。情形与超时在 `configs/baseline.yaml` 的 `run`、`scenarios` 两节。
 
-同一时间只跑一个 `run_scenario.sh` 或 `run_batch.sh`,运行中也不调 `sim.sh` 的 load、play、pause、stop、reset:这一版没有互斥,第二个运行器会复位正在用的仿真、清空共享的接触缓存。
+同一时间只跑一个 `run_scenario.sh` 或 `run_batch.sh`。运行器开始前取得按 ROS domain 的独占锁(WSL 里的 `/tmp/robosim_eval/runner-domain-<id>.lock`,记着占用者的 pid 和运行目录;进程一结束就释放,被强杀也不会留下失效的锁);锁被占时,新的运行器不建运行目录、不碰仿真,退出 2。批量自己不持锁,只有正在跑的那次尝试持锁:两次尝试之间另起的 `run_scenario.sh` 能拿到锁,批量的下一次就会被拒,批量以 2 停止,余下的不跑,所以批量期间也不要另起运行。`sim.sh` 不取锁,运行中仍不要调它的 load、play、pause、stop、reset。
 
-中断一次运行:这一版的 `run_scenario.sh` 用 `timeout` 包住运行器,没加 `--foreground`,终端里的 Ctrl-C 到不了运行器(在伪终端上复现过)。要中断时从另一个终端执行 `wsl -d Ubuntu -- pkill -INT -f robosim_eval.runner`:执行中被中断时,运行器取消目标、确认停车并收尾,退出 20。例外:从 Nav2 就绪到目标被接受之间中断(主要是开始录制的约 4.5 s,实测 4.3–4.9 s;等接受本身只有几毫秒),运行器照样发出目标,之后不取消、也不确认停车,退出码仍是 20,要自己核对机器人已停。这两处的修复在 `fix/review-round1`。
+中断一次运行:在运行它的终端按 Ctrl-C(`run_scenario.sh` 用 `timeout --foreground`,Ctrl-C 能到运行器;在伪终端上由 verify.sh 的运行器假节点测试 pty_ctrl_c 和 tests/test_runner_ctrl_c.py 验证过,真实 Windows 控制台没有测),或从另一个终端执行 `wsl -d Ubuntu -- pkill -INT -f robosim_eval.runner`。目标发出之前被中断,就不再发目标;已经发出时,先等 Nav2 应答,接受了就取消并确认停车(被拒绝则不用取消);收尾后退出 20。取消或停车没确认时退出 31。目标已在取消中或已有终态之后才到的中断不记为中断,运行照常走完,退出码按判定。收到中断后最多再等 120 s,仍没结束就被强杀(137)。
+
+运行中不要关掉运行 `run_scenario.sh` 的终端窗口:关窗口(挂断)时运行器收到 SIGHUP,而它只处理 SIGINT、SIGTERM,所以会被直接结束:不取消目标(Nav2 会继续执行它)、不确认停车、不收尾,Nav2 和记录器残留,按"关闭"一节处理。这个机制 2026-10-03 用替身进程在伪终端上实测过(`artifacts/review-2026-10-03/hup_probe.py`),真实运行器没有测。批量不同:关窗口时当前这次照常跑完、收尾,然后批量停止(见第 4 节)。
 
 每次运行一个目录 `<out>/<情形>-<时间>/`:manifest.json、config.resolved.yaml、events.jsonl、goal-*.txt、rosbag/、trajectory.csv、result.json,以及各脚本的输出。
 
 | 退出码 | 含义 |
 | --- | --- |
 | 0 / 10 / 11 | 流程完整;评测结论分别为 pass / fail / inconclusive |
-| 20 | 被中断,已收尾。不等于目标已取消:执行中被中断才先取消目标并确认停车;从 Nav2 就绪到目标被接受之间被中断时目标照发,不取消也不确认停车(见上);更早被中断时还没有发目标 |
+| 20 | 被中断,已收尾。目标发出之前被中断时不发目标;发出之后被中断时先等 Nav2 应答,接受了就取消并确认停车(被拒绝则不用取消)。取消或停车没确认时是 31,不是 20;目标已在取消中或已有终态后才到的中断不改变退出码 |
 | 30 | 出错(例如复位核验或 doctor 失败、Nav2 没有就绪) |
-| 31 | 出错且应中止后续批次(取消或停车没有确认) |
-| 2 | 情形名不存在、参数写错、配置或环境脚本错误 |
-| 1 | 完全没写情形名(bash 直接退出);或运行器抛出未捕获的异常,例如收尾某一步出错时,后面的停录制、停 Nav2、写 result.json 都被跳过(见 docs/plan.md 未解决问题) |
+| 31 | 出错且应中止后续批次:取消或停车没有确认(包括收尾时兜底取消已发出、还没有终态的目标)、注入的暂停没能恢复、记录器或 Nav2 没确认停下、启动前发现已有 Nav2 在跑或查不了(start_nav2.sh 退出 3) |
+| 2 | 情形名不存在、参数写错、配置或环境脚本错误,或同一 ROS domain 上已有运行器在跑(锁被占:不建运行目录、不碰仿真) |
+| 1 | 完全没写情形名(bash 直接退出);或运行器在受保护的流程之外抛出未捕获的异常(例如 rclpy 初始化失败、锁文件或运行目录建不了),这时可能没有 result.json。收尾各步各自捕获异常:一步出错只记为错误(退出 30;恢复注入的暂停、兜底取消、停录制、停 Nav2 这几步出错时退出 31),其余步骤照常执行 |
 | 124 | 1500 s 硬上限触发,运行器在之后 120 s 内收完尾 |
-| 137 | 收到 SIGINT 后 120 s 仍未结束,被 timeout 强杀,收尾没做完(见"关闭");SIGINT 可以来自 1500 s 硬上限,也可以来自上文的 pkill(它同样匹配到 timeout 进程) |
+| 137 | 收到 SIGINT 后 120 s 仍未结束,被 timeout 强杀,收尾没做完(见"关闭");SIGINT 可以来自 1500 s 硬上限、终端 Ctrl-C,或上文的 pkill(它同样匹配到 timeout 进程) |
 
 ### 3. 判定与失败处理(D3)
 
 `result.json` 的五个状态字段由 `robosim_eval/evaluator.py` 给出,规则写在模块说明里,要点:
 
 - 到达看 sim_control 真值(不是 AMCL);Nav2 报成功但真值超出 0.5 m 是"虚假成功",判 fail。
-- 不可达必须同时满足:情形在配置里写了 `preset_unreachable: true`、Nav2 中止或拒绝、判定必需的数据完整、真值没显示到达(没有真值也算没到);导航时限已触发时一律判 timeout。情形里的 `evidence`(离线证据)只写给人看,代码不检查。只有中止记 unknown。
-- 安全看 Isaac 内的接触报告(需要用 `start_isaac_ros2.ps1 -PythonServer` 启动 Isaac);没测到就是 unknown,不是"没碰撞"。与两个地面碰撞平面、机器人自身的接触不算碰撞。
-- 判定必需的数据是 /clock、odom、Isaac 侧 TF;AMCL 估计只作参考,它的断流只记警告。
+- 不可达必须同时满足:情形在配置里写了 `preset_unreachable: true`;Nav2 以 ABORTED 结束且 error_code 是规划器的无路径码 207 或 208(被拒绝、其他中止码都不算);运行器开始前的地图检查(`robosim_eval/map_check.py`,在钉住的 Nav2 地图上按机器人内切半径搜路)在目标容差内找不到可达位置;有真值且真值没到目标(没有真值不算没到);判定必需的数据完整。导航时限已触发时一律判 timeout。中止或被拒绝却缺其中任何一条时记 unknown:期望 reached 的情形因此判 fail,预设不可达的情形判 inconclusive;预设不可达而真值到了目标判 fail。情形里的 `evidence` 文字只写给人看,代码不检查。
+- 安全看 Isaac 内的接触报告(需要用 `start_isaac_ros2.ps1 -PythonServer` 启动 Isaac);没测到就是 unknown,不是"没碰撞";监视器丢了接触事件、又没发现不允许的接触时,也是 unknown。与两个地面碰撞平面、机器人自身的接触不算碰撞;运行前清空时已在接触、运行中仍持续的接触照样计入。
+- 判定必需的数据是 /clock、odom、Isaac 侧 TF;AMCL 估计只作参考,它的断流只记警告。必需数据流在评测窗口里没有数据、墙钟断流超过 2 s 或时间戳倒退,运行器收到的 /clock 倒退,或录制没覆盖整次运行(bag 开始晚或结束早、没录到目标的接受或终态、记录器撞上时长上限、离线分析失败),都判数据不完整。WSL 的墙钟被往回拨时,录下的数据也会因时间戳倒退判不完整(见"本机实测特性")。
 
-情形(`configs/baseline.yaml` 的 `scenarios`):normal、bypass、unreachable、normal_slow(D5 声明的参数改动,见第 5 节),以及故障注入 cancel(目标被接受后 5 s 仿真时间取消)、dropout(目标被接受后 5 s 仿真时间暂停仿真,墙钟 6 s 后恢复)、timeout(导航的仿真时间时限压到 6 s,墙钟时限仍是 300 s)、collision(路上放一个 /scan 看不到的 0.10 m 高矮箱子)。没有 Python 执行服务时可以加 `--no-contacts` 跳过接触检测,安全字段同样是 unknown。
+情形(`configs/baseline.yaml` 的 `scenarios`):normal、bypass、unreachable、normal_slow(D5 声明的参数改动,见第 5 节),以及故障注入 cancel(目标被接受后 5 s 仿真时间取消)、dropout(目标被接受后 5 s 仿真时间暂停仿真,墙钟 6 s 后恢复)、timeout(导航的仿真时间时限压到 6 s,墙钟时限仍是 300 s)、collision(路上放一个 /scan 看不到的 0.10 m 高矮箱子)。没有 Python 执行服务时可以加 `--no-contacts` 跳过接触检测,安全字段同样是 unknown。dropout 声明 `expect_data: incomplete`、collision 声明 `expect_safety: fail`:注入的故障要被数据或安全检查抓到才算符合预期(导航结果也符合时判 pass);没抓到(数据完整、安全 pass)判 fail;没测到接触(安全 unknown),或数据除断流外还有别的问题时,判 inconclusive。
 
 ### 4. 批量复跑与报告(D4)
 
@@ -91,11 +93,11 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_scenario.sh collisi
 wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/run_batch.sh      # normal、bypass、unreachable 各 3 次
 ```
 
-`run_batch.sh [--scenarios a,b,c] [--repeats N] [--out <目录>] [--config <yaml>]`。每次尝试都先复位并用真值核对;某次运行的取消或停车没有确认(运行器退出 31)时中止后续批次。这一版里,从 Nav2 就绪到目标被接受之间被中断(20)、等接受超时或目标接受后内部出错(30)时,停车同样没有确认,但批量照常继续(见 docs/plan.md 未解决问题)。结果在 `artifacts/d4/batch-<时间>/`:`batch.json`、`runs/<每次运行>/`、`runs/report.html`(静态页面,双击打开)、`runs/summary.json`。
+`run_batch.sh [--scenarios a,b,c] [--repeats N] [--out <目录>] [--config <yaml>]`。开跑前先核对配置和情形名。每次尝试都先复位并用真值核对。某次运行的取消或停车没有确认(运行器退出 31),或运行器没有正常收尾(被信号杀掉、退出码不在 0/10/11/20/30 之内、运行目录里没有带判定的 result.json)时,中止后续批次;某次退出 20 时,批量在这次之后停止。运行器收尾时,对已发出、还没有终态的目标一律取消并确认停车,确认不了就退出 31。结果在 `artifacts/d4/batch-<时间>/`:`batch.json`、各次的输出 `NN-<情形>-<次>.txt`、`runs/<每次运行>/`、`runs/report.html`(静态页面,双击打开)、`runs/summary.json`。
 
 报告只从已保存的记录生成,可单独重建(会覆盖该目录下的 report.html 和 summary.json;`-m` 要在仓库根目录下才找得到包,所以带 `--cd`):`wsl -d Ubuntu --cd /mnt/d/RoboSim-Eval -- python3 -m robosim_eval.report /mnt/d/RoboSim-Eval/artifacts/d4/<批次目录>/runs`。页头列出批次里出现的每个 commit 及其运行次数;"final distance to goal (m, ground truth)" 列(分情形表取最大值)是停车确认时(没确认时取收尾时)真值算的到目标距离,不可达情形也有值,不是到达误差;"Nav2 recoveries" 列只是线索,不能单凭它认定开头卡住:D4 可到达的 6 次里卡住的 5 次都是 5 次恢复、没卡住的那次是 0,但没卡住的运行也会有恢复(D5 演示的 normal 2 次、normal_slow 各 1 次),unreachable 每次 15 次;怎么判断卡住见 artifacts/d4/commands.md。
 
-一次批量 9 次约 27 分钟墙钟,硬上限 4 h;批量直接调用运行器,没有单次 1500 s 的上限。退出码:0 每次尝试都执行过(不看判定结果,情形名写错也是 0;判定看 `batch.json` 里各次的退出码和 `runs/summary.json`);31 某次取消或停车未确认,余下的不跑;20 被中断;2 用法或环境错误;124 4 h 硬上限触发。终端 Ctrl-C 同样到不了批量;要停批量,从另一个终端执行 `wsl -d Ubuntu -- pkill -INT -f robosim_eval.batch`,当前这次跑完后停。
+一次批量 9 次约 27 分钟墙钟,硬上限 4 h;批量直接调用运行器,没有单次 1500 s 的上限。退出码:0 每个计划的尝试都跑了并正常收尾(不看判定结果;判定看 `batch.json` 里各次的退出码和 `runs/summary.json`);31 某次取消或停车未确认,或运行器没有正常收尾,余下的不跑;20 被中断(Ctrl-C、SIGTERM、关窗口、4 h 硬上限)或某次运行器退出 20;2 用法、配置或环境错误(情形名写错在第一次尝试前就查出,一次都不跑),或某次运行器拒绝启动(例如锁被占),余下的不跑;30 报告没写成(只在本应退出 0 时);137 硬上限、Ctrl-C、关窗口或 pkill 之后 1 h 仍未结束,被强杀(batch.json 仍是 running)。终端 Ctrl-C 能到批量:批量把它转给正在跑的那次一次,那次按"中断一次运行"处理(执行中就取消目标、确认停车,收尾后退出 20),之后批量停止,余下的不跑;从另一个终端执行 `wsl -d Ubuntu -- pkill -INT -f robosim_eval.batch` 效果相同。要让当前这次跑完再停,发 SIGTERM(`wsl -d Ubuntu -- pkill -TERM -f robosim_eval.batch`);关掉窗口(SIGHUP)也是让当前这次跑完再停,batch.json 和报告照常写出。
 
 ### 5. 声明的参数改动与演示(D5)
 
@@ -134,16 +136,16 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/doctor.sh --out /mnt/d/
 | 10 | 仿真不推进 | Isaac 暂停或停止(⏸ / ⏹) |
 | 11 | 仿真数据缺失 | Isaac 没开或刚启动还没加载场景(单独跑 doctor 前先 `sim.sh load`、`sim.sh play`;运行器自己会做)、ROS 2 bridge 没加载、防火墙或 DDS 发现不通、某个必需话题没有发布者 |
 | 12 | 数据降级 | 某路数据过慢、陈旧或静默 |
-| 13 | 环境或接口不对 | 话题类型与配置不符;ROS 2 Python 导入失败;绕过 doctor.sh 直接跑 `python3 -m robosim_eval.doctor` 而没加载 ros_env.sh / dds_env.sh 时,RMW 不是 Fast DDS、ROS_DOMAIN_ID 或 ROS_DISTRO 与配置不符、Fast DDS 配置文件不存在(doctor.sh 自己加载这两个脚本,加载失败退出 2) |
-| 2 | 用法、配置或环境脚本错误 | 参数写错、配置文件缺项或数值非法、ros_env.sh / dds_env.sh 加载失败 |
-| 1 | 内部错误 | doctor 自身出现未处理的异常(例如配置文件不是合法的 YAML),按失败处理 |
+| 13 | 环境或接口不对 | ros_env.sh / dds_env.sh 加载失败(doctor.sh 直接退出 13);某个配置话题有发布者的消息类型与配置不符(有一个就算,即使同时有类型正确的发布者);ROS 2 Python 导入失败或 rclpy 起不来;绕过 doctor.sh 直接跑 `python3 -m robosim_eval.doctor` 而没加载这两个脚本时,RMW 不是 Fast DDS 或 RMW_IMPLEMENTATION 指定的 RMW 没装、ROS_DOMAIN_ID 或 ROS_DISTRO 与配置不符、Fast DDS 配置文件未设置或不存在 |
+| 2 | 用法或配置错误 | 参数写错,包括 `--window` 不是有限数、短于 clock_stall_s(2 s)或长于 50 s(doctor.sh 的 60 s 上限减去 discovery_timeout_s 和 5 s 启停余量);配置文件不存在、不是合法的 YAML、有重复键或未知键、缺项或数值非法,或给要观察的话题配了 doctor 不支持的消息类型 |
+| 1 | 内部错误 | doctor 自身出现未处理的异常(例如 `--out` 目录建不起来或写不进),按失败处理 |
 | 124 | 60 s 硬上限触发 | doctor 自身卡住,按失败处理 |
 
 话题与阈值在 `configs/baseline.yaml`,依据是 D0 的实测频率。它的固定输入测试和假节点测试都包含在 verify.sh 里。
 
 ## 关闭
 
-1. 自动路径:`run_scenario.sh`、`run_batch.sh` 自己停止录制和 Nav2;中途要停,用上文的 `pkill -INT`(终端 Ctrl-C 到不了)。运行器被强杀(`run_scenario.sh` 退出 137:SIGINT 之后 120 s 仍未结束)时收尾没做完,Nav2 会残留,下一次 start_nav2 拒绝启动;这时对那个运行目录跑 `stop_record.sh` 和 `stop_nav2.sh`(见附录)。
+1. 自动路径:`run_scenario.sh`、`run_batch.sh` 自己停止录制和 Nav2;中途要停,在运行它的终端按 Ctrl-C,或用上文的 `pkill -INT`(单次见第 2 节,批量见第 4 节)。运行器被强杀(`run_scenario.sh` 退出 137:SIGINT 之后 120 s 仍未结束),或运行中关掉了 `run_scenario.sh` 的窗口时,收尾没做完,Nav2 和记录器会残留,下一次运行的 start_nav2 拒绝启动(运行器退出 31);这时对那个运行目录跑 `stop_record.sh` 和 `stop_nav2.sh`(见附录)。
 2. Isaac Sim:用户在 GUI 按 ⏹ 或 File → Exit;不要从 WSL 或脚本杀 kit.exe。Claude Code 的 PreToolUse 钩子(`.claude/settings.json` → `.claude/hooks/guard_commands.py`)只看 Bash、PowerShell 工具调用的命令文本:会拦下其中结束 kit.exe 的调用(含 `wsl -d Ubuntu -- taskkill.exe /IM kit.exe`),但不读被调用的脚本文件(`bash <脚本>`、`powershell -File <脚本>` 直接放行),也管不到 Codex 和手动执行的命令。
 3. 手动启动的 Nav2 与记录器怎么停,见附录。
 
@@ -152,12 +154,13 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/doctor.sh --out /mnt/d/
 - 仿真实时因子随会话变化:不跑 Nav2 时 D0–D4 约 0.36–0.43,D5(02:00 重新加载场景之后)只有 0.30–0.34(各运行 doctor-1.txt 的 RTF);完整导航中 D0 约 0.33,D2–D4 约 0.35–0.41,D5 约 0.28–0.32(events.jsonl 从 EXECUTING 到下一状态的仿真/墙钟时间)。按 0.32 计,120 s 仿真时间约需 375 s 现实时间,会先触发 300 s 现实上限(D3 collision:300 s 墙钟只走了 106 s 仿真)。
 - 6.1 的 Nova Carter 示例只发布 3D 点云,不发布 /front_2d_lidar/scan、/back_2d_lidar/scan;钉住 params 的局部代价地图这两路无数据,全局代价地图与 collision_monitor 用的 /scan 由 pointcloud_to_laserscan 转换得到。
 - 复位后点云发布者约 1.5–2 s 才重建,头几秒可能只有 0–1 帧;运行器准备阶段的 doctor 对此有限重查(artifacts/d2/repro-doctor-after-reset)。
-- Nav2 从启动到就绪:D2 三次 13.3–13.6 s;D2–D5 全部 31 次真实运行 12.6–16.7 s(各运行 events.jsonl 的 "nav2 ready after")。
+- Nav2 从启动到就绪:D2 三次 13.3–13.6 s;D2–D5 启动了 Nav2 的 31 次真实运行 12.6–16.7 s(33 次真实运行中另 2 次在启动 Nav2 前就结束;各运行 events.jsonl 的 "nav2 ready after")。
 - 机器人在零指令下缓慢前爬:按位置增量约 1.1 mm/仿真秒;odom twist 读数只有约 0.6 mm/s。都远低于停稳阈值 0.05 m/s。
 - 话题偶有停顿(按接收时刻的墙钟间隔):空场景 odom 曾有 0.695 s 的间隔(D0);导航中 /clock、odom 的最长间隔 D0 为 0.92 s,D2–D5 的完整导航多为 1.16–1.32 s,D5 有一次自发卡顿 2.19 s(超过 2 s 门槛,判 inconclusive);AMCL 的 map→odom 最长间隔 D0 为 1.86 s,D2–D5 多为 2.3–2.6 s(最大 2.60 s),所以 AMCL 只作参考(各运行 result.json 的 data_integrity;D3 dropout 的约 6 s 空档是注入的暂停)。
-- USD 动画时间线周期性循环:约每 16.7 s 仿真时间一次(复位后第一次在仿真约 17 s,相邻两次实测相差 16.3–17.2 s,由各运行 trajectory.csv 的仿真时间戳对照 kit 日志得出),墙钟间隔随实时因子变化:D0 约 40–43 s,9-30 当天各时段中位数 43–58 s;kit 日志每次循环出现 "resetting the animation timeline" 与一帧 differential_controller "Invalid deltaTime 0.000000"。仿真时钟不受影响(已实测 /clock 单调:D0 的 clock-continuity-01,D2–D5 共 31 份 result.json 的 /clock 倒退次数都是 0);物理是否受影响没有单独测。
+- USD 动画时间线周期性循环:约每 16.7 s 仿真时间一次(复位后第一次在仿真约 17 s,相邻两次实测相差 16.3–17.2 s,由各运行 trajectory.csv 的仿真时间戳对照 kit 日志得出),墙钟间隔随实时因子变化:D0 约 40–43 s,9-30 当天各时段中位数 43–58 s;kit 日志每次循环出现 "resetting the animation timeline" 与一帧 differential_controller "Invalid deltaTime 0.000000"。仿真时钟不受影响(已实测 /clock 单调:D0 的 clock-continuity-01,D2–D5 有录制的 31 次运行,result.json 的 /clock 倒退次数都是 0,另 2 次在启动 Nav2 前就结束,没有录制);物理是否受影响没有单独测。
 - D0 首次 Play 后约 7 s 时间线暂停(不是停止),由什么触发不明:kit 日志在那一刻与后来用户按 ⏸ 时特征相同(TF 聚合警告开始出现,紧接着同一毫秒出现 "resetting the animation timeline" 与菜单刷新),整个会话在用户关闭 Isaac 前没有停止才有的 "onStop: Cleared time samples";此后 OmniGraph 不再 tick,topic 仍在但没有数据。再按 ▶ 即恢复:日志只有 onResume,没有从停止状态播放时才有的 "Created simulation views",是从暂停处继续,场景没有重置;要回到出生点用 `sim.sh reset`。
-- WSL 的 eth0 地址每次 WSL 重启可能变化;防火墙规则按接口而非 IP 限定,不受影响。
+- WSL 的 eth0 地址每次 WSL 重启可能变化;防火墙规则按接口而非 IP 限定,不受影响(2026-10-03 WSL 重启后 sim.sh state 照常退出 0)。
+- 2026-10-03 一次 Windows 睡眠(07:06–07:32)之后,WSL 的 VM 时钟比真实时间快约 1.5–1.8%,WSL 里的 systemd-timesyncd(NTP)约每 32 s 校一次,每次把墙钟往回拨约 0.5 s;重启 WSL 不能消除,Windows 时钟对 NTP 不漂移(WSL 用的时钟源是 Hyper-V 提供的参考时钟)。rosbag 按接收时的墙钟给消息排序,于是录下的 /clock、odom、TF 出现倒退时间戳,评测判数据不完整、验证 inconclusive(当天合并后第一次真实 normal 就是这样)。真实运行前先跑 `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/artifacts/review-2026-10-03/clock_probe.sh 90`:报告有回拨就先处理时钟再跑(证据与排查见 `artifacts/review-2026-10-03/commands.md`)。
 
 ## 附录:D0 手动串脚本的流程(调试用)
 
