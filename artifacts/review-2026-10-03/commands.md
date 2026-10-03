@@ -26,12 +26,15 @@
 | 10:19:18–10:19:45 | `python3 …/hup_probe.py fg`;`python3 …/hup_probe.py bg` | PowerShell → wsl.exe | D:\RoboSim-Eval | 0;0 | — | 伪终端挂断(相当于关窗口):`timeout --foreground`(现在的 run_scenario.sh)下,只处理 SIGINT/SIGTERM 的替身进程被直接结束,日志只有 "started";不加 `--foreground`(v0.1.0)时它活下来并正常结束 |
 | 10:20:17–10:20:23 | `wsl -l -v`;`Get-Process kit`;`wsl -d Ubuntu -- bash -l …/sim.sh state` | PowerShell → wsl.exe bash -l | D:\RoboSim-Eval | 0 | — | kit.exe 33268 仍在;WSL 重启后仍能连上 sim_control,state playing |
 | 10:22:35–10:22:53 | `python3 …/verify_ctrlc_probe.py` | PowerShell → wsl.exe | D:\RoboSim-Eval | 0 | — | 按 verify.sh 的方式在 `timeout` 下跑两项检查,第 2 s 在终端按 Ctrl-C:第一项没收到 SIGINT、照常跑完,第二项接着跑,共 12.1 s。即终端 Ctrl-C 停不下 verify.sh |
+| 10:34:01–10:34:06 | `bash -l …/artifacts/review-2026-10-03/timesync_param.sh` | PowerShell → wsl.exe bash -l | D:\RoboSim-Eval | 0 | — | `/sys/module/hv_utils/parameters/timesync_implicit` 为 Y(root 可写);WSL 里在跑 **systemd-timesyncd**,NTP=yes、NTPSynchronized=yes;有 /dev/ptp_hyperv,但没有 chrony 之类用它 |
+| 10:34:30–10:34:34 | `bash -l …/artifacts/review-2026-10-03/timesync_log.sh` | PowerShell → wsl.exe bash -l | D:\RoboSim-Eval | 0 | — | timesyncd 对 ntp.ubuntu.com 做了初次同步,轮询间隔最短 32 s;日志显示 Ubuntu 发行版空闲后自动停掉、下一条命令又重新启动(10:34:05、10:34:32 各一次) |
+| 10:35:20–10:37:31 | `bash -l …/artifacts/review-2026-10-03/clock_who_steps.sh 130` | PowerShell → wsl.exe bash -l | D:\RoboSim-Eval | 0 | — | 130 s 里墙钟被往回拨 4 次(10:35:53 −0.523 s、10:36:25 −0.494 s、10:36:57 −0.486 s、10:37:28 −0.494 s),每次都紧跟 timesyncd 的一次 NTP 校时(包计数 1→2→3→4→5,约 32 s 一次)。往回拨的是 timesyncd,不是 Hyper-V 时间同步 |
 
 ## 09:44 那次运行为什么是 inconclusive
 
 - `result.json` 的 `verdict_reasons.inconclusive`:"data incomplete: clock: 48 backward stamps; odom: 49 backward stamps; tf_odom_base: 49 backward stamps"(离线分析另记 tf_map_odom 6 次)。最大间隔只有 0.13 s,数据本身没有缺。
 - 运行器自己实时订阅的 /clock 没有倒退(判定理由里没有 "/clock jumped backwards"),倒退只出现在录下的 bag 里:bag 按接收时的墙钟给消息打时间戳,读回时按这个时间排序。
 - `events.jsonl` 里每个事件同时记了墙钟和单调时钟,两者之差在运行中跳了四次:−0.750 s(09:44:21→09:44:39)、−0.506 s(09:45:07→09:45:12)、**−3.714 s(09:45:28 目标被接受 → 09:48:51 停车确认,正是导航录制期间)**、−0.515 s(09:49:03→09:49:13)。墙钟每被往回拨一次,之后收到的消息就排到之前的消息中间;按每墙钟秒约 13 条计,3.7 s 约等于 48 条。
-- 内核参数有 `hv_utils.timesync_implicit=1`:WSL 的时钟由 Hyper-V 时间同步定期纠正。clock_probe.sh 测得约每 30 s 往回拨 0.5 s,即 WSL 的时钟比 Windows 快约 1.8%。WSL 用的时钟源是 Hyper-V 提供的参考时钟(hyperv_clocksource_tsc_page),Windows 时钟对 NTP 不漂移,所以快的是 Hyper-V 给 VM 的参考时间。
+- 往回拨的是 WSL 里的 systemd-timesyncd(NTP,ntp.ubuntu.com):10:35–10:37 的 4 次回拨都紧跟它的一次校时(clock_who_steps.sh)。它最短约 32 s 校一次;VM 时钟快约 1.5–1.8%(每次回拨 0.47–0.58 s),超出它能慢慢调的范围(内核频率校正上限 500 ppm,即 0.05%),所以每次直接往回拨。WSL 用的时钟源是 Hyper-V 提供的参考时钟(hyperv_clocksource_tsc_page),Windows 时钟对 NTP 不漂移,所以快的是 Hyper-V 给 VM 的参考时间。内核参数 `hv_utils.timesync_implicit=1` 的 Hyper-V 隐式时间同步在这期间没有观察到回拨。(本节和本目录提交 cd7a490 的说明里原先写的"Hyper-V 时间同步往回拨"是错的,10:37 的实验之后改正。)
 - 2026-09-30 的 31 次真实运行(D2–D5)和 practice-01 那次 backward_stamps 都是 0。今天 07:06–07:32 Windows 睡眠过一次(系统事件:Kernel-Power 42 "The system is entering sleep";系统时间从 14:06:29Z 改为 14:32:20Z),漂移是这之后出现的;重启 WSL(10:00:42 前后)没有消除。
-- 结论:环境问题,不是合并后代码的缺陷;评测按规则把乱序的数据判为不完整,行为正确。在时钟恢复之前,每次真实运行都会这样。最可能的处理是重启 Windows(会关掉 Isaac,由用户决定和执行),之后先用 clock_probe.sh 确认不再被往回拨,再重跑 normal。
+- 结论:环境问题,不是合并后代码的缺陷;评测按规则把乱序的数据判为不完整,行为正确。在时钟恢复之前,每次真实运行都会这样。处理办法都由用户决定和执行:最可能有效的是重启 Windows(会关掉 Isaac);不重启的话,可以在 WSL 里停掉 timesyncd(`sudo systemctl disable --now systemd-timesyncd`,用完 `enable --now`),墙钟就不再被往回拨,代价是 WSL 墙钟每小时比 Windows 快约 1 分钟,Hyper-V 隐式时间同步在差得多时会不会往回拨没测过(没试过)。之后先用 clock_probe.sh 确认不再被往回拨,再重跑 normal。
