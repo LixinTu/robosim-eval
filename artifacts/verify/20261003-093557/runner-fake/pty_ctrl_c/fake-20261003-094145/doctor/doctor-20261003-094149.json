@@ -1,0 +1,73 @@
+{
+  "started": "2026-10-03T09:41:49.242453-07:00",
+  "config": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-093557/runner-fake/runner_fake.yaml",
+  "window_s_requested": 3.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "healthy",
+    "exit_code": 0,
+    "reasons": [],
+    "warnings": [],
+    "window_s": 3.0001039800000058,
+    "clock": {
+      "present": true,
+      "count": 75,
+      "rate_hz": 24.999133530031802,
+      "sim_progress_s": 1.1841418529999999,
+      "rtf": 0.399977872321324,
+      "last_age_s": 0.00011600999999927808,
+      "backward_jumps": 0,
+      "last_sim_s": 3.856982863,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 76,
+        "rate_hz": 25.332455310432223,
+        "max_gap_s": 0.04117355400001088,
+        "last_age_s": 8.395999998356274e-06,
+        "stamp_lag_s": -7.048700000034103e-05,
+        "status": "ok",
+        "detail": "odom: 25.33 Hz, last message 0.00 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 75,
+        "rate_hz": 24.999133530031802,
+        "max_gap_s": 0.04127341899999237,
+        "last_age_s": 0.040101721000041834,
+        "stamp_lag_s": 0.015891605999999836,
+        "status": "ok",
+        "detail": "tf: 25.00 Hz, last message 0.04 s old"
+      },
+      "lidar": {
+        "present": true,
+        "msg_types": [
+          "sensor_msgs/msg/PointCloud2"
+        ],
+        "count": 8,
+        "rate_hz": 2.6665742432033923,
+        "max_gap_s": 0.38533556800001634,
+        "last_age_s": 0.1948608410000361,
+        "stamp_lag_s": 0.07784837499999986,
+        "status": "ok",
+        "detail": "lidar: 2.67 Hz, last message 0.19 s old"
+      }
+    },
+    "observed": true
+  }
+}

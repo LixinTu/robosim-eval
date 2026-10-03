@@ -1,0 +1,73 @@
+{
+  "started": "2026-10-03T09:45:01.359960-07:00",
+  "config": "/mnt/d/RoboSim-Eval/configs/baseline.yaml",
+  "window_s_requested": 5.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "0",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "healthy",
+    "exit_code": 0,
+    "reasons": [],
+    "warnings": [],
+    "window_s": 5.026962323999896,
+    "clock": {
+      "present": true,
+      "count": 84,
+      "rate_hz": 16.70989249292049,
+      "sim_progress_s": 1.383333333,
+      "rtf": 0.2757909646489914,
+      "last_age_s": 3.6034999993717065e-05,
+      "backward_jumps": 0,
+      "last_sim_s": 1.966666666,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 83,
+        "rate_hz": 16.510965201338102,
+        "max_gap_s": 0.09486469399996622,
+        "last_age_s": 0.08417773099995429,
+        "stamp_lag_s": 0.016666665999999886,
+        "status": "ok",
+        "detail": "odom: 16.51 Hz, last message 0.08 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 83,
+        "rate_hz": 16.510965201338102,
+        "max_gap_s": 0.09546047100002397,
+        "last_age_s": 0.08106446399995093,
+        "stamp_lag_s": 0.016666665999999886,
+        "status": "ok",
+        "detail": "tf: 16.51 Hz, last message 0.08 s old"
+      },
+      "lidar": {
+        "present": true,
+        "msg_types": [
+          "sensor_msgs/msg/PointCloud2"
+        ],
+        "count": 14,
+        "rate_hz": 2.7849820821534146,
+        "max_gap_s": 0.37660674400001426,
+        "last_age_s": 0.12815810600000077,
+        "stamp_lag_s": 0.06666666600000015,
+        "status": "ok",
+        "detail": "lidar: 2.78 Hz, last message 0.13 s old"
+      }
+    },
+    "observed": true
+  }
+}

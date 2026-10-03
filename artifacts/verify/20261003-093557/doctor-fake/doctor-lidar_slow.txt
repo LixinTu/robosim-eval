@@ -1,0 +1,9 @@
+doctor 2026-10-03T09:37:45-07:00 config=/mnt/d/RoboSim-Eval/artifacts/verify/20261003-093557/doctor-fake/doctor_fake.yaml window=5.0s discovery<=5.0s
+env: RMW=rmw_fastrtps_cpp ROS_DOMAIN_ID=42 ROS_DISTRO=jazzy FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml (exists=True)
+clock  /clock                           present      125 msgs  25.00 Hz  sim +1.984 s  RTF 0.40  last 0.00 s ago
+odom   /chassis/odom                    ok           126 msgs  25.20 Hz  max gap 0.042 s  last 0.00 s ago  stamp lag -0.000 s
+tf     /tf odom->base_link              ok           125 msgs  25.00 Hz  max gap 0.042 s  last 0.04 s ago  stamp lag 0.016 s
+lidar  /front_3d_lidar/lidar_points     slow         3 msgs   0.60 Hz  max gap 2.000 s  last 0.56 s ago  stamp lag 0.224 s
+reason: lidar: 0.60 Hz < 1.0 Hz
+verdict: degraded (exit 12); window 5.00 s wall
+written /mnt/d/RoboSim-Eval/artifacts/verify/20261003-093557/doctor-fake/lidar_slow/doctor-20261003-093745.json

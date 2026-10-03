@@ -1,0 +1,158 @@
+{
+  "schema": "robosim-eval run result (D3 runner verdict; the offline analyzer's own output is under 'analyzer', null when it did not run or failed)",
+  "execution_status": "error",
+  "task_outcome": "unknown",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "fail",
+  "verdict_reasons": {
+    "fail": [
+      "runner errors: declared Nav2 parameter not in effect: [{'path': 'controller_server.ros__parameters.FollowPath.max_vel_x', 'old': 0.8, 'new': 0.4, 'node': 'controller_server', 'param': 'FollowPath.max_vel_x', 'in_effect': 0.8}]"
+    ],
+    "inconclusive": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": []
+  },
+  "evaluator": {
+    "execution_status": "error",
+    "task_outcome": "unknown",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "fail",
+    "fail_reasons": [
+      "runner errors: declared Nav2 parameter not in effect: [{'path': 'controller_server.ros__parameters.FollowPath.max_vel_x', 'old': 0.8, 'new': 0.4, 'node': 'controller_server', 'param': 'FollowPath.max_vel_x', 'in_effect': 0.8}]"
+    ],
+    "inconclusive_reasons": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [],
+    "arrival_error_m": null,
+    "disallowed_contacts": []
+  },
+  "evaluator_inputs": {
+    "scenario_expect": "reached",
+    "preset_unreachable": false,
+    "tolerance_m": 0.5,
+    "goal": [
+      1.0,
+      0.0
+    ],
+    "execution_status": "error",
+    "runner_errors": [
+      "declared Nav2 parameter not in effect: [{'path': 'controller_server.ros__parameters.FollowPath.max_vel_x', 'old': 0.8, 'new': 0.4, 'node': 'controller_server', 'param': 'FollowPath.max_vel_x', 'in_effect': 0.8}]"
+    ],
+    "accepted": false,
+    "rejected": false,
+    "terminal_status": null,
+    "error_code": null,
+    "cancel_requested": false,
+    "cancel_reason": null,
+    "timeout_reason": null,
+    "stop_confirmed": false,
+    "gt_at_stop": null,
+    "contacts_measured": false,
+    "contacts": [],
+    "required_gaps": {},
+    "required_backward": {},
+    "informational_gaps": {},
+    "dropout_threshold_wall_s": 2.0,
+    "clock_backward_jumps": 0,
+    "coverage_problems": [
+      "no recording: the recorders were not started (--no-record)"
+    ],
+    "contacts_dropped": 0,
+    "unreachable_evidence": null,
+    "scenario_expect_safety": null,
+    "scenario_expect_data": null
+  },
+  "goal": {
+    "frame": "map",
+    "x": 1.0,
+    "y": 0.0,
+    "yaw": 0.0,
+    "position_tolerance_m": 0.5,
+    "source": "scenario goal sent by the runner (no offline analysis)"
+  },
+  "target_goal": {
+    "id": null,
+    "id_source": "runner action client"
+  },
+  "timing": null,
+  "data_integrity": null,
+  "analyzer": null,
+  "nav2_raw": {
+    "terminal_status_code": null,
+    "terminal_status_name": "none",
+    "rejected": false,
+    "error_code": null,
+    "error_msg": null,
+    "source": "runner action client (no offline analysis)"
+  },
+  "runner": {
+    "run_id": "fake_slow-20261003-094042",
+    "scenario": "fake_slow",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 407.710420982,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 415.454817622,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 415.458480322,
+        "t_sim": 3.826566395,
+        "reason": "failure: declared Nav2 parameter not in effect: [{'path': 'controller_server.ros__parameters.FollowPath.max_vel_x', 'old': 0.8, 'new': 0.4, 'node': 'controller_server', 'param': 'FollowPath.max_vel_x', 'in_effect': 0.8}]"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 415.458651899,
+        "t_sim": 3.826566395,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [
+      "declared Nav2 parameter not in effect: [{'path': 'controller_server.ros__parameters.FollowPath.max_vel_x', 'old': 0.8, 'new': 0.4, 'node': 'controller_server', 'param': 'FollowPath.max_vel_x', 'in_effect': 0.8}]"
+    ],
+    "interrupted_by": null,
+    "timeout_reason": null,
+    "abort_batch": false,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "injections": [],
+    "contacts": {
+      "installed": false,
+      "measured": false,
+      "error": null
+    },
+    "nav2_params": {
+      "file": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-093557/runner-fake/param_not_in_effect/fake_slow-20261003-094042/nav2_params.yaml",
+      "sha256": "b831ffaa31b2930ee1f740b344bc3c892b6fd3de992e0f34cfc63705797d2bde",
+      "source": "/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws/install/carter_navigation/share/carter_navigation/params/carter_navigation_params.yaml",
+      "source_sha256": "8349fe3ba9d871139637850555f3d7e7fe3569ce46983fe90e02ec12eb3cf798",
+      "changes": [
+        {
+          "path": "controller_server.ros__parameters.FollowPath.max_vel_x",
+          "old": 0.8,
+          "new": 0.4,
+          "node": "controller_server",
+          "param": "FollowPath.max_vel_x",
+          "in_effect": 0.8
+        }
+      ]
+    },
+    "doctor_attempts": 1
+  }
+}

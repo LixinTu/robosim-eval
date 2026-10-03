@@ -1,0 +1,11 @@
+[INFO] [1791045927.295274037] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1791045928.364003155] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1791045929.364019013] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1791045930.566208471] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1791045931.763705771] [tf2_echo]: Waiting for transform map ->  base_link: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[INFO] [1791045932.763806125] [tf2_echo]: Waiting for transform map ->  base_link: Lookup would require extrapolation at time 8.183333, but only time 9.100000 is in the buffer, when looking up transform from frame [base_link] to frame [map]
+[INFO] [1791045933.963762801] [tf2_echo]: Waiting for transform map ->  base_link: Lookup would require extrapolation into the past.  Requested time 8.466667 but the earliest data is at time 9.100000, when looking up transform from frame [base_link] to frame [map]
+[INFO] [1791045934.963829256] [tf2_echo]: Waiting for transform map ->  base_link: Lookup would require extrapolation into the past.  Requested time 8.716667 but the earliest data is at time 9.100000, when looking up transform from frame [base_link] to frame [map]
+[INFO] [1791045936.163857687] [tf2_echo]: Waiting for transform map ->  base_link: Lookup would require extrapolation into the past.  Requested time 9.016667 but the earliest data is at time 9.100000, when looking up transform from frame [base_link] to frame [map]
+[INFO] [1791046141.455211444] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [1791046141.464065036] [rclcpp]: signal_handler(SIGINT/SIGTERM)

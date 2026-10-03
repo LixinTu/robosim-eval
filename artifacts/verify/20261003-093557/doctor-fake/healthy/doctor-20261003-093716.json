@@ -1,0 +1,73 @@
+{
+  "started": "2026-10-03T09:37:16.487387-07:00",
+  "config": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-093557/doctor-fake/doctor_fake.yaml",
+  "window_s_requested": 5.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "healthy",
+    "exit_code": 0,
+    "reasons": [],
+    "warnings": [],
+    "window_s": 5.000275211999991,
+    "clock": {
+      "present": true,
+      "count": 125,
+      "rate_hz": 24.99862401573752,
+      "sim_progress_s": 1.9839614209999998,
+      "rtf": 0.3999934434880436,
+      "last_age_s": 0.00040289800000437026,
+      "backward_jumps": 0,
+      "last_sim_s": 2.501374757,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 126,
+        "rate_hz": 25.198613007863422,
+        "max_gap_s": 0.04338556899998025,
+        "last_age_s": 3.0199999997648774e-05,
+        "stamp_lag_s": -8.1640000000327e-05,
+        "status": "ok",
+        "detail": "odom: 25.20 Hz, last message 0.00 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 125,
+        "rate_hz": 24.99862401573752,
+        "max_gap_s": 0.043267095000004474,
+        "last_age_s": 0.040585919999983844,
+        "stamp_lag_s": 0.015960648999999716,
+        "status": "ok",
+        "detail": "tf: 25.00 Hz, last message 0.04 s old"
+      },
+      "lidar": {
+        "present": true,
+        "msg_types": [
+          "sensor_msgs/msg/PointCloud2"
+        ],
+        "count": 13,
+        "rate_hz": 2.5998568976367022,
+        "max_gap_s": 0.3864749779999954,
+        "last_age_s": 0.04657729400000221,
+        "stamp_lag_s": 0.018431357999999953,
+        "status": "ok",
+        "detail": "lidar: 2.60 Hz, last message 0.05 s old"
+      }
+    },
+    "observed": true
+  }
+}
