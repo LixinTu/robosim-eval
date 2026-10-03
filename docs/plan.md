@@ -17,11 +17,11 @@
 | D3 判定与失败处理 | 实现与验证完成(2026-09-30 00:5x–01:29),**待独立审查**与用户验收 | 分支 `feature/d3-verdicts`;`robosim_eval/evaluator.py`、`contacts.py`、`kit/contact_monitor.py`;证据 `artifacts/d3/commands.md`;缺陷记录 `docs/defect-record.md` | 固定输入测试 109 passed;判定模块改坏检查 8/8(含 4 种必做的坏数据);真实 Isaac:正常、绕行、不可达、取消、超时 pass,断流正确判 inconclusive,碰撞抓到轮子与矮箱子的接触判 fail;修复一个运行器缺陷(复位前 odom 残留) |
 | D4 批量复跑 | 实现与验证完成(2026-09-30 01:30–02:0x),**待独立审查**与用户验收 | 分支 `feature/d4-batch`;`robosim_eval/batch.py`、`report.py`、`scripts/wsl/run_batch.sh`;证据 `artifacts/d4/commands.md`、`artifacts/d4/batch-20260930-013010/runs/report.html` | 9 次全部留档、全部 pass(normal 3/3 到达、bypass 3/3 到达且未碰箱子、unreachable 3/3 判不可达);每次复位后真值距出生点 0.07 mm;报告改进 1 处(列出全部 commit、恢复次数列);"开头卡住"查到大部分机制(见 §4) |
 | D5 作品交付 | 实现与演示完成(2026-09-30 01:3x–02:3x),**待独立审查**与用户验收 | 分支 `feature/d5-demo`;`README.md`、`docs/demo.md`、`robosim_eval/nav2_params.py`;证据 `artifacts/d5/commands.md` | README 第 2 步的两条命令在新的 PowerShell 里逐字执行通过(用空场景模拟"刚启动、场景未加载";Isaac 没有真正重启,第 1 步和第 3 步没有按原文执行);三个演示:正常导航并打开记录(pass)、取消案例及解释(pass)、参数改动 max_vel_x 0.8→0.4 的事先预测与复跑对比(峰值速度、平均速度、行驶段、到达误差成立;"判定不变"部分成立,一次因自发卡顿判 inconclusive;路程与最大角速度不成立;"开头卡住不因参数改变"无法检验,见 docs/demo.md);修复缺陷 3(场景未加载时接触监视装不上)与缺陷 4(接受目标时的仿真时间是旧的);固定输入测试 128 passed,运行器假节点测试 10/10 |
-| 审查修复(`fix/review-round1`) | 已并入 `chore/harness-cleanup`(2026-10-03,5241837);**真实 Isaac 复跑待重做** | 合并提交 5241837;完整 verify `artifacts/verify/20261003-093557`(620 passed,doctor 与运行器假节点测试 PASS);真实运行 `artifacts/review-2026-10-03/` | 2026-09-30 Claude 多代理审查确认的问题和 Codex D0 round1c-a 的修复,共 42 个提交。合并后第一次真实 normal(2026-10-03 09:44)到达、安全 pass,但数据判 incomplete、验证 inconclusive:WSL 的墙钟被 NTP 往回拨,与代码无关(§4)。`impl/shell` 没有并入(§4) |
+| 审查修复(`fix/review-round1`) | 已并入 `chore/harness-cleanup`(2026-10-03,5241837),真实 Isaac 复跑 normal **pass**;合入 master 见 §2 | 合并提交 5241837;完整 verify `artifacts/verify/20261003-093557`(620 passed,doctor 与运行器假节点测试 PASS);真实运行 `artifacts/review-2026-10-03/runs/normal-20261003-114140` | 2026-09-30 Claude 多代理审查确认的问题和 Codex D0 round1c-a 的修复,共 42 个提交。合并后第一次真实 normal(09:44)因 WSL 墙钟被往回拨判 inconclusive,与代码无关;Windows 重启后(11:41)pass:真值距目标 0.145 m,0 次恢复,接触已测,倒退时间戳 0(§4)。`impl/shell` 没有并入(§4) |
 
 **尚未完成的验收**(其余各项的证据见上表):
 
-- 合并后代码的真实 Isaac 复跑:第一次因 WSL 时钟判 inconclusive,时钟处理好后重跑(§2、§4)。
+- 合并后的代码只在真实 Isaac 上跑过 normal;其余情形(normal_slow、bypass、unreachable、cancel、timeout、dropout、collision)和终端 Ctrl-C 还没用它重跑。
 - 独立审查:D0–D5 都没有完成,见 §2。
 - 用户验收:D0 三步(新终端启动后看到地图与实时数据;发目标,看到达并打开记录核对;暂停看数据停,恢复看数据回来);D1–D5 按 README 与 docs/demo.md 的操作复现。
 
@@ -31,9 +31,9 @@
 
 1. **合并**(2026-10-03 用户定的顺序,不再等审查与验收;争取在 2026-10-06 14:51 Codex 额度恢复前合完,之后排队直接从合好的分支跑):
    - ① 把 `fix/review-round1` 并进来,代码以 fix 分支为准、文档结构以本分支为准:完成(5241837);完整 verify.sh 通过(2026-10-03 09:36–09:42,`artifacts/verify/20261003-093557`)。AGENTS.md、setup.md、本文件已按合并后的代码改过(2026-10-03 逐条对照代码核实)。
-   - ② 在真实 Isaac 上跑一次 normal:09:44 跑过(`artifacts/review-2026-10-03/`),到达、安全 pass,但录下的 clock、odom、tf_odom_base 各有 48–49 个倒退时间戳,数据判 incomplete、验证 inconclusive(退出 11)。原因是 WSL 的墙钟被 NTP 往回拨(§4),判 incomplete 符合规则(规则合并前后没变)。**等用户处理好时钟后重跑**;时钟没处理好之前,真实运行都会这样判。
-   - ③ 把 master 上的提交并进来:还没做。master 比本分支多 8 个提交:6108b21、c2c195d、dae9412、09ed399、5a0cbf8 与已并入的 a3f28a3、4c6ebce、7f065f7、67f2562、8c0cd7f 内容相同(`docs/commit-map.tsv` 已在本分支);bad1ca4 是 D0–D5 合进 master 的合并提交;带来新内容的只有 7b73dcb(LICENSE、NOTICE,以及 AGENTS.md、README、plan.md、technical-overview.md 的发布说明)和 7f9c719(2026-10-03 的 README 修正,origin/master 仍是 v0.1.0 的 5a0cbf8)。AGENTS.md、README、plan.md、technical-overview.md 两边都改过:README 的审查状态取 7f9c719 的写法,但 master 版 README 里只对 v0.1.0 成立的说法(第 7 行版本说明、第 45 行和第 101–102 行"终端 Ctrl-C 到不了运行器"及其例外)按合并后的代码改写;technical-overview.md §16 还写着"进行中、尚未合入",一起更新。
-   - ④ 一次合回 master(本地 `--no-ff`,在 master 的工作树里做;`git merge` 无冲突自动生成的合并提交不跑提交前检查,先自己跑 verify.sh),推送由用户做。
+   - ② 在真实 Isaac 上跑一次 normal:完成。09:44 那次录下的 clock、odom、tf_odom_base 各有 48–49 个倒退时间戳,数据判 incomplete、验证 inconclusive(退出 11),原因是 WSL 的墙钟被 NTP 往回拨(§4)。用户重启 Windows、重新绑定防火墙规则后,11:41 那次 pass(退出 0,`artifacts/review-2026-10-03/runs/normal-20261003-114140`,代码 bf7f431)。
+   - ③ 把 master 上的提交并进来:完成(37ea5cf)。并入前 master 比本分支多 8 个提交:6108b21、c2c195d、dae9412、09ed399、5a0cbf8 与已并入的 a3f28a3、4c6ebce、7f065f7、67f2562、8c0cd7f 内容相同(`docs/commit-map.tsv` 已在本分支);bad1ca4 是 D0–D5 合进 master 的合并提交;带来新内容的只有 7b73dcb(LICENSE、NOTICE,以及 AGENTS.md、README、plan.md、technical-overview.md 的发布说明)和 7f9c719(2026-10-03 的 README 修正,origin/master 仍是 v0.1.0 的 5a0cbf8)。AGENTS.md、README、plan.md、technical-overview.md 两边都改过:README 的审查状态取 7f9c719 的写法,但 master 版 README 里只对 v0.1.0 成立的说法(第 7 行版本说明、第 45 行和第 101–102 行"终端 Ctrl-C 到不了运行器"及其例外)按合并后的代码改写;technical-overview.md §16 还写着"进行中、尚未合入",一起更新。
+   - ④ 一次合回 master(本地 `--no-ff`,在 master 的工作树里做;`git merge` 无冲突自动生成的合并提交不跑提交前检查,先自己跑 verify.sh),推送由用户做(`git push origin master chore/harness-cleanup`)。合并提交见 `git log master`。
 2. **独立审查(Codex 分片)**,截至 2026-10-03:
    - 已出报告:D0 round1c-a(评测逻辑 analyze_attempt.py,5 条:3 Major、2 Minor)、round1c-b(录制、Nav2 启停、发目标脚本,9 条:7 Major、2 Minor),都在 `docs/review/2026-09-29-d0/`。
    - 未出报告:D0 round1c-c(2026-09-30 四次撞账户用量上限)、round1c-d、D1、D2 a/b、D3 a/b、D4、D5。Codex 提示最早 2026-10-06 14:51 才能再用。
@@ -64,12 +64,14 @@
 | 2026-10-03 | 先把 `fix/review-round1` 并入 `chore/harness-cleanup`(代码以 fix 分支为准,文档结构以本分支为准);verify 通过、在真实 Isaac 上跑一次 normal 之后,把 master 的提交并进来,再一次合回 master;争取在 2026-10-06 14:51 额度恢复前合完,之后排队从合好的分支跑 | 用户 | 排队时不再纠结用哪条分支的脚本 |
 | 2026-10-03 | README 的审查状态与退出码 20 的说明直接在 master 上改正(7f9c719),由用户推送 | 用户 | v0.1.0 已公开。核对后:已推送的 README 第 5 行本来就写明审查未完成,不实的是第 45 行"20 = 被 Ctrl-C 中断(已取消目标并收尾)",与它自己第 101 行"终端 Ctrl-C 到不了运行器"矛盾 |
 | 2026-10-03 | 审查过程记录(codex-queue.log 新增的行、round1c-c 第 2–4 次尝试)单独提交(5947179);所有改动都提交,包括 practice-01(修复前代码的一次运行,05ba155) | 用户("所有改动都提交到github") | practice-01 的来源没有记录,`artifacts/practice-01/commands.md` 写明了能确认和不能确认的部分 |
+| 2026-10-03 | 为 WSL 时钟问题重启 Windows(不停 timesyncd);重启后防火墙规则失效,由用户在管理员 PowerShell 重新绑定到 vEthernet (WSL);之后用合并后的代码跑真实 normal,pass | 用户("重启吧";执行管理员命令) | 重启后漂移方向反转为往前拨,不影响判定;真实复跑是合回 master 之前用户要求的一步 |
 
 ## 4. 未解决问题
 
 **环境**
 
-- WSL 的墙钟被往回拨,真实运行因此判数据不完整(2026-10-03 起,挡住 §2 的真实复跑):07:06–07:32 那次 Windows 睡眠之后,WSL 的 VM 时钟比真实时间快约 1.5–1.8%。WSL 里的 systemd-timesyncd(NTP,ntp.ubuntu.com)最短 32 s 校一次,快出的部分超出它能慢慢调的范围,每次就把墙钟往回拨约 0.5 s(130 s 里 4 次回拨都紧跟它的一次校时)。重启 WSL 后的新 VM 照样快;Windows 时钟对 NTP 不漂移;WSL 的时钟源是 Hyper-V 提供的参考时钟,所以快的是 Hyper-V 给 VM 的时间。rosbag 按接收时的墙钟排序,往回拨之后收到的消息就排到前面的消息中间,录下的 /clock、odom、TF 出现倒退时间戳;2026-09-30 的 31 次真实运行都是 0。处理办法都要用户决定和执行:最可能有效的是重启 Windows(会关掉 Isaac);不重启的话,可以在 WSL 里停掉 timesyncd(`sudo systemctl disable --now systemd-timesyncd`,用完 `enable --now`;只用 `stop` 的话,发行版空闲自动停掉后下次启动又会开起来),墙钟就不再被往回拨,代价是 WSL 墙钟每小时比 Windows 快约 1 分钟,而且 Hyper-V 自己的时间同步(内核参数 `hv_utils.timesync_implicit=1`)差得多时会不会往回拨没测过:这条没试过,用了要在记录里写明。之后先用 `artifacts/review-2026-10-03/clock_probe.sh 90` 确认不再被往回拨,再重跑 normal。证据与排查:`artifacts/review-2026-10-03/commands.md`。
+- WSL 的墙钟会被 NTP 拨动(2026-10-03 查明):WSL 的 VM 时钟比真实时间快或慢约 1.5–2%,方向每次 Windows 启动或睡眠醒来可能不同(07:06–07:32 睡眠醒来后快,11:21 重启后慢);WSL 里的 systemd-timesyncd(NTP,ntp.ubuntu.com)最短 32 s 校一次,快出或慢下的部分超出它能慢慢调的范围,每次直接把墙钟拨回约 0.5–0.7 s。Windows 时钟对 NTP 不漂移;WSL 的时钟源是 Hyper-V 提供的参考时钟,所以偏的是 Hyper-V 给 VM 的时间;重启 WSL 不能消除。rosbag 按接收时的墙钟排序:往回拨时,之后收到的消息排到前面的消息中间,录下的 /clock、odom、TF 出现倒退时间戳,数据判 incomplete(09:44 那次);往前拨只让一次接收间隔变长(11:41 那次最长 0.74 s,门槛 2 s),不影响判定。2026-09-30 的 31 次真实运行倒退时间戳都是 0,多半处在往前拨的状态。真实运行前先跑 `artifacts/review-2026-10-03/clock_probe.sh 90`:出现负值(往回拨)就先不跑,由用户决定处理办法(重启 Windows 可能翻转方向但不保证;或用 sudo 停掉 timesyncd,没试过)。证据与排查:`artifacts/review-2026-10-03/commands.md`。
+- Windows 重启后 WSL 连不上 Isaac(2026-10-03 查明):防火墙规则 "RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)" 按 vEthernet (WSL) 网卡限定,Windows 重启会重建这块网卡,规则随之失效。症状:Isaac 正常(bridge 与 sim_control 都已启动),Isaac 的发现广播能到 WSL,但 WSL 看不到 Isaac 的话题和服务,sim.sh state 一直退出 3。处理:用户在管理员 PowerShell 执行 `Set-NetFirewallRule -DisplayName 'RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)' -InterfaceAlias 'vEthernet (WSL)'`,立即生效,不用重启 Isaac。每次重启都要做;改成不依赖网卡的规则(例如按 WSL 的地址段限定)待用户决定。agent 未提权读不了防火墙规则。
 
 **审查与流程**
 

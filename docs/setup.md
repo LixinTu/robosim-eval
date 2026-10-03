@@ -1,17 +1,17 @@
 # 本机启动、运行与关闭(D0–D5)
 
-本机是 Isaac Sim 6.1 官方不支持的配置(Windows 10 + 8 GB 显存),下面的内容只表示"在本机实测可用"(D0、D1 于 2026-09-29,D2–D5 于 2026-09-30,verify.sh 与提交前检查于 2026-10-03),不表示普遍可用。2026-10-03 合并 `fix/review-round1` 之后,运行锁、终端 Ctrl-C、收尾兜底取消、地图检查、批量中止规则等新行为主要由 verify.sh 的固定输入测试和假节点测试验证(`artifacts/verify/20261003-093557`);真实 Isaac 上只跑过一次 normal(`artifacts/review-2026-10-03/commands.md`):地图检查通过、正常收尾,退出 11,因 WSL 的墙钟被往回拨、录下的消息时间戳倒退而判数据不完整,见该记录。D0–D5 每条命令的原始记录与退出码见 `artifacts/d0a..d0d`、`artifacts/d1..d5` 的 commands.md;verify.sh 每次运行自动写 `artifacts/verify/<时间>/commands.md`(默认不进 Git,入库的只有 20261003-070428、-074935、-075258、-093557 四份);提交前检查的启用和一次被它拒绝的提交见提交 2784ec5 的说明。正常使用走自动路径(`run_scenario.sh`、`run_batch.sh`);D0 时手动串脚本的流程放在文末附录,只在调试时用。
+本机是 Isaac Sim 6.1 官方不支持的配置(Windows 10 + 8 GB 显存),下面的内容只表示"在本机实测可用"(D0、D1 于 2026-09-29,D2–D5 于 2026-09-30,verify.sh 与提交前检查于 2026-10-03),不表示普遍可用。2026-10-03 合并 `fix/review-round1` 之后,运行锁、终端 Ctrl-C、收尾兜底取消、地图检查、批量中止规则等新行为主要由 verify.sh 的固定输入测试和假节点测试验证(`artifacts/verify/20261003-093557`);真实 Isaac 上跑过两次 normal(`artifacts/review-2026-10-03/commands.md`):第一次地图检查通过、正常收尾,但因 WSL 的墙钟被往回拨、录下的消息时间戳倒退而判数据不完整(退出 11);Windows 重启后的第二次 pass(退出 0)。D0–D5 每条命令的原始记录与退出码见 `artifacts/d0a..d0d`、`artifacts/d1..d5` 的 commands.md;verify.sh 每次运行自动写 `artifacts/verify/<时间>/commands.md`(默认不进 Git,入库的只有 20261003-070428、-074935、-075258、-093557 四份);提交前检查的启用和一次被它拒绝的提交见提交 2784ec5 的说明。正常使用走自动路径(`run_scenario.sh`、`run_batch.sh`);D0 时手动串脚本的流程放在文末附录,只在调试时用。
 
 ## 一次性前提(已完成,重装时才需要)
 
 | 项目 | 状态 | 怎么做 |
 | --- | --- | --- |
 | Isaac Sim 6.1.0 | 已装在 `D:\isaac-sim-standalone-6.1.0-windows-x86_64` | 不重装 |
-| Windows 防火墙规则 "RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)" | 已建(入站 / UDP / 仅 kit.exe / 仅 vEthernet (WSL)) | 管理员 PowerShell:`powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\allow_wsl_to_isaac_firewall.ps1`(可重复运行;删除见脚本头) |
+| Windows 防火墙规则 "RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)" | 已建(入站 / UDP / 仅 kit.exe / 仅 vEthernet (WSL));**Windows 重启后失效**,要重新绑定 | 管理员 PowerShell:`powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\allow_wsl_to_isaac_firewall.ps1`(删除见脚本头;规则已存在时脚本不改它)。Windows 重启会重建 vEthernet (WSL) 网卡,规则随之失效,这时在管理员 PowerShell 执行 `Set-NetFirewallRule -DisplayName 'RoboSim Eval: WSL -> Isaac Sim kit.exe (UDP)' -InterfaceAlias 'vEthernet (WSL)'`,立即生效,不用重启 Isaac(2026-10-03 实测) |
 | WSL `Ubuntu` 内 ROS 2 Jazzy + Nav2 + 依赖闭包 | 已装 | Ubuntu 终端(需 sudo 密码):`bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh` |
 | 钉住工作区 `~/robotics/vendor/isaac-ros-6.1`(IsaacSim-6.1.0 @ a9e8471)+ `colcon build --packages-up-to carter_navigation` | 已建 | `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/setup_workspace.sh`。可重跑:已有检出只核对、不重置(2026-09-29 重跑过一次,退出 0,见 artifacts/d0d/commands.md);退出 4 = HEAD 不是钉住的提交,5 = 检出有改动,6 = rosdep 要装新包(需 sudo,先补进 install_ros2_jazzy.sh),7 = rosdep 模拟失败。默认日志是已入库的 `artifacts/d0b/setup-workspace.log`(追加)和 `setup-workspace.exit`(覆盖),重跑前先设 `ROBOSIM_SETUP_LOG=<别处>/setup-workspace.log`,不动 D0b 证据 |
 | 安装自检 | PASS | `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/check_ros_install.sh` |
-| 提交前检查(每个克隆一次) | 本克隆已设(写在 .git/config,所有工作树共用;相对路径按提交所在工作树的根目录找,检出里没有 `scripts/git-hooks/pre-commit` 的工作树提交时不跑任何检查,2026-10-03 时 master、fix/review-round1 等 7 个链接工作树都是这样) | `git config core.hooksPath scripts/git-hooks`:之后在含有该钩子的检出里,每次 `git commit` 先跑 `verify.sh --fast`,失败就拒绝提交 |
+| 提交前检查(每个克隆一次) | 本克隆已设(写在 .git/config,所有工作树共用;相对路径按提交所在工作树的根目录找,检出里没有 `scripts/git-hooks/pre-commit` 的工作树提交时不跑任何检查,例如合并前的 master、fix/review-round1 和各 impl/* 分支的工作树) | `git config core.hooksPath scripts/git-hooks`:之后在含有该钩子的检出里,每次 `git commit` 先跑 `verify.sh --fast`,失败就拒绝提交 |
 
 ## 离线检查(不需要仿真)
 
@@ -44,7 +44,7 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/verify.sh --fast   # �
 powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\start_isaac_ros2.ps1 -PythonServer
 ```
 
-先 `Get-Process kit` 确认没有实例在跑,再在新开的普通 PowerShell 窗口里运行(agent 用 `Start-Process` 新开窗口):脚本一直占着窗口,直到 Isaac 退出。启动后轮询 `sim.sh state`,等它退出 0 再开始运行:sim_control 服务出现之前 sim.sh 退出 3,这时开始的运行会按出错收尾(退出 30)。脚本检查路径与 XML、拒绝在已有 kit.exe 时再开一份,然后带 ROS 2 bridge 和 sim_control 扩展(ROS 2 simulation_interfaces 服务;`-NoSimControl` 可关掉)启动。`-PythonServer` 另外打开只监听 127.0.0.1、需要令牌的 Python 执行服务,运行器靠它在 Isaac 内做接触检测;不加时运行照常进行、不报错,但安全结论只能是 unknown,验证结论最多 inconclusive(退出 11),不会 pass。不需要在 GUI 里加载场景或按 Play:运行器发现场景没加载会自己加载,再通过 sim_control 复位。
+先 `Get-Process kit` 确认没有实例在跑,再在新开的普通 PowerShell 窗口里运行(agent 用 `Start-Process` 新开窗口):脚本一直占着窗口,直到 Isaac 退出。启动后轮询 `sim.sh state`,等它退出 0 再开始运行:sim_control 服务出现之前 sim.sh 退出 3,这时开始的运行会按出错收尾(退出 30)。正常约 2 分钟就通;Windows 重启后一直退出 3 时,先按"一次性前提"里防火墙那一行重新绑定规则。脚本检查路径与 XML、拒绝在已有 kit.exe 时再开一份,然后带 ROS 2 bridge 和 sim_control 扩展(ROS 2 simulation_interfaces 服务;`-NoSimControl` 可关掉)启动。`-PythonServer` 另外打开只监听 127.0.0.1、需要令牌的 Python 执行服务,运行器靠它在 Isaac 内做接触检测;不加时运行照常进行、不报错,但安全结论只能是 unknown,验证结论最多 inconclusive(退出 11),不会 pass。不需要在 GUI 里加载场景或按 Play:运行器发现场景没加载会自己加载,再通过 sim_control 复位。
 
 核对 bridge(可选):`powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\check_isaac_bridge.ps1` → 日志应有 "ROS bridge extension isaacsim.ros2.bridge enabled successfully"。
 
@@ -159,8 +159,8 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/doctor.sh --out /mnt/d/
 - 话题偶有停顿(按接收时刻的墙钟间隔):空场景 odom 曾有 0.695 s 的间隔(D0);导航中 /clock、odom 的最长间隔 D0 为 0.92 s,D2–D5 的完整导航多为 1.16–1.32 s,D5 有一次自发卡顿 2.19 s(超过 2 s 门槛,判 inconclusive);AMCL 的 map→odom 最长间隔 D0 为 1.86 s,D2–D5 多为 2.3–2.6 s(最大 2.60 s),所以 AMCL 只作参考(各运行 result.json 的 data_integrity;D3 dropout 的约 6 s 空档是注入的暂停)。
 - USD 动画时间线周期性循环:约每 16.7 s 仿真时间一次(复位后第一次在仿真约 17 s,相邻两次实测相差 16.3–17.2 s,由各运行 trajectory.csv 的仿真时间戳对照 kit 日志得出),墙钟间隔随实时因子变化:D0 约 40–43 s,9-30 当天各时段中位数 43–58 s;kit 日志每次循环出现 "resetting the animation timeline" 与一帧 differential_controller "Invalid deltaTime 0.000000"。仿真时钟不受影响(已实测 /clock 单调:D0 的 clock-continuity-01,D2–D5 有录制的 31 次运行,result.json 的 /clock 倒退次数都是 0,另 2 次在启动 Nav2 前就结束,没有录制);物理是否受影响没有单独测。
 - D0 首次 Play 后约 7 s 时间线暂停(不是停止),由什么触发不明:kit 日志在那一刻与后来用户按 ⏸ 时特征相同(TF 聚合警告开始出现,紧接着同一毫秒出现 "resetting the animation timeline" 与菜单刷新),整个会话在用户关闭 Isaac 前没有停止才有的 "onStop: Cleared time samples";此后 OmniGraph 不再 tick,topic 仍在但没有数据。再按 ▶ 即恢复:日志只有 onResume,没有从停止状态播放时才有的 "Created simulation views",是从暂停处继续,场景没有重置;要回到出生点用 `sim.sh reset`。
-- WSL 的 eth0 地址每次 WSL 重启可能变化;防火墙规则按接口而非 IP 限定,不受影响(2026-10-03 WSL 重启后 sim.sh state 照常退出 0)。
-- 2026-10-03 一次 Windows 睡眠(07:06–07:32)之后,WSL 的 VM 时钟比真实时间快约 1.5–1.8%,WSL 里的 systemd-timesyncd(NTP)约每 32 s 校一次,每次把墙钟往回拨约 0.5 s;重启 WSL 不能消除,Windows 时钟对 NTP 不漂移(WSL 用的时钟源是 Hyper-V 提供的参考时钟)。rosbag 按接收时的墙钟给消息排序,于是录下的 /clock、odom、TF 出现倒退时间戳,评测判数据不完整、验证 inconclusive(当天合并后第一次真实 normal 就是这样)。真实运行前先跑 `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/artifacts/review-2026-10-03/clock_probe.sh 90`:报告有回拨就先处理时钟再跑(证据与排查见 `artifacts/review-2026-10-03/commands.md`)。
+- WSL 的 eth0 地址每次 WSL 重启可能变化;防火墙规则按接口而非 IP 限定,WSL 重启不受影响(2026-10-03 WSL 重启后 sim.sh state 照常退出 0)。但 Windows 重启会重建 vEthernet (WSL) 网卡,规则随之失效:Isaac 的发现广播仍能到 WSL,WSL 发回的数据被拦下,WSL 看不到 Isaac 的话题和服务(2026-10-03 重启后实测,与 D0c 没有规则时的症状相同),处理见"一次性前提"。
+- WSL 的 VM 时钟比真实时间快或慢约 1.5–2%,方向每次 Windows 启动或睡眠醒来可能不同(2026-10-03:07:06–07:32 睡眠醒来后快,11:21 重启后慢);WSL 里的 systemd-timesyncd(NTP)约每 32 s 校一次,每次把墙钟拨回约 0.5–0.7 s。重启 WSL 不能消除;Windows 时钟对 NTP 不漂移(WSL 用的时钟源是 Hyper-V 提供的参考时钟)。rosbag 按接收时的墙钟给消息排序:往回拨时,录下的 /clock、odom、TF 出现倒退时间戳,评测判数据不完整、验证 inconclusive(当天 09:44 那次);往前拨只让一次接收间隔变长(11:41 那次最长 0.74 s,门槛 2 s),不影响判定。真实运行前先跑 `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/artifacts/review-2026-10-03/clock_probe.sh 90`:出现负值(往回拨)就先交给用户处理再跑(证据与排查见 `artifacts/review-2026-10-03/commands.md`)。
 
 ## 附录:D0 手动串脚本的流程(调试用)
 
