@@ -1,0 +1,13 @@
+=== test_doctor_fake.sh 2026-10-03T11:56:07-07:00 ROS_DOMAIN_ID=42 max 15s per doctor run ===
+doctor module: /mnt/d/RoboSim-Eval/robosim_eval/doctor.py
+healthy            expected 0   got 0      5.6s  PASS         (verdict: healthy (exit 0); window 5.00 s wall | )
+paused             expected 10  got 10     2.7s  PASS         (verdict: sim_not_advancing (exit 10); window 2.01 s wall | reason: clock: publisher present but no /clock message in 2.0 s (simulation paused or stopped))
+closed             expected 11  got 11     6.2s  PASS         (verdict: sim_data_missing (exit 11); window 0.00 s wall | reason: clock: no publisher for /clock (Isaac Sim closed, ROS 2 bridge not loaded, or DDS discovery broken))
+lidar_missing      expected 11  got 11    10.6s  PASS         (verdict: sim_data_missing (exit 11); window 5.00 s wall | reason: lidar: no publisher for the topic)
+lidar_slow         expected 12  got 12     5.6s  PASS         (verdict: degraded (exit 12); window 5.00 s wall | reason: lidar: 0.60 Hz < 1.0 Hz)
+rmw_unset          expected 13  got 13     0.1s  PASS         (verdict: env_or_interface_error (exit 13) | reason: RMW_IMPLEMENTATION is None, expected 'rmw_fastrtps_cpp')
+odom_wrong_type    expected 13  got 13     5.7s  PASS         (verdict: env_or_interface_error (exit 13); window 5.04 s wall | reason: odom: publisher message type sensor_msgs/msg/Imu != expected nav_msgs/msg/Odometry)
+clock_wrong_type   expected 13  got 13     5.7s  PASS         (verdict: env_or_interface_error (exit 13); window 5.03 s wall | reason: clock: publisher message type std_msgs/msg/Float64 != expected rosgraph_msgs/msg/Clock)
+window_short       expected 2   got 2      0.1s  PASS         (ERROR robosim_eval.doctor: usage error: --window: window 0.5 s is shorter than clock_stall_s (2.0 s) | )
+config_malformed   expected 2   got 2      0.2s  PASS         (ERROR robosim_eval.doctor: config error: /mnt/d/RoboSim-Eval/artifacts/verify/20261003-115448/doctor-fake/doctor_fake_malformed.yaml: invalid YAML at line 2, column 1: expected ',' or ']', but got '<stream end>' (while parsing a flow sequence) | )
+=== result: PASS ===

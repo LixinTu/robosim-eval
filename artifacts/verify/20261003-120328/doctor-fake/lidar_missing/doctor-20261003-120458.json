@@ -1,0 +1,73 @@
+{
+  "started": "2026-10-03T12:04:58.212317-07:00",
+  "config": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-120328/doctor-fake/doctor_fake.yaml",
+  "window_s_requested": 5.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "sim_data_missing",
+    "exit_code": 11,
+    "reasons": [
+      "lidar: no publisher for the topic"
+    ],
+    "warnings": [],
+    "window_s": 5.037337627000056,
+    "clock": {
+      "present": true,
+      "count": 127,
+      "rate_hz": 25.211730760170184,
+      "sim_progress_s": 1.9990661760000004,
+      "rtf": 0.4000200183481268,
+      "last_age_s": 1.5506000067944115e-05,
+      "backward_jumps": 0,
+      "last_sim_s": 4.651932922,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 127,
+        "rate_hz": 25.211730760170184,
+        "max_gap_s": 0.04184432800002469,
+        "last_age_s": 0.03954658500003916,
+        "stamp_lag_s": 0.01583569000000029,
+        "status": "ok",
+        "detail": "odom: 25.21 Hz, last message 0.04 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 127,
+        "rate_hz": 25.211730760170184,
+        "max_gap_s": 0.04213923700001487,
+        "last_age_s": 0.03935117200001059,
+        "stamp_lag_s": 0.015791479000000663,
+        "status": "ok",
+        "detail": "tf: 25.21 Hz, last message 0.04 s old"
+      },
+      "lidar": {
+        "present": false,
+        "msg_types": [],
+        "count": 0,
+        "rate_hz": 0.0,
+        "max_gap_s": null,
+        "last_age_s": null,
+        "stamp_lag_s": null,
+        "status": "missing",
+        "detail": "lidar: no publisher for the topic"
+      }
+    },
+    "observed": true
+  }
+}

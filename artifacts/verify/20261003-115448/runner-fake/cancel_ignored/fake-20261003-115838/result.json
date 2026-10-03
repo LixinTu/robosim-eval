@@ -1,0 +1,177 @@
+{
+  "schema": "robosim-eval run result (D3 runner verdict; the offline analyzer's own output is under 'analyzer', null when it did not run or failed)",
+  "execution_status": "error",
+  "task_outcome": "timeout",
+  "safety_status": "unknown",
+  "data_status": "incomplete",
+  "validation_status": "fail",
+  "verdict_reasons": {
+    "fail": [
+      "runner errors: cancel_timeout",
+      "cancel requested but no terminal status was acknowledged",
+      "outcome timeout differs from the scenario expectation reached"
+    ],
+    "inconclusive": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": []
+  },
+  "evaluator": {
+    "execution_status": "error",
+    "task_outcome": "timeout",
+    "safety_status": "unknown",
+    "data_status": "incomplete",
+    "validation_status": "fail",
+    "fail_reasons": [
+      "runner errors: cancel_timeout",
+      "cancel requested but no terminal status was acknowledged",
+      "outcome timeout differs from the scenario expectation reached"
+    ],
+    "inconclusive_reasons": [
+      "data incomplete: no recording: the recorders were not started (--no-record)",
+      "contact data missing: safety cannot be judged (not measured is not 'no collision')"
+    ],
+    "warnings": [],
+    "arrival_error_m": null,
+    "disallowed_contacts": []
+  },
+  "evaluator_inputs": {
+    "scenario_expect": "reached",
+    "preset_unreachable": false,
+    "tolerance_m": 0.5,
+    "goal": [
+      1.0,
+      0.0
+    ],
+    "execution_status": "error",
+    "runner_errors": [
+      "cancel_timeout"
+    ],
+    "accepted": true,
+    "rejected": false,
+    "terminal_status": null,
+    "error_code": null,
+    "cancel_requested": true,
+    "cancel_reason": "nav_wall_timeout",
+    "timeout_reason": "nav_wall_timeout",
+    "stop_confirmed": false,
+    "gt_at_stop": null,
+    "contacts_measured": false,
+    "contacts": [],
+    "required_gaps": {},
+    "required_backward": {},
+    "informational_gaps": {},
+    "dropout_threshold_wall_s": 2.0,
+    "clock_backward_jumps": 0,
+    "coverage_problems": [
+      "no recording: the recorders were not started (--no-record)"
+    ],
+    "contacts_dropped": 0,
+    "unreachable_evidence": null,
+    "scenario_expect_safety": null,
+    "scenario_expect_data": null
+  },
+  "goal": {
+    "frame": "map",
+    "x": 1.0,
+    "y": 0.0,
+    "yaw": 0.0,
+    "position_tolerance_m": 0.5,
+    "source": "scenario goal sent by the runner (no offline analysis)"
+  },
+  "target_goal": {
+    "id": "c2efcbebcdaeba06dabdf89bfa56873c",
+    "id_source": "runner action client"
+  },
+  "timing": null,
+  "data_integrity": null,
+  "analyzer": null,
+  "nav2_raw": {
+    "terminal_status_code": null,
+    "terminal_status_name": "none",
+    "rejected": false,
+    "error_code": null,
+    "error_msg": null,
+    "source": "runner action client (no offline analysis)"
+  },
+  "runner": {
+    "run_id": "fake-20261003-115838",
+    "scenario": "fake",
+    "states": [
+      {
+        "state": "PREPARE",
+        "t_wall": 334.296871343,
+        "t_sim": null,
+        "reason": "run started"
+      },
+      {
+        "state": "WAIT_READY",
+        "t_wall": 342.702100875,
+        "t_sim": null,
+        "reason": "prepared"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 342.703049675,
+        "t_sim": 4.002483045,
+        "reason": "nav2 ready after 0.0 s"
+      },
+      {
+        "state": "SEND_GOAL",
+        "t_wall": 342.718054269,
+        "t_sim": 4.082462853,
+        "reason": "goal c2efcbebcdaeba06dabdf89bfa56873c sent: the acceptance deadline starts now"
+      },
+      {
+        "state": "EXECUTING",
+        "t_wall": 342.720295268,
+        "t_sim": 4.082462853,
+        "reason": "goal accepted c2efcbebcdaeba06dabdf89bfa56873c"
+      },
+      {
+        "state": "CANCELING",
+        "t_wall": 350.755630705,
+        "t_sim": 7.282491553,
+        "reason": "nav_wall_timeout"
+      },
+      {
+        "state": "TEARDOWN",
+        "t_wall": 355.756796379,
+        "t_sim": 9.29840116,
+        "reason": "cancel_timeout"
+      },
+      {
+        "state": "DONE",
+        "t_wall": 355.757607712,
+        "t_sim": 9.29840116,
+        "reason": "teardown finished"
+      }
+    ],
+    "errors": [
+      "cancel_timeout"
+    ],
+    "interrupted_by": null,
+    "timeout_reason": "nav_wall_timeout",
+    "abort_batch": true,
+    "exit_codes": {
+      "doctor": 0
+    },
+    "obstacles": [],
+    "ground_truth": {},
+    "injections": [],
+    "contacts": {
+      "installed": false,
+      "measured": false,
+      "error": null
+    },
+    "doctor_attempts": 1,
+    "nav2_ready_wall_s": 0.0,
+    "goal_sent": {
+      "id": "c2efcbebcdaeba06dabdf89bfa56873c",
+      "wall": "2026-10-03T11:58:47.530-07:00"
+    },
+    "goal_id": "c2efcbebcdaeba06dabdf89bfa56873c",
+    "accept_sim": 4.082462853
+  }
+}

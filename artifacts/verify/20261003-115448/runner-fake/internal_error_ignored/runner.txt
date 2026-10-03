@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/verify/20261003-115448/runner-fake/internal_error_ignored/fake-20261003-120100
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-115448/runner-fake/internal_error_ignored/fake-20261003-120100", "exit": 31, "execution_status": "error", "task_outcome": "unknown", "validation_status": "fail", "errors": ["internal error: RuntimeError: injected test fault (--test-fault executing)", "safety net: goal e82538dfa65f255d2ddc8d0462e1abfd has no confirmed terminal status within 5.0 s after the cancel"]}

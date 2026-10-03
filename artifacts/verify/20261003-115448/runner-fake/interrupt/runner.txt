@@ -1,0 +1,2 @@
+run dir: /mnt/d/RoboSim-Eval/artifacts/verify/20261003-115448/runner-fake/interrupt/fake-20261003-115825
+{"run_dir": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-115448/runner-fake/interrupt/fake-20261003-115825", "exit": 20, "execution_status": "interrupted", "task_outcome": "unknown", "validation_status": "inconclusive", "errors": []}

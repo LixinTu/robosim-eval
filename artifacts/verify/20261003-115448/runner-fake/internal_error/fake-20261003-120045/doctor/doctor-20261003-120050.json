@@ -1,0 +1,73 @@
+{
+  "started": "2026-10-03T12:00:50.720913-07:00",
+  "config": "/mnt/d/RoboSim-Eval/artifacts/verify/20261003-115448/runner-fake/runner_fake.yaml",
+  "window_s_requested": 3.0,
+  "env": {
+    "rmw": "rmw_fastrtps_cpp",
+    "domain_id": "42",
+    "dds_profile_exists": true,
+    "ros_distro": "jazzy"
+  },
+  "report": {
+    "verdict": "healthy",
+    "exit_code": 0,
+    "reasons": [],
+    "warnings": [],
+    "window_s": 3.0000782710000067,
+    "clock": {
+      "present": true,
+      "count": 75,
+      "rate_hz": 24.999347758683804,
+      "sim_progress_s": 1.1839847000000003,
+      "rtf": 0.39998699579527636,
+      "last_age_s": 2.7804000012565666e-05,
+      "backward_jumps": 0,
+      "last_sim_s": 3.918498173,
+      "msg_types": [
+        "rosgraph_msgs/msg/Clock"
+      ]
+    },
+    "streams": {
+      "odom": {
+        "present": true,
+        "msg_types": [
+          "nav_msgs/msg/Odometry"
+        ],
+        "count": 75,
+        "rate_hz": 24.999347758683804,
+        "max_gap_s": 0.040601084000002174,
+        "last_age_s": 0.04007026100003941,
+        "stamp_lag_s": 0.015949860000000093,
+        "status": "ok",
+        "detail": "odom: 25.00 Hz, last message 0.04 s old"
+      },
+      "tf": {
+        "present": true,
+        "msg_types": [
+          "tf2_msgs/msg/TFMessage"
+        ],
+        "count": 75,
+        "rate_hz": 24.999347758683804,
+        "max_gap_s": 0.04067418400001088,
+        "last_age_s": 0.04000787400002537,
+        "stamp_lag_s": 0.015903370000000194,
+        "status": "ok",
+        "detail": "tf: 25.00 Hz, last message 0.04 s old"
+      },
+      "lidar": {
+        "present": true,
+        "msg_types": [
+          "sensor_msgs/msg/PointCloud2"
+        ],
+        "count": 8,
+        "rate_hz": 2.666597094259606,
+        "max_gap_s": 0.38507844499997645,
+        "last_age_s": 0.14492764300001681,
+        "stamp_lag_s": 0.057873046000000095,
+        "status": "ok",
+        "detail": "lidar: 2.67 Hz, last message 0.14 s old"
+      }
+    },
+    "observed": true
+  }
+}

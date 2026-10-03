@@ -1,0 +1,1 @@
+ERROR robosim_eval.doctor: config error: /mnt/d/RoboSim-Eval/artifacts/verify/20261003-115448/doctor-fake/doctor_fake_malformed.yaml: invalid YAML at line 2, column 1: expected ',' or ']', but got '<stream end>' (while parsing a flow sequence)

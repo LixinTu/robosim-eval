@@ -92,7 +92,7 @@ cancel 是有意注入的故障:`configs/baseline.yaml` 里这个情形的 `inje
 
 | 预测 | 结果 | 判断 |
 | --- | --- | --- |
-| Nav2 结果、任务结果、安全、评测都不变 | 4 次都是 SUCCEEDED、reached、安全 pass。评测:normal 两次 pass;normal_slow 一次 pass,一次 inconclusive | **部分成立**。那次 inconclusive 的原因与参数无关:导航中 Isaac 自发卡住,`/clock`、odom、TF 三路同时停了 2.19 s 墙钟(超过 2 s 门槛),期间仿真时间只前进 0.017 s(一个步长)。评测按规则判数据不完整。D4 的 9 次没有出现过这种卡顿,原因没查 |
+| Nav2 结果、任务结果、安全、评测都不变 | 4 次都是 SUCCEEDED、reached、安全 pass。评测:normal 两次 pass;normal_slow 一次 pass,一次 inconclusive | **部分成立**。那次 inconclusive 的原因与参数无关:`/clock`、odom、TF 三路的接收间隔同时达到 2.19 s 墙钟(超过 2 s 门槛),期间仿真时间只前进 0.017 s(一个步长),评测按规则判数据不完整。当时记为 Isaac 自发卡住、原因没查;2026-10-03 对照该运行的 events.jsonl 查明,这是 WSL 墙钟的一次约 2.2 s 往前拨(墙钟比单调时钟同时多走了这么多),不是 Isaac 卡住。D4 的 9 次同样有往前拨,只是每次分成两段、都没超过门槛(见 docs/setup.md 的本机实测特性) |
 | 到达误差 ≤ 0.5 m,量级不变 | 0.173、0.095 m(同批 normal 0.213、0.298) | 成立 |
 | 峰值线速度 ≤ 0.42 且 ≥ 0.35 m/s | 0.411、0.414(normal 0.801、0.802) | 成立 |
 | 移动时平均线速度 ≤ 0.40 m/s | 0.318、0.320(normal 0.522、0.582) | 成立 |

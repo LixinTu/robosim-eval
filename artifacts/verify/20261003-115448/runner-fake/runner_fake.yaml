@@ -1,0 +1,35 @@
+# Runner config for the fake-node test: the doctor settings of tests/ros_fake/doctor_fake.yaml (ROS domain 42), short
+# timeouts so every failure path finishes within seconds, and one scenario. No sim section: the test runs with --no-sim.
+env: {rmw: rmw_fastrtps_cpp, domain_id: "42", ros_distro: jazzy, require_dds_profile: true}
+topics:
+  clock: {name: /clock, type: rosgraph_msgs/msg/Clock}
+  odom: {name: /chassis/odom, type: nav_msgs/msg/Odometry}
+  tf: {name: /tf, type: tf2_msgs/msg/TFMessage, parent: odom, child: base_link}
+  lidar: {name: /front_3d_lidar/lidar_points, type: sensor_msgs/msg/PointCloud2}
+doctor:
+  discovery_timeout_s: 5.0
+  window_s: 3.0
+  clock_stall_s: 2.0
+  min_sim_progress_s: 0.2
+  streams:
+    odom: {min_rate_hz: 8.0, max_age_s: 2.0}
+    tf: {min_rate_hz: 8.0, max_age_s: 2.0}
+    lidar: {min_rate_hz: 1.0, max_age_s: 2.5}
+run:
+  frame: map
+  units: {length: m, angle: rad}
+  position_tolerance_m: 0.5
+  heading_assessed: false
+  stop_still: {linear_mps: 0.05, angular_radps: 0.1, hold_sim_s: 1.0, max_gap_sim_s: 0.25}
+  timeouts: {ready_wall_s: 8, accept_wall_s: 5, nav_sim_s: 30, nav_wall_s: 8, cancel_wall_s: 5, stop_wall_s: 6}
+  dropout_wall_s: 2.0
+  contact_filter: "not measured in the fake test"
+  record_cap_s: 60
+scenarios:
+  fake:
+    goal: {x: 1.0, y: 0.0, yaw: 0.0}
+    expect: "depends on the fake Nav2 mode"
+  fake_slow:   # D5: same as fake plus a declared Nav2 parameter change the runner must find in effect
+    goal: {x: 1.0, y: 0.0, yaw: 0.0}
+    expect: "depends on the fake Nav2 mode"
+    nav2_params: {controller_server.ros__parameters.FollowPath.max_vel_x: 0.4}
