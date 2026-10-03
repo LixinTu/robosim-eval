@@ -1,0 +1,32 @@
+RoboSim Eval
+Copyright (c) 2026 LixinTu. The code and documentation of this project are under the MIT License (see LICENSE),
+except for the third-party material listed below, which keeps its own licence.
+
+Third-party material included in this repository
+------------------------------------------------
+- configs/network/fastdds.xml
+  Taken from NVIDIA IsaacSim-ros_workspaces, tag IsaacSim-6.1.0 (commit a9e8471), jazzy_ws/fastdds.xml.
+  Copyright (c) NVIDIA CORPORATION & AFFILIATES. Licensed under the Apache License, Version 2.0.
+  The licence notice is kept in the file (moved into an XML comment so the file is one well-formed XML document).
+
+- artifacts/**/nav2_params.yaml
+  Run records of scenarios that declare a Nav2 parameter change. Each is the NVIDIA carter_navigation parameter
+  file (IsaacSim-ros_workspaces, jazzy_ws/src/navigation/carter_navigation/params/carter_navigation_params.yaml,
+  tag IsaacSim-6.1.0) with the declared value lines changed. Copyright (c) NVIDIA CORPORATION & AFFILIATES.
+  Licensed under the Apache License, Version 2.0.
+
+- The warehouse map image embedded (base64) in the HTML batch reports (artifacts/**/report*.html):
+  carter_navigation/maps/carter_warehouse_navigation.png from the same NVIDIA workspace and tag.
+  Copyright (c) NVIDIA CORPORATION & AFFILIATES. Licensed under the Apache License, Version 2.0.
+
+A copy of the Apache License 2.0 is available at https://www.apache.org/licenses/LICENSE-2.0.
+
+Not included (installed separately; see README.md and docs/setup.md)
+--------------------------------------------------------------------
+NVIDIA Isaac Sim 6.1 and its Nova Carter assets; the NVIDIA IsaacSim-ros_workspaces checkout; ROS 2 Jazzy, Nav2,
+RViz and rosbag2. Raw rosbag recordings are not part of the repository (.gitignore).
+
+Development note
+----------------
+The code, scripts, tests and documentation were written with the AI coding tool Claude Code under the author's
+direction; independent read-only reviews use OpenAI Codex CLI. See README.md.

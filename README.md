@@ -2,7 +2,9 @@
 
 基于现成机器人和 Nav2,做了仿真任务运行、数据记录、异常处理与可复跑评测。
 
-**状态(2026-09-30)**:D0–D5 已实现,并在真实 Isaac 上运行和演示过;独立审查(Codex)与用户验收都还没有完成,进度见 [docs/plan.md](docs/plan.md) §1。
+**状态(2026-10-03)**:D0–D5 已实现,并在真实 Isaac 上运行和演示过;独立审查(Codex)与用户验收都还没有完成(11 个审查分片只出了 2 份报告),进度见 [docs/plan.md](docs/plan.md) §1。
+
+**版本**:v0.1.0(2026-09-30)是产生仓库里 D0–D5 全部运行记录的早期版本。之后 master 合入了多代理审查确认问题的修复(`fix/review-round1`,见 [docs/technical-overview.md](docs/technical-overview.md) §16):固定输入测试和假节点测试通过,2026-10-03 在真实 Isaac 上复跑 normal 判 pass(`artifacts/review-2026-10-03/`)。D0 常驻进程脚本的修复(分支 `impl/shell`)还没合入,也还没打新的版本标签。文中提到的提交号是改写作者邮箱之前的,对照表见 [docs/commit-map.tsv](docs/commit-map.tsv)。
 
 机器人是 NVIDIA Isaac Sim 6.1 自带的 Nova Carter 仓库场景,导航用 ROS 2 Jazzy 的 Nav2。本项目自己写的是围绕它们的评测工具:运行前诊断、复位场景并用真值核对、发目标、监控超时与中断、确认停车、录制、按固定规则判定、批量复跑、生成报告。机器人控制、定位、路径规划都不是本项目实现的。
 
@@ -15,7 +17,7 @@
 | Isaac Sim 6.1.0(Windows) | `D:\isaac-sim-standalone-6.1.0-windows-x86_64` | 官方独立包,解压即可 |
 | WSL2 发行版 `Ubuntu`(24.04)+ ROS 2 Jazzy + Nav2 | 已装 | `bash /mnt/d/RoboSim-Eval/scripts/wsl/install_ros2_jazzy.sh`(需 sudo) |
 | carter_navigation 工作区(钉在 IsaacSim-6.1.0 @ a9e8471) | `~/robotics/vendor/isaac-ros-6.1` | `wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/setup_workspace.sh` |
-| 防火墙:允许 WSL 到 kit.exe 的 UDP | 已建 | 管理员 PowerShell 运行 `powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\allow_wsl_to_isaac_firewall.ps1` |
+| 防火墙:允许 WSL 到 kit.exe 的 UDP | 已建;规则绑定在 vEthernet (WSL) 网卡上,Windows 重启后要重新绑定(见 docs/setup.md) | 管理员 PowerShell 运行 `powershell -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\windows\allow_wsl_to_isaac_firewall.ps1` |
 
 细节、期望输出和失败时怎么查见 [docs/setup.md](docs/setup.md)。
 
@@ -82,7 +84,7 @@
 | NVIDIA carter_navigation(IsaacSim-ros_workspaces) | Nav2 launch、参数文件、地图;本项目不修改它们,参数变更在运行目录里派生 |
 | ROS 2 Jazzy、Nav2 1.3 | 定位(AMCL)、全局规划(NavFn)、局部控制(DWB)、恢复行为、NavigateToPose 动作接口 |
 | 本项目 | `robosim_eval/`(诊断、仿真控制适配、运行状态机、判定、报告、批量)、`scripts/`(启动、录制、停止、测试脚本)、`configs/`(阈值、情形、障碍物资产)、`tests/`、`docs/` |
-| AI | 本项目的代码、脚本、测试和文档由 Claude Code(Anthropic 的 Claude 模型)在用户指挥下编写;独立审查计划由 Codex CLI(OpenAI)以只读方式完成,审查材料和已有报告在 `docs/review/`;截至 2026-09-30,只有 D0 的两个分片出了报告,其余分片受账户额度限制仍在排队。另做过一轮 Claude 多代理审查,它与编写代码的是同一模型家族,不算独立审查。需求与验收标准来自用户提供的计划文档,关键决定(例如打开 Python 执行服务、在不受支持的配置上继续)由用户做出,记在 [docs/plan.md](docs/plan.md) |
+| AI | 本项目的代码、脚本、测试和文档由 Claude Code(Anthropic 的 Claude 模型)在用户指挥下编写;独立审查计划由 Codex CLI(OpenAI)以只读方式完成,审查材料和已有报告在 `docs/review/`;截至 2026-10-03,11 个分片中只有 D0 的两个出了报告,其余 9 个受账户额度限制暂停,额度恢复后继续。另做过一轮 Claude 多代理审查,它与编写代码的是同一模型家族,不算独立审查。需求与验收标准来自用户提供的计划文档,关键决定(例如打开 Python 执行服务、在不受支持的配置上继续)由用户做出,记在 [docs/plan.md](docs/plan.md) |
 
 ## 测试
 
@@ -99,8 +101,14 @@ wsl -d Ubuntu -- bash -l /mnt/d/RoboSim-Eval/scripts/wsl/test_runner_fake.sh <�
 - 仿真约 0.3 倍实时;一次运行的墙钟时间是仿真时间的约 3 倍。
 - "开头卡住":部分运行在收到目标后,控制器持续输出最小的原地转向指令(0.7/19 ≈ 0.037 rad/s),机器人对这个指令基本不转。Nav2 的进度检查约每 30 s 墙钟报一次"Failed to make progress",前 3 次之后的恢复都没有解开;第 4 次时 behavior_server 执行原地旋转(1.57 rad),转完之后才正常转向、行驶并到达(Nav2 反馈共计 5 次恢复)。合计约 37 s 仿真时间、约 2 分钟墙钟。它拉长到达时间、增加恢复次数,不影响判定。机制大部分已查明(机器人开头正好背对全局路径,DWB 常选最小转向档,直接实验证实机器人对它不响应),DWB 为什么把这一档打分最高还没查明,见 [docs/defect-record.md](docs/defect-record.md) 与 `artifacts/d4/commands.md`。
 - AMCL 的 map→odom 变换间隔常超过 2 s;它只作参考数据流,记为警告,不判数据不完整。
-- 接触检测依赖 Python 执行服务;没打开时安全结论是 unknown,不是"没碰撞"。
+- 接触检测依赖 Python 执行服务;没打开时安全结论是 unknown,不是"没碰撞",验证结论最多 inconclusive(退出 11),不会 pass。
 - 到达只判位置(容差 0.5 m,真值来自 Isaac),不判朝向。
+- 运行 `run_scenario.sh` 时不要关掉它所在的终端窗口:运行器会被直接结束,不取消目标、不收尾,Nav2 和录制器会残留,按 [docs/setup.md](docs/setup.md) 的"关闭"处理。终端 Ctrl-C 没有这个问题,它会取消目标并收尾。批量不受影响。
+- 审查确认的问题与修复状态见 [docs/technical-overview.md](docs/technical-overview.md) §16;D0 常驻进程脚本的修复(分支 `impl/shell`)还没合入。
+
+## 许可证
+
+本项目的代码和文档采用 MIT 许可证,见 [LICENSE](LICENSE)。取自 NVIDIA 的少量文件(Fast DDS 配置、运行记录里派生的 Nav2 参数文件、报告里嵌入的地图图片)保留 Apache-2.0,见 [NOTICE](NOTICE)。
 
 ## 进一步阅读
 
