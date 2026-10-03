@@ -2,7 +2,7 @@
 
 本文面向第一次接触这个项目的工程师或面试官,假设读者了解 ROS 2 的基本概念(topic、TF、action、launch)。项目里的专有名词在文末"附录:术语"里解释。
 
-**证据约定**:文中的数字都来自仓库里的记录。原始输出在 `artifacts/`(产品证据)和 `docs/review/`(审查过程),各阶段的命令台账是 `artifacts/d0*/commands.md`。rosbag 本体只存在本机、不入库;由 bag 算出的数字可以对照入库的 `trajectory.csv`、`result.json` 和 `bag-info.txt`。少数结果只在台账里有摘要、没有单独存档,文中会注明。多数小节末尾给出证据位置。
+**证据约定**:文中的数字都来自仓库里的记录。原始输出在 `artifacts/`(产品证据)和 `docs/review/`(审查过程),各阶段的命令台账是 `artifacts/d0*/commands.md`。rosbag 本体只存在本机、不入库;由 bag 算出的数字可以对照入库的 `trajectory.csv`、`result.json` 和 `bag-info.txt`。少数结果只在台账里有摘要、没有单独存档,文中会注明。多数小节末尾给出证据位置。文中引用的 `docs/plan.md` §n 指 2026-09-30 的版本:2026-10-03 起 plan.md 只留状态、当前任务、决定记录与未解决问题,原各节用 `git show cb7c6a4:docs/plan.md` 查看。
 
 ## 0. 摘要
 
