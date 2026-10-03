@@ -1,0 +1,3 @@
+ros_env.sh: ROS_DISTRO=jazzy RMW_IMPLEMENTATION=rmw_fastrtps_cpp ROS_DOMAIN_ID=0 mode=full overlay=/home/administrator/robotics/vendor/isaac-ros-6.1/jazzy_ws
+dds_env.sh: FASTRTPS_DEFAULT_PROFILES_FILE=/mnt/d/RoboSim-Eval/configs/network/fastdds.xml
+nav2 launch started: wrapper/session=18579 launch_pid=18582 run_dir=/mnt/d/RoboSim-Eval/artifacts/practice-01/runs/normal-20260930-134732 log=/mnt/d/RoboSim-Eval/artifacts/practice-01/runs/normal-20260930-134732/nav2-launch.log
