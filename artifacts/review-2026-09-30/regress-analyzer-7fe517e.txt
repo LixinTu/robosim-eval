@@ -1,0 +1,33 @@
+d0d/run-01/attempt-01                                      same
+d2/runs/normal-20260930-003622                             same
+d2/runs/normal-20260930-004343                             same
+d2/runs/normal-20260930-004634                             CHANGED {'execution_status': ('interrupted', 'completed')}  new reasons: []
+d3/runs-diagnosis/normal-20260930-012548                   same
+d3/runs/bypass-20260930-012001                             same
+d3/runs/cancel-20260930-010644                             same
+d3/runs/cancel-20260930-012218                             same
+d3/runs/cancel-20260930-012426                             same
+d3/runs/collision-20260930-011323                          same
+d3/runs/dropout-20260930-010804                            same
+d3/runs/normal-20260930-010104                             same
+d3/runs/timeout-20260930-011202                            same
+d3/runs/timeout-20260930-012837                            same
+d3/runs/unreachable-20260930-010458                        same
+d4/batch-20260930-013010/runs/bypass-20260930-013406       same
+d4/batch-20260930-013010/runs/bypass-20260930-014400       same
+d4/batch-20260930-013010/runs/bypass-20260930-015337       same
+d4/batch-20260930-013010/runs/normal-20260930-013010       same
+d4/batch-20260930-013010/runs/normal-20260930-014009       same
+d4/batch-20260930-013010/runs/normal-20260930-014949       same
+d4/batch-20260930-013010/runs/unreachable-20260930-013807  same
+d4/batch-20260930-013010/runs/unreachable-20260930-014759  same
+d4/batch-20260930-013010/runs/unreachable-20260930-015531  same
+d5/batch-20260930-021530/runs/normal-20260930-021530       same
+d5/batch-20260930-021530/runs/normal-20260930-022017       same
+d5/batch-20260930-021530/runs/normal_slow-20260930-021734  same
+d5/batch-20260930-021530/runs/normal_slow-20260930-022225  same
+d5/defect3-before/normal-20260930-020110                   same
+d5/defect4-after/cancel-20260930-023111                    same
+d5/demo/runs/cancel-20260930-021343                        same
+d5/demo/runs/normal-20260930-021122                        same
+runs with a changed analyzer verdict: 1

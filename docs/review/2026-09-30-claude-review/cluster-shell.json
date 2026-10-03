@@ -1,0 +1,156 @@
+[
+ {
+  "id": "shell-3",
+  "severity": "Minor",
+  "file": "scripts/wsl/stop_record.sh",
+  "line": "23-34",
+  "title": "stop_record.sh sends SIGINT, SIGTERM and SIGKILL to the recorded session ids without any ownership check, and PIDs demonstrably wrap on this machine",
+  "trigger": "stop_record.sh runs on an attempt dir whose recorder sessions have already ended, and meanwhile the PID counter has wrapped or WSL has restarted. Example: after a runner crash the recorders stop themselves at the 480 s cap, and later the operator follows setup.md:132 ('若有未停的记录器:stop_record.sh <attempt_dir>'), which is also the only tool that copies and checks the bag.",
+  "expected": "Plan B0 'stop only what you have confirmed you own'. stop_nav2.sh does this with boot_id, wrapper start time and command line, and its header states that run dirs are kept and PIDs are reused after a WSL restart.",
+  "actual": "Any live session whose id equals a number in record.pids gets `pkill -INT/-TERM/-KILL -s <sid>`. That can be the Nav2 wrapper session of a current run (start_nav2 uses setsid), another attempt's recorder, a user shell, or, after a WSL restart, boot-time services. Post-wrap recorder ids are low (816-885 in the 02:22:58 attempt), which is exactly where boot-time processes land.",
+  "evidence": "`cat /proc/sys/kernel/pid_max` in the Ubuntu distro prints 99999. A survey of tracked artifacts/*/record.pids shows about 700-1000 pids per run and a wrap during D4/D5: the 02:20:53 attempt has 'bag 99724 ... tf_map_base 99793' and the 02:22:58 attempt has 'bag 816 ... tf_map_base 885'. Static code: stop_record.sh:23 reads the sids, and :24-34 check liveness and signal them. No boot_id, start time or command-line check exists; record_d0.sh records only the session ids.",
+  "fix_direction": "In record_d0.sh, record boot_id and each wrapper's start time. The wrapper command line already contains \"$ATT/<name>.exit\". Before signalling, have stop_record.sh verify all three like stop_nav2.sh does, and refuse (with a distinct exit code) otherwise.",
+  "reproduced": false,
+  "verification": {
+   "id": "shell-3",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": false,
+   "repro": "Static only; I did not run stop_record.sh or record_d0.sh. Checks: `wsl -d Ubuntu -- cat /proc/sys/kernel/pid_max` gives 99999. A survey of `git ls-files 'artifacts/*record.pids'` shows about 800-900 PIDs per run and a wrap inside the D5 batch: normal-20260930-022017 has 'bag 99724 ... tf_map_base 99793', and normal_slow-20260930-022225 has 'bag 816 ... tf_map_base 885'.",
+   "reasoning": "stop_record.sh:23 reads the session ids from record.pids. Lines 24-34 then run pgrep -s and pkill -INT/-TERM/-KILL -s against each id. There is no boot_id, start-time or command-line check, and record_d0.sh records none of those. This contradicts plan B0 ('仅停止自己确认拥有的进程') and the pattern stop_nav2.sh already uses.\n\nOn the runner path, stop_record runs within the 480 s record cap while the recorder sessions are still alive, and PID reuse inside one run is impossible (it would need about 99,999 allocations). The exposure is therefore limited to manual invocation on an old attempt dir after its recorders ended (setup.md:132), or after a WSL restart. There, ids like 816-885 can equal the session id of a boot-time service or an unrelated wsl.exe session, which would then be sent INT, TERM and finally KILL.",
+   "fix_direction": "Have record_d0.sh record boot_id plus each wrapper's /proc start time. The wrapper command line already contains \"$ATT/<name>.exit\". stop_record.sh should verify all three before signalling each session and skip or refuse (distinct exit code) otherwise, mirroring stop_nav2.sh:36-43."
+  }
+ },
+ {
+  "id": "shell-4",
+  "severity": "Minor",
+  "file": "robosim_eval/runner.py",
+  "line": "323-331, 494 (with scripts/wsl/record_d0.sh:29, 47, 54, 69-75)",
+  "title": "When record_d0.sh fails, the recorders it did start are never stopped; re-running it in the same dir loses track of them",
+  "trigger": "record_d0.sh exits 1 because one of the six recorders is not running 2 s after start, or a wrapper took more than 5 s to write its pid file (record.pids gets 'MISSING').",
+  "expected": "Every recorder that was started is stopped and checked in teardown. The runner docstring says TEARDOWN always runs stop_record.sh.",
+  "actual": "The runner calls fsm.fail and returns before `self.started[\"record\"] = True`, so _teardown skips stop_record.sh. The remaining sessions run until the 480 s cap (record_cap_s). They keep appending to the failed run's odom.txt, cmd_vel.txt and other streams after its result.json is written. In a batch they also record the next attempt's reset and navigation into the failed run's files, running alongside the next bag recorder. The ~/robosim_bags bag is never copied or checked. On the manual D0 path, re-running record_d0 on the same dir does `: > record.pids` and deletes pid-* without checking liveness. stop_record then only knows the new sessions, and old and new recorders write the same <name>.txt.",
+  "evidence": "Static: runner.py:324-331 sets started['record'] only when rc == 0, and runner.py:494 gates stop_record on it. record_d0.sh:72-75 returns 1 while the other sessions keep running. The path is untested: all 31 recorded runs have `\"event\": \"record_start\", \"exit_code\": 0` (git grep over artifacts/*events.jsonl).",
+  "fix_direction": "Run stop_record.sh in teardown whenever record_d0 was invoked and record.pids exists. Alternatively, have record_d0.sh stop what it started before exiting 1. Make record_d0.sh refuse when pid-* sessions in the dir are still alive.",
+  "reproduced": false,
+  "verification": {
+   "id": "shell-4",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": false,
+   "repro": "Static only; record_d0.sh may not be run here. I confirmed that runner.py:324-331 sets started['record'] only after `rc == 0` (on rc != 0 it calls fsm.fail and returns False). runner.py:492-496 runs stop_record.sh only `if self.started[\"record\"]`. record_d0.sh:72-75 exits 1 when any session is not running or its id is MISSING, and never stops the sessions it did start. Lines 29, 47 and 54 truncate record.pids and delete pid-* without a liveness check. `grep -rn stop_record robosim_eval/ scripts/` shows no other cleanup path.",
+   "reasoning": "If one of the six recorders fails its 2 s check, or a pid file is late (MISSING), the other recorder sessions keep running until the record_cap_s (480 s) cap. They keep appending to the failed run's odom.txt, cmd_vel.txt and other streams after result.json is written. In a batch this spans the next attempt's reset and navigation. The ~/robosim_bags bag is never checked or copied.\n\nThe runner docstring (line 9, 'TEARDOWN (always: ... stop_record.sh ...)') overstates this. A manual re-run of record_d0.sh on the same dir loses track of the earlier sessions. All recorded runs had record_d0 exit 0, so the path is real but untested and not the normal path.",
+   "fix_direction": "In teardown, run stop_record.sh whenever record_d0.sh was invoked and record.pids exists, including on rc != 0. Alternatively, have record_d0.sh stop its own started sessions before exiting 1. It should also refuse to start while pid-* sessions in the dir are still alive."
+  }
+ },
+ {
+  "id": "shell-5",
+  "severity": "Minor",
+  "file": "scripts/wsl/stop_nav2.sh",
+  "line": "29-43",
+  "title": "stop_nav2.sh refuses (exit 5) to stop leftovers of its own launch once the wrapper process has exited, and gives a misleading reason",
+  "trigger": "`ros2 launch` dies abnormally (exception, OOM kill, SIGKILL) while some Nav2 children survive in the session. The wrapper writes nav2.exit and exits, and teardown then calls stop_nav2.sh.",
+  "expected": "The session's leftover processes are recognised as this run's and stopped, or at least the refusal names the real situation and the exit code signals leftovers.",
+  "actual": "alive() is true because members remain, but /proc/$WRAP is gone. starttime_of returns '' and the script records 'start time of process <WRAP> differs from the recorded wrapper start time', then exits 5 without signalling. The Nav2 processes stay. The next start_nav2.sh refuses (exit 3, Nav2 nodes visible), so every remaining batch attempt ends as an error.",
+  "evidence": "Repro (scratch review-wf/shell/repro_stop_nav2_orphans.sh copies stop_nav2.sh lines 24-43 verbatim; a setsid wrapper stand-in records its pid and start time, leaves `sleep 15` behind and exits; nothing is signalled). Output: `wrapper process exists: no; session members: 7282 sleep 15;` then `-> REFUSING to signal session 7280: start time of process 7280 differs from the recorded wrapper start time  (stop_nav2.sh exit 5)`.",
+  "fix_direction": "When /proc/$WRAP no longer exists, check ownership through the surviving members instead. Options: record launch_pid's start time in meta, or check that members' environ/cmdline reference the run dir. If ownership cannot be proven, report 'wrapper exited, N leftover processes in session' with the leftover exit code (1) rather than an identity mismatch.",
+  "reproduced": true,
+  "verification": {
+   "id": "shell-5",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": true,
+   "repro": "Scratch verify-shell/repro_shell5.sh. A setsid wrapper stand-in writes nav2.pid, leaves `sleep 12` in its session, writes nav2.exit=137 and exits. The meta file records boot_id and the wrapper's start time as start_nav2.sh:65 does. Lines 22-43 of stop_nav2.sh are then run verbatim, with exit replaced by echo; nothing is signalled. Command: MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash .../verify-shell/repro_shell5.sh. Output:\n wrapper process exists: no; nav2.exit=137; session members: 8066 sleep 12;\n -> REFUSING to signal session 8064: start time of process 8064 differs from the recorded wrapper start time  (stop_nav2.sh exit 5)",
+   "reasoning": "alive() (pgrep -s) is true because survivors remain in the session. /proc/$WRAP is gone, so starttime_of returns '', which never equals the recorded value. WHY then reports a start-time mismatch rather than 'wrapper exited', and the script exits 5 without signalling anything.\n\nThe refusal is conservative, not unsafe. The leftover Nav2 processes and nodes stay, though, and start_nav2.sh:36-37 then refuses (exit 3) on later attempts. The trigger needs `ros2 launch` to die abnormally while children survive, which is an edge case.",
+   "fix_direction": "When /proc/$WRAP is missing but session members remain, report 'wrapper exited, N leftover processes' with the leftover exit code 1. Optionally prove ownership through the surviving members, for example the recorded launch_pid start time or members' environ/cmdline referencing RUN_DIR, before stopping them."
+  }
+ },
+ {
+  "id": "shell-6",
+  "severity": "Minor",
+  "file": "scripts/wsl/send_goal.sh",
+  "line": "76",
+  "title": "send_goal.sh's 330 s client timeout is not a hard bound: `timeout -s INT` has no -k and the CLI client can wait for ever after SIGINT",
+  "trigger": "An accepted goal where the action server stops answering (for example bt_navigator hung) until the 330 s cap sends SIGINT.",
+  "expected": "The header says '124 when the 330 s client timeout fired', which implies the script ends shortly after 330 s.",
+  "actual": "ros2action's send_goal installs a SIGINT handler that calls `rclpy.spin_until_future_complete(node, cancel_future)` with no timeout. After it returns, the result loop continues with no limit because -t is not passed. Without -k, timeout waits for ever, so send_goal.sh blocks indefinitely.",
+  "evidence": "/opt/ros/jazzy/lib/python3.12/site-packages/ros2action/verb/send_goal.py lines 147-170 (handler: `cancel_future = goal_handle.cancel_goal_async(); rclpy.spin_until_future_complete(node, cancel_future)`) and 189-195 (`while rclpy.ok() and not result_future.done(): ... if timeout is not None and elapsed_time >= timeout: break`). Read via a scratch peek script; send_goal.sh itself was not run.",
+  "fix_direction": "Use `timeout -s INT -k 30 330 ...` and record 137 as 'killed after the cap'. Optionally pass `-t` to the client.",
+  "reproduced": false,
+  "verification": {
+   "id": "shell-6",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": false,
+   "repro": "Static. I read /opt/ros/jazzy/lib/python3.12/site-packages/ros2action/verb/send_goal.py with scratch peek_sendgoal.sh (MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash .../peek_sendgoal.sh). Lines 147-170 install a SIGINT handler that calls cancel_goal_async() and then `rclpy.spin_until_future_complete(node, cancel_future)` with no timeout. Lines 189-196 loop `while rclpy.ok() and not result_future.done()` and break only if `timeout is not None`, and send_goal.sh:76 does not pass -t. send_goal.sh itself was not run, and no rclpy node was created.",
+   "reasoning": "`timeout -s INT 330` without -k sends only SIGINT and then waits for the child indefinitely. If the action server stops answering, the client blocks forever: first in the cancel wait, and afterwards in the result loop, because -t is not passed. send_goal.sh never reaches its end line or exit code. The header's '124 when the 330 s client timeout fired' implies a bounded wait.\n\nOnly the D0 manual path uses send_goal.sh (AGENTS.md:48, setup.md:44); the runner uses its own action client. With a responsive server the cancel completes and the script ends with 124 as documented. The trigger needs a hung server, so Minor.",
+   "fix_direction": "Use `timeout -s INT -k 30 330 ros2 action send_goal ...` and document 137 as 'killed after the cap'. Optionally pass `-t` to the CLI."
+  }
+ },
+ {
+  "id": "shell-9",
+  "severity": "Minor",
+  "file": "scripts/windows/run_codex_review_queue.ps1",
+  "line": "54-60, 90-91",
+  "title": "The queue lock checks only whether some process has the recorded PID, is not atomic, and does not see an orphaned runner left by a killed queue",
+  "trigger": "(a) A queue is stopped by killing it during a round, as the log shows is done to requeue ('queue pid ... stopped by Claude'). Its child `powershell -File run_codex_review.ps1` / `cmd /c codex exec` keeps running, and the next queue finds the PID dead, takes the lock and starts the same round. (b) A stale lock whose PID Windows has reused for an unrelated process. (c) Two starts interleave between Test-Path and Out-File.",
+  "expected": "'Only one queue runs at a time', and no two Codex runs write the same round's files.",
+  "actual": "(a) Two codex runs write the same codex-<round>-{report,stdout,stderr,status} paths, and the attempt/limit classification then reads mixed files. (b) The queue exits 3 on every start (only the log says why) until the lock is deleted by hand. (c) Both queues run, and the first one's `finally` deletes the lock the other believes it holds.",
+  "evidence": "Static: lines 54-60 (owner = first line of the lock file, alive = Get-Process -Id), line 60 (non-atomic write), line 91 (unconditional Remove-Item). codex-queue.log shows repeated kill-and-restart at 00:50, 01:32, 02:36 and 07:06.",
+  "fix_direction": "Create the lock atomically (FileMode.CreateNew). Store PID plus process start time plus script path, and verify all of them. At start, refuse while a run_codex_review.ps1/codex process for the same Dir/round is still running.",
+  "reproduced": false,
+  "verification": {
+   "id": "shell-9",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": true,
+   "repro": "Part (b) was reproduced. Scratch verify-shell/repro_shell9.ps1 writes a scratch lock holding the PID of an unrelated live process (explorer.exe, standing in for a reused PID) and runs queue lines 54-59 verbatim. Output: 'refuse: another queue (pid 11364) holds ...q9.lock -> exit 3 (pid 11364 is explorer)', exit=3. Parts (a) and (c) are static.",
+   "reasoning": "Lines 54-59 treat any live process with the recorded PID as the owner. There is no start time or command-line check, so a reused PID blocks every start until someone deletes the lock (b). Test-Path followed by Out-File is not atomic, and the finally block at line 91 removes the lock unconditionally (c). That race needs two simultaneous starts, which is unlikely.\n\nFor (a): killing the queue does not kill its `powershell -File run_codex_review.ps1` / `cmd /c codex exec` child, because Windows does not cascade TerminateProcess. The lock then points to a dead PID, and a restarted queue would launch the same round, since the report is written only at the end. I did not verify whether the second run's Start-Process redirect then shares or fails on the files still held open by the first run.\n\nAll recorded kills (00:50, 01:32, 02:36, 07:06, 07:25) happened during NotBefore or usage-limit sleeps, so no orphan has occurred yet. The practical risk is small.",
+   "fix_direction": "Create the lock with FileMode.CreateNew. Store PID, process start time and script path, and verify all of them. At start, refuse while a run_codex_review.ps1 or codex process for the same Dir/round is still alive. In finally, remove the lock only if it still names this process."
+  }
+ },
+ {
+  "id": "shell-10",
+  "severity": "Minor",
+  "file": "scripts/wsl/test_runner_fake.sh",
+  "line": "13 (with scripts/wsl/doctor.sh:13,21-22 and scripts/wsl/test_doctor_fake.sh:12,23)",
+  "title": "Run from another checkout, the fake-node tests exercise /mnt/d/RoboSim-Eval's doctor, not the checkout under test",
+  "trigger": "test_runner_fake.sh or test_doctor_fake.sh is run from a git worktree. Commit 67a8ffa changed test_runner_fake's REPO to 'the checkout this script is in', and docs/plan.md:42 records moving development into a worktree during batches.",
+  "expected": "Every component a fake test exercises comes from the checkout being tested.",
+  "actual": "The runner is imported from the worktree, but its doctor step calls the worktree's doctor.sh, which does `cd /mnt/d/RoboSim-Eval` and `python3 -m robosim_eval.doctor`, so the main checkout's doctor runs. test_doctor_fake.sh hard-codes REPO=/mnt/d/RoboSim-Eval and does the same. A doctor change under test is never exercised, and a PASS can come from different code.",
+  "evidence": "Static: test_runner_fake.sh:13 (REPO from BASH_SOURCE) versus doctor.sh:13/21-22 and test_doctor_fake.sh:12/23 (hard-coded REPO, cd, python3 -m). `git show 67a8ffa -- scripts/wsl/test_runner_fake.sh` shows the REPO change.",
+  "fix_direction": "Derive REPO from BASH_SOURCE in doctor.sh and test_doctor_fake.sh (and the other wrappers), or make the tests assert the module path they imported.",
+  "reproduced": false,
+  "verification": {
+   "id": "shell-10",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": true,
+   "repro": "Scratch verify-shell/repro_shell10.sh uses the existing worktree scratchpad/wt-fix (fix/review-round1 @156c31a, from `git worktree list`). It mirrors the module resolution with importlib find_spec only, with PYTHONDONTWRITEBYTECODE=1 and nothing run. Command: MSYS_NO_PATHCONV=1 wsl -d Ubuntu -- bash .../verify-shell/repro_shell10.sh. Output:\n worktree doctor.sh REPO line: 13:REPO=/mnt/d/RoboSim-Eval\n runner (test_runner_fake cwd=worktree): .../scratchpad/wt-fix/robosim_eval/runner.py\n doctor (doctor.sh cwd=/mnt/d/RoboSim-Eval): /mnt/d/RoboSim-Eval/robosim_eval/doctor.py\n runner WSL dir -> doctor.sh used: .../scratchpad/wt-fix/scripts/wsl/doctor.sh",
+   "reasoning": "test_runner_fake.sh:13 derives REPO from BASH_SOURCE and runs the worktree's runner. The runner's WSL constant (runner.py:37-38) is derived from its own file, and the runner calls that doctor.sh on every fake case: PREPARE runs it even with --no-sim (runner.py:206-210). doctor.sh:13/21-22 hard-codes REPO=/mnt/d/RoboSim-Eval, cds there and runs `python3 -m robosim_eval.doctor`, which resolves to the main checkout's module. test_doctor_fake.sh:12 hard-codes the same path.\n\nA worktree is in real use: wt-fix exists, and plan.md:42 records worktree development during batches. So a fake-test PASS in a worktree can come from a different doctor than the one under test. Weak test isolation, Minor.",
+   "fix_direction": "Derive REPO from BASH_SOURCE in doctor.sh, test_doctor_fake.sh and the other wrappers that the runner calls, or let the runner pass its REPO through the environment. Have the fake tests log and assert the imported module paths."
+  }
+ },
+ {
+  "id": "critic-5",
+  "severity": "Minor",
+  "file": "README.md",
+  "line": "14-15",
+  "title": "The README's one-time install commands append to, and overwrite, tracked D0b evidence files",
+  "trigger": "Following the README prerequisites (also docs/setup.md:11-12, which says the scripts may be re-run): running `install_ros2_jazzy.sh` or `setup_workspace.sh` on this checkout or another machine.",
+  "expected": "Re-running setup should leave the recorded D0b product evidence (A7: command, exit code, log per verification) unchanged, or write to a new location.",
+  "actual": "install_ros2_jazzy.sh:20-24 tees to /mnt/d/RoboSim-Eval/artifacts/d0b/install-jazzy.log (-a) and overwrites install-jazzy.exit. setup_workspace.sh:13-19 does the same with setup-workspace.log and .exit by default. The ROBOSIM_SETUP_LOG override exists but README does not use it. All four files are tracked, so a failed re-run replaces the recorded exit 0 of the original D0b install.",
+  "evidence": "git ls-files artifacts/d0b lists install-jazzy.exit, install-jazzy.log, setup-workspace.exit and setup-workspace.log. Script lines are cited above. Not executed: it needs sudo and installation.",
+  "fix_direction": "Write setup logs to a timestamped path outside the tracked evidence by default, for example artifacts/setup-<time>/ or a temp directory. Or use ROBOSIM_SETUP_LOG in README and docs/setup.md.",
+  "reproduced": false,
+  "verification": {
+   "id": "critic-5",
+   "verdict": "confirmed",
+   "severity": "Minor",
+   "reproduced": false,
+   "repro": "Not executed (needs sudo and would write to the repository). Code evidence: install_ros2_jazzy.sh:20-24 has fixed LOG_DIR=/mnt/d/RoboSim-Eval/artifacts/d0b, then exec > >(tee -a install-jazzy.log), and its EXIT trap overwrites install-jazzy.exit. setup_workspace.sh:13-19 defaults LOG to artifacts/d0b/setup-workspace.log (tee -a) and overwrites the .exit file. Its only override is ROBOSIM_SETUP_LOG, and line 15's comment says 'override to re-run without touching D0b evidence'. git ls-files artifacts/d0b lists install-jazzy.exit/.log and setup-workspace.exit/.log as tracked. README.md:14-15 and docs/setup.md:11-12 ('可重跑') give the commands without the override.",
+   "reasoning": "The scripts write product evidence files in place by default, and the script header itself admits a re-run touches the D0b evidence. The documented commands do not avoid this. The originals survive in git history, so nothing is irrecoverably lost. The harm is that tracked evidence becomes modified or mixed: another machine's log gets appended, or a failed re-run overwrites the exit 0. As a side effect, later runs' manifests show dirty_tracked_files true. Re-running is rare, which makes this Minor.",
+   "fix_direction": "Default the setup logs to a new timestamped location outside the tracked D0b evidence, or use ROBOSIM_SETUP_LOG (and an equivalent for install_ros2_jazzy.sh) in README and docs/setup.md."
+  }
+ }
+]

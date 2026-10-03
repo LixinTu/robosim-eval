@@ -140,3 +140,112 @@ def test_transcript_parser(tmp_path):
 def test_pose_compose_with_the_real_spawn():
     x, y, yaw = aa.pose_compose((-6.0, -1.0, math.pi), (0.5, 0.0, 0.0))
     assert (x, y) == (pytest.approx(-6.5), pytest.approx(-1.0))
+
+
+def test_stream_with_no_message_inside_the_window_makes_data_incomplete():
+    # Codex D0 round1c-a #2: completeness was judged on the whole-bag count; a stream present only outside the
+    # accept..arrival window passed whenever the window itself was not longer than the dropout threshold.
+    bag = make_run()
+    bag["clock"] = [(bag["clock"][-1][0] + 10 * NS, 99.0)]      # the only /clock message arrives after the window
+    r, _ = aa.evaluate(bag, transcript(), GOAL, SPAWN, dropout=100.0)   # a large threshold isolates the in-window rule
+    assert r["data_status"] == "incomplete" and r["validation_status"] == "inconclusive"
+    assert "clock: no messages in the evaluation window" in " ".join(r["verdict_reasons"]["inconclusive"])
+
+
+def test_transcript_without_goal_id_does_not_let_a_bag_goal_pass():
+    # Codex D0 round1c-a #1: with the sent goal but no goal id in the transcript, the first accepted goal in the bag
+    # was taken as the target and could pass although it may belong to another attempt.
+    r, _ = aa.evaluate(make_run(), transcript(uuid=None), GOAL, SPAWN)
+    assert r["validation_status"] == "inconclusive"
+    assert any("goal id" in s for s in r["verdict_reasons"]["inconclusive"])
+
+
+def test_stale_arrival_position_is_not_a_navigation_failure():
+    # Codex D0 round1c-a #3: odometry stops at sim 1 s (x = 0.5), the result comes at 4 s; the last odometry sample is
+    # far older than the arrival check and must not produce a position-error failure.
+    bag = make_run(final_x=2.0)
+    bag["odom"] = [o for o in bag["odom"] if o[1] <= 1.0]
+    r, _ = aa.evaluate(bag, transcript(), GOAL, SPAWN)
+    assert r["validation_status"] == "inconclusive" and not r["verdict_reasons"]["fail"]
+    assert r["data_status"] == "incomplete"
+    assert any("position sample" in s for s in r["verdict_reasons"]["inconclusive"])
+
+
+def test_map_base_composition_never_uses_a_later_map_odom_transform():
+    # Codex D0 round1c-a #4: an odom->base_link sample received before the first map->odom must not be composed with it.
+    out = aa.compose_map_base([(10 * NS, 10.0, 100.0, 0.0, 0.0)],
+                              [(1 * NS, 1.0, 0.0, 0.0, 0.0), (11 * NS, 11.0, 0.0, 0.0, 0.0)])
+    assert [p[0] for p in out] == [11 * NS] and out[0][2] == 100.0
+
+
+@pytest.mark.parametrize("goal, sent", [((2.0, 0.0, float("nan")), GOAL), (GOAL, (2.0, float("nan"), 0.0)),
+                                        ((2.0, float("inf"), 0.0), None)])
+def test_non_finite_goal_values_are_rejected(goal, sent):
+    # Codex D0 round1c-a #5: NaN compares false, so a NaN goal passed the transcript check.
+    with pytest.raises(aa.GoalMismatch):
+        aa.evaluate(make_run(), transcript(goal=sent), goal, SPAWN)
+
+
+# ---- review round 2 (eval-1, eval-11, runner-10) -------------------------------------------------------------------
+
+def test_succeeded_but_never_at_rest_fails():
+    # eval-11 A1: the robot keeps moving after SUCCEEDED for more than 2 x hold of gap-free data
+    bag = make_run(rec_after=3.0)
+    bag["odom"] = [(t, s, f, c, x, y, yaw, 0.3 if s >= 4.0 else v, w) for (t, s, f, c, x, y, yaw, v, w) in bag["odom"]]
+    r, _ = aa.evaluate(bag, transcript(), GOAL, SPAWN)
+    assert r["stop_still"]["state"] == "not_still" and r["validation_status"] == "fail"
+    assert any("did not come to rest" in s for s in r["verdict_reasons"]["fail"])
+
+
+def test_backward_stamps_make_the_analyzer_data_incomplete():
+    # eval-11 A2
+    bag = make_run()
+    bag["odom"][100], bag["odom"][101] = bag["odom"][101], bag["odom"][100]
+    r, _ = aa.evaluate(bag, transcript(), GOAL, SPAWN)
+    assert r["data_integrity"]["odom"]["backward_stamps"] >= 1
+    assert r["data_status"] == "incomplete" and r["validation_status"] == "inconclusive"
+
+
+def test_goal_yaw_must_match_the_sent_goal():
+    # eval-11 A3
+    with pytest.raises(aa.GoalMismatch):
+        aa.evaluate(make_run(), transcript(goal=(2.0, 0.0, 1.0)), GOAL, SPAWN)
+
+
+def test_coverage_reports_what_the_recording_holds():
+    # eval-1: the runner compares these spans with its own acceptance..stop times (evaluator.recording_coverage_problems)
+    r, _ = aa.evaluate(make_run(), transcript(), GOAL, SPAWN)
+    cov = r["coverage"]
+    assert (cov["target_goal_observed"], cov["accepted_recorded"], cov["terminal_recorded"]) == (True, True, True)
+    assert cov["streams"]["odom"]["first_sim_s"] == 0.0 and cov["streams"]["odom"]["last_sim_s"] == pytest.approx(7.0)
+    assert set(cov["streams"]) == {"clock", "odom", "tf_odom_base", "tf_map_odom"}
+
+
+def test_coverage_of_a_truncated_recording():
+    bag = make_run(status_seq=((0.5, 2),))                     # the recording stops while the goal is still running
+    for k in ("clock", "odom", "tf_odom_base", "tf_map_odom"):
+        bag[k] = [e for e in bag[k] if e[1] <= 3.0]
+    r, _ = aa.evaluate(bag, transcript(), GOAL, SPAWN)
+    cov = r["coverage"]
+    assert cov["terminal_recorded"] is False and cov["streams"]["clock"]["last_sim_s"] == pytest.approx(3.0)
+    r, _ = aa.evaluate(make_run(status_seq=((4.0, 4),)), transcript(), GOAL, SPAWN)
+    assert r["coverage"]["accepted_recorded"] is False
+    r, _ = aa.evaluate(make_run(status_seq=()), transcript(), GOAL, SPAWN)
+    assert r["coverage"]["target_goal_observed"] is False
+    empty = make_run()
+    empty["tf_odom_base"] = []
+    r, _ = aa.evaluate(empty, transcript(), GOAL, SPAWN)
+    assert r["coverage"]["streams"]["tf_odom_base"] == {"first_sim_s": None, "last_sim_s": None}
+
+
+def test_transcript_without_a_client_result_has_no_client_exit(tmp_path):
+    # runner-10: the runner writes action_client_exit=none when no terminal result was received
+    (tmp_path / "goal-101010.txt").write_text(
+        "send_goal start 2026-09-30T10:10:10-07:00 action=/navigate_to_pose frame=map x=1.0 y=0.0 yaw=0.0 (runner)\n"
+        "send_goal end 2026-09-30T10:10:20-07:00 action_client_exit=none (no terminal result received)\n",
+        encoding="utf-8")
+    assert aa.parse_goal_transcript(str(tmp_path))["client_exit"] is None
+    (tmp_path / "goal-101011.txt").write_text(
+        "send_goal start 2026-09-30T10:10:11-07:00 action=/navigate_to_pose frame=map x=1.0 y=0.0 yaw=0.0 (runner)\n"
+        "send_goal end 2026-09-30T10:10:20-07:00 action_client_exit=0\n", encoding="utf-8")
+    assert aa.parse_goal_transcript(str(tmp_path))["client_exit"] == 0

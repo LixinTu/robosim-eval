@@ -7,11 +7,13 @@ Pure logic without ROS, driven by robosim_eval.runner; tested with fixed inputs 
   any state before TEARDOWN -> TEARDOWN (failure, rejection, interrupt before the goal, unconfirmed cancel or stop)
 
 Deadlines (A5 candidates; wall = host monotonic seconds, sim = /clock seconds):
-  WAIT_READY ready_wall_s, SEND_GOAL accept_wall_s, EXECUTING nav_sim_s of simulation time or nav_wall_s of wall time
-  (whichever comes first), CANCELING cancel_wall_s, STOP_CONFIRM stop_wall_s.
+  WAIT_READY ready_wall_s, SEND_GOAL accept_wall_s (restarted when the goal is sent), EXECUTING nav_sim_s of simulation
+  time or nav_wall_s of wall time (whichever comes first), CANCELING cancel_wall_s, STOP_CONFIRM stop_wall_s (restarted
+  when an injected pause ends).
 Final status: "error" after any failure or an unconfirmed cancel/stop (the latter two also set abort_batch, because
-the plan stops further batch runs when a stop is not confirmed); otherwise "interrupted" after an interrupt; otherwise
-"completed". A navigation timeout is not an execution error: it is kept in timeout_reason for the task verdict.
+the plan stops further batch runs when a stop is not confirmed; so does a failure that leaves a goal unresolved or Nav2
+or the recorders not confirmed stopped); otherwise "interrupted" after an interrupt; otherwise "completed". A navigation
+timeout is not an execution error: it is kept in timeout_reason for the task verdict.
 """
 from __future__ import annotations
 
@@ -137,8 +139,19 @@ class RunStateMachine:
         self.cancel_reason = "injected"
         self.go(State.CANCELING, t_wall, t_sim, why)
 
-    def fail(self, why: str, t_wall: float, t_sim: Optional[float]) -> None:
+    def restart(self, reason: str, t_wall: float, t_sim: Optional[float]) -> None:
+        """Restart the current state's deadline (the history keeps both entries). Only two deadlines restart: the
+        acceptance wait once the goal is actually sent (SEND_GOAL is entered before the recorder start) and the stop
+        wait once an injected simulation pause has ended (no odometry can arrive while the simulation is paused)."""
+        if self.state not in (State.SEND_GOAL, State.STOP_CONFIRM):
+            raise ValueError(f"the {self.state.name} deadline cannot restart ({reason})")
+        self.history.append(Transition(self.state, t_wall, t_sim, reason))
+
+    def fail(self, why: str, t_wall: float, t_sim: Optional[float], abort: bool = False) -> None:
+        """Record an error and go to TEARDOWN (already there: only record it). abort=True also stops a batch: an
+        unresolved goal, or Nav2 or the recorders not confirmed stopped."""
         self.errors.append(why)
+        self.abort_batch = self.abort_batch or abort
         if self.state not in (State.TEARDOWN, State.DONE):
             self.go(State.TEARDOWN, t_wall, t_sim, f"failure: {why}")
 

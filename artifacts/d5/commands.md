@@ -16,9 +16,9 @@
 | 02:10–02:11 | `sim.sh stop`、`sim.sh load D:/RoboSim-Eval/tests/assets/empty_stage.usda`、`sim.sh pose` | wsl.exe bash -l | 同上 | 0、0、3 | 会话输出 | 等同于 Isaac 刚启动、场景未加载;pose 报机器人不存在 |
 | 02:11:06 | README 第 2 步:`wsl -d Ubuntu -- bash -l …/doctor.sh --out …/artifacts/d5/demo/doctor` | 新的 PowerShell | D:\RoboSim-Eval | 11 | demo/doctor/doctor-20260930-021108.json | 没有 /clock 发布者,与 README 一致 |
 | 02:11:21–02:13:26 | README 第 2 步:`run_scenario.sh normal --out …/artifacts/d5/demo/runs` | 新的 PowerShell | 同上 | 0 | demo/run-normal.txt、demo/runs/normal-20260930-021122/ | 演示 1,也是缺陷 3 的同条件复跑:先加载场景,再装接触监视(8 个刚体);pass,真值距目标 0.049 m |
-| 02:13:43–02:15:06 | `run_scenario.sh cancel --out …/artifacts/d5/demo/runs` | 新的 PowerShell | 同上 | 0 | demo/run-cancel.txt、demo/runs/cancel-20260930-021343/ | 演示 2:注入的取消在接受后 5 s,同一时刻收到 CANCELED 回执,1.47 s 后确认停车;pass |
+| 02:13:43–02:15:06 | `run_scenario.sh cancel --out …/artifacts/d5/demo/runs` | 新的 PowerShell | 同上 | 0 | demo/run-cancel.txt、demo/runs/cancel-20260930-021343/ | 演示 2:注入的取消按运行器计时在接受后 5 s(缺陷 4:实际是 bag 接受时刻后 3.65 s),同一时刻收到 CANCELED 回执,1.47 s 后确认停车;pass |
 | 02:15:30–02:25 | `run_batch.sh --scenarios normal,normal_slow --repeats 2 --out …/artifacts/d5` | wsl.exe bash -l(后台) | /mnt/d/RoboSim-Eval | 0 | batch-20260930-021530/(batch.json、runs/report.html) | 演示 3:4 次都到达;normal 2 pass,normal_slow 1 pass、1 inconclusive(自发卡顿 2.19 s 墙钟) |
 | 02:2x | `python3 artifacts/d5/compare_speed.py batch-20260930-021530/runs` | wsl.exe bash -lc | /mnt/d/RoboSim-Eval | 0 | compare-speed-01.md | 与预测逐条对照见 docs/demo.md |
-| 02:2x | 核对 26 次真实运行里运行器与 bag 的接受时刻 | Git Bash(只读 result.json) | D:\RoboSim-Eval\artifacts | 0 | 会话输出 | 25 次偏差 1.1–2.1 s,1 次 0.07 s:缺陷 4 |
+| 02:2x | 核对修复前 27 次真实运行里运行器与 bag 的接受时刻 | Git Bash(只读 result.json) | D:\RoboSim-Eval\artifacts | 0 | 会话输出 | 26 次偏差 1.1–2.1 s,1 次 0.07 s:缺陷 4(初次核对时漏数了一次,2026-09-30 审查更正) |
 | 02:2x | `pytest tests/test_runner_fsm.py`(先红:refresh_clock 不存在)→ 实现 → 128 passed;`test_runner_fake.sh artifacts/d5/fake-02` | wsl.exe bash -l | /mnt/d/RoboSim-Eval | 0 | fake-02/summary.txt | 10/10;提交 `9ae722b` |
 | 02:31:09–02:32:42 | `run_scenario.sh cancel --out …/artifacts/d5/defect4-after` | 新的 PowerShell | D:\RoboSim-Eval | 0 | defect4-after/cancel-20260930-023111/、defect4-after-cancel.txt | 缺陷 4 修复后复跑:接受时刻与 bag 差 0.033 s;取消在真实接受后 4.97 s;pass |

@@ -23,7 +23,10 @@ from robosim_eval.doctor_checks import (
     Observation,
     StreamObservation,
     StreamThresholds,
+    env_reasons,
     evaluate,
+    not_observed_report,
+    window_problem,
 )
 
 W0, W1 = 100.0, 105.0  # observation window in wall seconds
@@ -65,9 +68,11 @@ def default_sim(t: float) -> float:
 
 
 def stream(times: List[float], name: str, sim_of: Callable[[float], float] = default_sim, present: bool = True,
-           msg_type: Optional[str] = None) -> StreamObservation:
-    return StreamObservation(present=present, msg_type=msg_type or EXPECTED_TYPES[name],
-                             samples=tuple((t, sim_of(t)) for t in times))
+           msg_types: Optional[Tuple[str, ...]] = None) -> StreamObservation:
+    """msg_types: the publishers' types (empty when there is no publisher)."""
+    if msg_types is None:
+        msg_types = (EXPECTED_TYPES[name],) if present else ()
+    return StreamObservation(present=present, msg_types=msg_types, samples=tuple((t, sim_of(t)) for t in times))
 
 
 def healthy_observation(**overrides) -> Observation:
@@ -77,7 +82,7 @@ def healthy_observation(**overrides) -> Observation:
         "lidar": stream(ticks(W0, W1, 2.6), "lidar"),
     }
     streams.update(overrides.pop("streams", {}))
-    kwargs = dict(window_start=W0, window_end=W1, clock_present=True, clock_type=EXPECTED_TYPES["clock"],
+    kwargs = dict(window_start=W0, window_end=W1, clock_present=True, clock_types=(EXPECTED_TYPES["clock"],),
                   clock=tuple(clock_samples(W0, W1, 25.0, 0.4)), streams=streams, env=GOOD_ENV)
     kwargs.update(overrides)
     return Observation(**kwargs)
@@ -121,7 +126,7 @@ def test_clock_that_stops_during_the_window_is_not_advancing():
 
 def test_closed_simulation_without_any_publisher_is_data_missing():
     absent = {n: stream([], n, present=False) for n in ("odom", "tf", "lidar")}
-    rep = run(healthy_observation(clock_present=False, clock=(), streams=absent))
+    rep = run(healthy_observation(clock_present=False, clock_types=(), clock=(), streams=absent))
     assert rep.exit_code == EXIT_DATA_MISSING and rep.verdict == "sim_data_missing"
 
 
@@ -165,10 +170,74 @@ def test_missing_dds_profile_is_an_environment_error():
 
 
 def test_wrong_message_type_is_an_interface_error():
-    bad = stream(ticks(W0, W1, 25.0), "odom", msg_type="geometry_msgs/msg/PoseStamped")
+    bad = stream(ticks(W0, W1, 25.0), "odom", msg_types=("geometry_msgs/msg/PoseStamped",))
     rep = run(healthy_observation(streams={"odom": bad}))
     assert rep.exit_code == EXIT_ENV
     assert any("odom" in r and "type" in r for r in rep.reasons)
+
+
+def test_one_publisher_of_another_type_among_right_ones_is_an_interface_error():
+    mixed = stream(ticks(W0, W1, 25.0), "odom", msg_types=("nav_msgs/msg/Odometry", "sensor_msgs/msg/Imu"))
+    rep = run(healthy_observation(streams={"odom": mixed}))
+    assert rep.exit_code == EXIT_ENV
+    assert any("odom" in r and "sensor_msgs/msg/Imu" in r for r in rep.reasons)
+
+
+def test_clock_publisher_of_another_type_is_an_interface_error():
+    rep = run(healthy_observation(clock=(), clock_types=("std_msgs/msg/Float64",)))
+    assert rep.exit_code == EXIT_ENV
+    assert any("clock" in r and "std_msgs/msg/Float64" in r for r in rep.reasons)
+
+
+def test_topic_without_publisher_reports_no_message_type():
+    rep = run(healthy_observation(streams={"lidar": stream([], "lidar", present=False)}))
+    assert rep.streams["lidar"].msg_types == ()
+    assert rep.streams["odom"].msg_types == ("nav_msgs/msg/Odometry",)
+
+
+# ---- documented precedence with two faults at once (review round 1: doctor_config-9) --------------------------------
+
+WRONG_ENV = EnvFacts("rmw_zenoh_cpp", "0", True, "jazzy")
+MISSING_LIDAR = {"lidar": stream([], "lidar", present=False)}
+SLOW_LIDAR = {"lidar": stream(ticks(W0, W1, 0.5), "lidar")}
+NO_CLOCK = dict(clock_present=False, clock_types=(), clock=())
+
+
+@pytest.mark.parametrize("faults,code,reason", [
+    (dict(env=WRONG_ENV, **NO_CLOCK), EXIT_ENV, "RMW"),                            # 13 before 11 (no clock)
+    (dict(env=WRONG_ENV, clock=()), EXIT_ENV, "RMW"),                              # 13 before 10 (paused)
+    (dict(env=WRONG_ENV, streams=MISSING_LIDAR), EXIT_ENV, "RMW"),                 # 13 before 11 (stream missing)
+    (dict(env=WRONG_ENV, streams=SLOW_LIDAR), EXIT_ENV, "RMW"),                    # 13 before 12
+    (dict(clock=(), streams={"odom": stream(ticks(W0, W1, 25.0), "odom", msg_types=("sensor_msgs/msg/Imu",))}),
+     EXIT_ENV, "odom"),                                                            # interface 13 before 10
+    (dict(streams=MISSING_LIDAR, **NO_CLOCK), EXIT_DATA_MISSING, "/clock"),        # clock-missing reason first
+    (dict(clock=(), streams=MISSING_LIDAR), EXIT_NOT_ADVANCING, "clock"),          # 10 (paused) before 11 (stream)
+    (dict(clock=tuple((t, 230.85) for t in ticks(W0, W1, 25.0)), streams=MISSING_LIDAR), EXIT_NOT_ADVANCING, "clock"),
+    (dict(clock=tuple(clock_samples(W0, W0 + 1.0, 25.0, 0.4)), streams=MISSING_LIDAR), EXIT_NOT_ADVANCING, "clock"),
+    (dict(clock=(), streams=SLOW_LIDAR), EXIT_NOT_ADVANCING, "clock"),             # 10 before 12
+    (dict(streams={**MISSING_LIDAR, "odom": stream(ticks(W0, W1, 0.5), "odom")}), EXIT_DATA_MISSING, "lidar"),
+])
+def test_two_faults_give_the_documented_winner(faults, code, reason):
+    rep = run(healthy_observation(**faults))
+    assert rep.exit_code == code
+    assert reason in rep.reasons[0]
+
+
+def test_not_observed_report_is_an_environment_error_without_stream_data():
+    rep = not_observed_report(["RMW_IMPLEMENTATION is 'rmw_zenoh_cpp', expected 'rmw_fastrtps_cpp'"], THRESHOLDS)
+    assert (rep.verdict, rep.exit_code, rep.observed) == ("env_or_interface_error", EXIT_ENV, False)
+    assert rep.reasons == ("RMW_IMPLEMENTATION is 'rmw_zenoh_cpp', expected 'rmw_fastrtps_cpp'",)
+    assert set(rep.streams) == set(THRESHOLDS.streams)
+    assert all(s.status == "not_observed" and s.count == 0 and s.msg_types == () for s in rep.streams.values())
+    assert rep.clock.count == 0 and not rep.clock.present
+    assert json.loads(json.dumps(rep.to_dict()))["observed"] is False
+
+
+def test_env_reasons_compare_every_expected_field():
+    assert env_reasons(GOOD_ENV, GOOD_ENV) == []
+    bad = EnvFacts(rmw=None, domain_id="7", dds_profile_exists=False, ros_distro="humble")
+    assert [r.split()[0] for r in env_reasons(bad, GOOD_ENV)] == \
+        ["RMW_IMPLEMENTATION", "ROS_DOMAIN_ID", "Fast", "ROS_DISTRO"]
 
 
 def test_backward_clock_jump_is_reported_and_only_forward_progress_counts():
@@ -191,3 +260,19 @@ def test_report_serializes_to_plain_json_types():
     rep = run(healthy_observation())
     text = json.dumps(rep.to_dict())
     assert '"verdict": "healthy"' in text and '"exit_code": 0' in text
+
+
+# ---- observation window bounds (review round 1: doctor_config-5) ---------------------------------------------------
+
+@pytest.mark.parametrize("window,problem", [
+    (0.0, "shorter than clock_stall_s"), (-5.0, "shorter than clock_stall_s"), (0.6, "shorter than clock_stall_s"),
+    (float("nan"), "not a finite number"), (float("inf"), "not a finite number"), (True, "not a finite number"),
+    (50.5, "longer than 50.0 s"), (100.0, "longer than 50.0 s"),
+])
+def test_window_that_cannot_give_a_sound_verdict_is_refused(window, problem):
+    assert problem in window_problem(window, clock_stall_s=2.0, discovery_timeout_s=5.0)
+
+
+@pytest.mark.parametrize("window", [2.0, 3.0, 5.0, 50.0])
+def test_window_between_the_clock_stall_and_the_doctor_cap_is_accepted(window):
+    assert window_problem(window, clock_stall_s=2.0, discovery_timeout_s=5.0) is None

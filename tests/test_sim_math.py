@@ -1,7 +1,15 @@
-"""Fixed-input tests for the pure helpers behind the Isaac sim_control adapter (no ROS needed)."""
+"""Fixed-input tests for the pure helpers behind the Isaac sim_control adapter (no ROS needed), and for its sim.sh
+wrapper with a stub python3 (only the ROS environment files are sourced; nothing talks to Isaac)."""
 from __future__ import annotations
 
 import math
+import os
+import re
+import subprocess
+import sys
+import types
+from pathlib import Path
+from types import SimpleNamespace as NS
 
 import pytest
 
@@ -73,3 +81,113 @@ def test_spawn_names_are_confined_to_the_tool_root():
     for bad in ("/World/Nova_Carter_ROS", "/World/RoboSimObstaclesX/a", f"{SPAWN_ROOT}/../Nova_Carter_ROS", "", "a/b"):
         with pytest.raises(ValueError):
             validate_spawn_name(bad)
+
+
+@pytest.mark.parametrize("pose, v, w", [
+    (Pose2D(math.nan, math.nan, math.nan), 0.0, 0.0),                    # physics blow-up: every field NaN
+    (Pose2D(math.nan, -1.0, math.pi), 0.0, 0.0),                         # one coordinate NaN, the rest at the spawn
+    (Pose2D(-6.0, -1.0, math.nan), 0.0, 0.0),                            # heading NaN (e.g. from a NaN quaternion)
+    (Pose2D(-6.0, -1.0, math.pi), math.nan, 0.0),                        # pose at the spawn, speeds NaN
+    (Pose2D(-6.0, -1.0, math.pi), 0.0, math.nan),
+    (Pose2D(-6.0, math.inf, math.pi), 0.0, 0.0),
+    (Pose2D(-6.0, -1.0, math.pi), 0.0, -math.inf),
+])
+def test_reset_check_fails_closed_on_non_finite_ground_truth(pose, v, w):
+    # every comparison with NaN is False, so without an explicit check a NaN ground truth would pass the reset check
+    res = check_reset(pose, v, w, SPAWN)
+    assert not res.ok
+    assert any("not finite" in r for r in res.reasons)
+
+
+def _entity_state(frame_id: str) -> NS:
+    """Duck-typed simulation_interfaces/EntityState as Isaac's GetEntityState fills it (D5 normal run, at stop)."""
+    return NS(header=NS(frame_id=frame_id),
+              pose=NS(position=NS(x=0.032, y=-1.037, z=0.1), orientation=NS(x=0.0, y=0.0, z=0.0, w=1.0)),
+              twist=NS(linear=NS(x=0.3, y=0.4, z=0.0), angular=NS(x=0.0, y=0.0, z=-0.2)))
+
+
+def _adapter_returning(monkeypatch, state: NS):
+    """SimAdapter whose service call returns a fixed GetEntityState response (no ROS: the srv module is faked)."""
+    srv = types.ModuleType("simulation_interfaces.srv")
+    srv.GetEntityState = NS(Request=lambda: NS(entity=""))
+    pkg = types.ModuleType("simulation_interfaces")
+    pkg.srv = srv
+    monkeypatch.setitem(sys.modules, "simulation_interfaces", pkg)
+    monkeypatch.setitem(sys.modules, "simulation_interfaces.srv", srv)
+    from robosim_eval.sim_adapter import RESULT_OK, SimAdapter
+    sim = SimAdapter(node=None)
+    monkeypatch.setattr(sim, "_call", lambda _cls, _name, _req, timeout=None: NS(
+        result=NS(result=RESULT_OK, error_message=""), state=state))
+    return sim
+
+
+def test_ground_truth_is_labelled_world_not_the_robot_name(monkeypatch):
+    # Isaac sets header.frame_id to the prim name ("nova_carter") although the pose comes from get_world_poses; the
+    # message definition reads frame_id as the frame of the pose, so the record must say world and keep Isaac's value
+    rec = _adapter_returning(monkeypatch, _entity_state("nova_carter")).entity_state("/World/Nova_Carter_ROS/chassis_link")
+    assert rec["frame"] == "world"
+    assert rec["isaac_frame_id"] == "nova_carter"
+    assert "ground truth" in rec["source"] and "world" in rec["source"]
+    # the keys older records already carry keep their meaning
+    assert rec["entity"] == "/World/Nova_Carter_ROS/chassis_link" and isinstance(rec["received_wall"], float)
+    assert (rec["x"], rec["y"], rec["z"]) == (0.032, -1.037, 0.1)
+    assert rec["yaw"] == pytest.approx(0.0) and rec["linear_speed"] == pytest.approx(0.5)
+    assert rec["angular_speed"] == pytest.approx(0.2)
+
+
+def test_ground_truth_frame_is_world_when_isaac_leaves_it_empty(monkeypatch):
+    # EntityState.msg: "Empty frame defaults to world"
+    rec = _adapter_returning(monkeypatch, _entity_state("")).entity_state("/World/x")
+    assert rec["frame"] == "world" and rec["isaac_frame_id"] == ""
+
+
+REPO = Path(__file__).resolve().parents[1]
+# python3 stand-in: records how sim.sh starts the adapter; anything else (dds_env.sh's XML check) runs the real one
+STUB_PYTHON = """#!/bin/sh
+if [ "$1" = "-m" ] && [ "$2" = "robosim_eval.sim_adapter" ]; then
+  printf 'cwd=%s\\nargs=%s\\n' "$PWD" "$*"
+  exit 0
+fi
+exec /usr/bin/python3 "$@"
+"""
+
+
+@pytest.mark.skipif(not Path("/opt/ros/jazzy/setup.bash").exists(), reason="sim.sh sources the ROS 2 Jazzy setup")
+def test_sim_sh_runs_the_adapter_of_its_own_checkout(tmp_path):
+    # contract C6: run from a worktree, sim.sh must not cd into /mnt/d/RoboSim-Eval and run that checkout's adapter
+    stub = tmp_path / "python3"
+    stub.write_text(STUB_PYTHON, encoding="utf-8")
+    stub.chmod(0o755)
+    env = {**os.environ, "PATH": f"{tmp_path}:{os.environ['PATH']}"}
+    p = subprocess.run(["bash", str(REPO / "scripts" / "wsl" / "sim.sh"), "state"], capture_output=True, text=True,
+                       env=env, timeout=120, cwd=str(tmp_path))
+    assert p.returncode == 0, (p.stdout, p.stderr)
+    assert f"cwd={REPO}\n" in p.stdout and "args=-m robosim_eval.sim_adapter state\n" in p.stdout
+
+
+SIM_SCRIPTS = ["scripts/wsl/sim.sh", "scripts/windows/isaac_py.ps1", "scripts/windows/start_isaac_ros2.ps1",
+               "robosim_eval/contacts.py", "robosim_eval/sim_adapter.py"]
+
+
+@pytest.mark.parametrize("rel", SIM_SCRIPTS)
+def test_sim_scripts_do_not_hard_code_the_main_checkout(rel):
+    # contract C6: the repository root comes from the file's own location; the path may only appear in comments
+    code = [ln for ln in (REPO / rel).read_text(encoding="utf-8").splitlines() if not ln.lstrip().startswith("#")]
+    assert not [ln for ln in code if "RoboSim-Eval" in ln]
+
+
+# start_isaac_ros2.ps1 launches Isaac, so it is never run here: its profile expression is evaluated on its own
+DDS_LINE = re.compile(r"^\$robosimDds\s*=\s*(?P<expr>.+)$", re.MULTILINE)
+
+
+@pytest.mark.skipif(not Path("/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe").exists()
+                    or not str(REPO).startswith("/mnt/"), reason="needs Windows PowerShell through WSL interop")
+def test_isaac_launcher_takes_the_dds_profile_from_its_own_checkout():
+    m = DDS_LINE.search((REPO / "scripts" / "windows" / "start_isaac_ros2.ps1").read_text(encoding="utf-8"))
+    assert m, "no $robosimDds assignment"
+    script_dir = r"X:\some checkout\scripts\windows"
+    expr = m.group("expr").replace("$PSScriptRoot", f"'{script_dir}'")
+    p = subprocess.run(["/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe", "-NoProfile",
+                        "-NonInteractive", "-Command", f"Write-Output ({expr})"], capture_output=True, timeout=60)
+    assert p.returncode == 0, p.stderr.decode("gbk", "replace")[-600:]
+    assert p.stdout.decode("ascii").strip() == r"X:\some checkout\configs\network\fastdds.xml"
