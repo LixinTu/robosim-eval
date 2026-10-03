@@ -17,15 +17,14 @@
 | 怎么从新终端跑起来、结果在哪、哪些来自 NVIDIA/Nav2/AI | [README.md](README.md) |
 | 项目整体技术说明(第一次接触时先读) | [docs/technical-overview.md](docs/technical-overview.md) |
 | 三个演示(正常、取消、参数改动的预测与复跑) | [docs/demo.md](docs/demo.md) |
-| 需求、验收、状态合同(冻结参考) | [RoboSim-Eval-Plan-and-Setup-ZH(1).md](RoboSim-Eval-Plan-and-Setup-ZH(1).md) 的 §0.2、A4、A5、B |
-| 开发流程与审查约定(冻结参考) | [Claude-Code-Harness-Pack-ZH(1).md](Claude-Code-Harness-Pack-ZH(1).md)、[Codex-Harness-Pack-ZH(1).md](Codex-Harness-Pack-ZH(1).md) |
+| 需求、验收、状态合同(冻结参考) | [docs/reference/RoboSim-Eval-Plan-and-Setup-ZH.md](docs/reference/RoboSim-Eval-Plan-and-Setup-ZH.md) 的 A4、A5(§0 与 B 是 D0 时的执行指令,已作废) |
+| 审查提示词模板 | [docs/review/codex-review-prompt.md](docs/review/codex-review-prompt.md)(两份 harness pack 已于 2026-10-03 删除,原文见 git 历史 cb7c6a4) |
 | 本机环境证据 | [docs/environment.md](docs/environment.md)(阶段 1 生成) |
 | 已验证的启动/关闭顺序 | [docs/setup.md](docs/setup.md)(验证通过后才存在) |
-| 资料台账(读过什么、采用什么) | [docs/harness-sources.md](docs/harness-sources.md) |
 | 运行证据与记录格式 | [artifacts/README.md](artifacts/README.md) |
 | 审查材料与报告 | docs/review/ |
 
-优先级:根目录三份 ZH 文档是 2026-09-29 冻结的需求参考,它们里面的"当前状态"列已作废;状态只看 docs/plan.md。文件名保留下载时的 "(1)" 后缀,引用时写真实路径。
+优先级:需求文档是 2026-09-29 冻结的参考,其中 §0 与 B 已作废;状态只看 docs/plan.md。
 
 ## 跑起来(2026-09-29 本机实测;完整顺序与期望值见 docs/setup.md)
 
@@ -81,7 +80,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File D:\RoboSim-Eval\scripts\wind
 
 额度不够一次审完时,把范围拆成分片提示词,用 `scripts/windows/run_codex_review_queue.ps1 -Rounds <轮次1>,<轮次2> -NotBefore <时间>` 在后台排队;撞到上限会按提示的恢复时间等待后重试,日志是审查目录下的 codex-queue.log。
 
-审查材料与报告放在 docs/review/;提示词模板是 Codex-Harness-Pack-ZH(1).md 的"默认:Codex 独立审查提示词"。
+审查材料与报告放在 docs/review/;提示词模板是 docs/review/codex-review-prompt.md。
 
 ## 什么要问人
 

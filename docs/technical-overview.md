@@ -17,11 +17,11 @@
   - 把"开头卡住"追到了机器人对最小转向指令不响应这一环(§15)。
 - **环境前提**:本机是 Windows 10、8 GB 显存(RTX 4070 Laptop)、NVIDIA 驱动 591.44。Isaac Sim 6.1 官方只支持 Windows 11,显存最低 16 GB,测试驱动为 595.97,三项本机都不满足。本文的结论只代表"在这台机器上实测可用"。
 
-证据:`docs/plan.md` §1、§7;`docs/environment.md`;`docs/harness-sources.md` 的 S1(官方要求页摘录)。
+证据:`docs/plan.md` §1、§7;`docs/environment.md`;`docs/harness-sources.md` 的 S1(官方要求页摘录;该台账 2026-10-03 已删除,用 `git show cb7c6a4:docs/harness-sources.md` 查看)。
 
 ## 1. 目标与当前范围
 
-计划文档(根目录的 `RoboSim-Eval-Plan-and-Setup-ZH(1).md`)把产品目标定义为:使用者选择场景、起点和目标,运行一次导航,查看轨迹、任务状态和评测结果,并能按保存的条件复跑。
+计划文档(`docs/reference/RoboSim-Eval-Plan-and-Setup-ZH.md`)把产品目标定义为:使用者选择场景、起点和目标,运行一次导航,查看轨迹、任务状态和评测结果,并能按保存的条件复跑。
 
 第一版(计划文档 A1)包括:
 - 一个 Nova Carter、一个简单场景、已有地图、一个 A→B 导航任务;
@@ -338,7 +338,7 @@ RoboSim-Eval/
 │   ├── setup.md                   本机启动、运行、关闭顺序(复现从这里开始)
 │   ├── environment.md             本机环境证据
 │   ├── technical-overview.md      本文
-│   ├── harness-sources.md         参考资料台账
+│   ├── reference/                 需求文档(2026-09-29 冻结;A4–A6 仍是验收依据)
 │   └── review/                    审查材料与记录
 ├── README.md                      从新终端启动、结果文件、来源与 AI 参与(D5)
 ├── configs/network/fastdds.xml    两侧共用的 Fast DDS 配置(取自 NVIDIA 工作区)
@@ -352,7 +352,7 @@ RoboSim-Eval/
 └── artifacts/d0a … d0d、d1 … d5/  每一步的命令台账与原始证据(rosbag 本体不入库)
 ```
 
-根目录还有三份参考文档:项目计划书和两份开发流程说明。它们是 2026-09-29 冻结的需求参考,状态以 `docs/plan.md` 为准。
+项目计划书在 `docs/reference/`(2026-09-29 冻结的需求参考,§0 与 B 已作废),状态以 `docs/plan.md` 为准。两份开发流程说明(harness pack)已于 2026-10-03 删除,原文见 git 历史 cb7c6a4。
 
 复现步骤见 `docs/setup.md`;一次性前提(ROS 安装、工作区构建、防火墙规则)也在其中。
 

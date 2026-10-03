@@ -1,12 +1,12 @@
 # RoboSim Eval — 执行计划与状态(唯一活计划)
 
-> 这是项目唯一维护状态的计划。需求、验收方法、状态合同的原文在根目录 `RoboSim-Eval-Plan-and-Setup-ZH(1).md`(2026-09-29 冻结参考),其中的"当前状态"列已作废,状态只看本文件。开发流程约定见两份 harness pack(同样冻结参考)。
+> 这是项目唯一维护状态的计划。需求、验收方法、状态合同的原文在 `docs/reference/RoboSim-Eval-Plan-and-Setup-ZH.md`(2026-09-29 冻结参考),其中的"当前状态"列与 §0、B 已作废,状态只看本文件。开发流程约定见 AGENTS.md,审查提示词模板见 `docs/review/codex-review-prompt.md`;两份 harness pack 已于 2026-10-03 删除,原文见 git 历史 cb7c6a4。
 
 ## 1. 状态总览
 
 | 交付 | 状态 | 证据 | 阻塞 / 备注 |
 | --- | --- | --- | --- |
-| 阶段 0 · 唯一计划与入口 | 完成(2026-09-29) | 基线 commit `dbf67ce`(master);分支 `feature/d0-environment`;AGENTS.md / CLAUDE.md / docs/plan.md / docs/harness-sources.md / artifacts/README.md | — |
+| 阶段 0 · 唯一计划与入口 | 完成(2026-09-29) | 基线 commit `dbf67ce`(master);分支 `feature/d0-environment`;AGENTS.md / CLAUDE.md / docs/plan.md / docs/harness-sources.md(2026-10-03 删除,见 git 历史 cb7c6a4)/ artifacts/README.md | — |
 | D0a · 环境证据 | 完成(2026-09-29 19:02–19:04) | docs/environment.md;artifacts/d0a/(两侧探测原始输出 + commands.md) | 门槛 1→2 通过;发现:WSL 内无 ROS 2,sudo 需密码 |
 | D0b · ROS 2 Jazzy + 6.1.0 示例工作区 | 完成(2026-09-29 19:16–19:30) | artifacts/d0b/commands.md(安装日志、check-ros-install、talker/listener ×2、rviz2 测试、setup-workspace.log) | 门槛 2→3 通过。工作区 `~/robotics/vendor/isaac-ros-6.1`,HEAD a9e8471…;安装脚本首跑退出码 1 是校验步骤的 `set -u` 缺陷(已修),安装本身成功 |
 | D0c · Windows↔WSL 桥接 + Nova Carter 场景 | 完成(2026-09-29 19:35–20:12) | artifacts/d0c/commands.md;probe-04-playing/(/clock 25–26 Hz、/chassis/odom 25.8 Hz、/tf 25–26 Hz、/front_3d_lidar/lidar_points 2.4–2.8 Hz、tf2_echo odom→base_link);clock-continuity-01;clock-pause-test-02(暂停 29 s 时钟停、恢复后继续);bridge-check-01/02;kit-udp-endpoints-01;diag-01 | 门槛 3→4 通过。排障:Windows 防火墙阻断 WSL→kit.exe 入站(用户以管理员加一条限定规则后解决);首次 Play 后 7 s 时间线被停止(重新 Play 解决)。发现:示例场景不发布 2D 雷达扫描(params 的局部代价地图两路来源无数据,D0d 记偏差);USD 动画时间线每 ~41 s 循环但仿真时钟不受影响;显存为几次点采样(空场景 3124–3128 MiB、Play 后 5 s 3754 MiB、Nav2 运行时 Isaac 界面显示 3.9 GiB),未做连续测量 |

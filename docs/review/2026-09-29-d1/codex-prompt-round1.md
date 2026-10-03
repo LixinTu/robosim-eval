@@ -1,6 +1,6 @@
 # Codex 独立审查提示词(D1 第 1 轮)
 
-你是本次交付的独立审查者。请对 D:\RoboSim-Eval 的 D1(doctor 诊断工具)做只读代码审查:不修改任何文件,不启动或停止 Isaac Sim、Nav2 或任何 WSL 进程。审查完把报告交回 Claude Code,由它核实和修复。流程约定见 `Codex-Harness-Pack-ZH(1).md` 的"默认:Codex 独立审查提示词"。
+你是本次交付的独立审查者。请对 D:\RoboSim-Eval 的 D1(doctor 诊断工具)做只读代码审查:不修改任何文件,不启动或停止 Isaac Sim、Nav2 或任何 WSL 进程。审查完把报告交回 Claude Code,由它核实和修复。流程约定见 `docs/review/codex-review-prompt.md`(默认 Codex 独立审查提示词)。
 
 **额度很紧,请严格控制阅读量:**
 - 被审代码一律用 `git -C D:\RoboSim-Eval show c6cbdab:<路径>` 读取。工作区可能已经在别的分支继续开发,不代表被审版本。
@@ -19,7 +19,7 @@
 - 证据(只定位需要的几行):`artifacts/d1/commands.md`、`artifacts/d1/fake-03/summary.txt`、`artifacts/d1/real-02-pause/paused/doctor.txt`、`artifacts/d1/real-02-pause/resumed/doctor.txt`
 
 ## 需求
-`RoboSim-Eval-Plan-and-Setup-ZH(1).md` 的 A3(doctor.py 一行)、A4(D1 一行)、A5(断流规则与主机时间一句);基线提交里 `docs/plan.md` 的 §11:`git show 16aef89:docs/plan.md` 中"## 11."一节。
+`docs/reference/RoboSim-Eval-Plan-and-Setup-ZH.md` 的 A3(doctor.py 一行)、A4(D1 一行)、A5(断流规则与主机时间一句);基线提交里 `docs/plan.md` 的 §11:`git show 16aef89:docs/plan.md` 中"## 11."一节。
 
 ## 审查重点
 1. 判定是否正确:暂停、关闭或断连、降级、环境错误能否被区分;有没有会把异常判成正常(假阴性)或在导航负载下误报(假阳性)的路径;优先级是否合理。

@@ -2,7 +2,7 @@
 
 背景:第 1 轮完整审查两次因账户用量上限中止(round1 用了 82,531 tokens,round1b 用了 102,685 tokens,都没有产出报告)。为在额度内完成,同一范围(基线 `dbf67ce` 到被审版本 `19203e0`)拆成 4 个分片,每片只审一组文件。内部预审的处理记录在 `docs/review/2026-09-29-d0/REVIEW.md`,请独立判断,不要只核对那张表。
 
-你是独立审查者。只读审查:不修改任何文件,不启动或停止 Isaac Sim、Nav2 或任何 WSL 进程。审查完把报告交回 Claude Code,由它核实和修复。流程约定见 `Codex-Harness-Pack-ZH(1).md` 的"默认:Codex 独立审查提示词"。
+你是独立审查者。只读审查:不修改任何文件,不启动或停止 Isaac Sim、Nav2 或任何 WSL 进程。审查完把报告交回 Claude Code,由它核实和修复。流程约定见 `docs/review/codex-review-prompt.md`(默认 Codex 独立审查提示词)。
 
 **额度很紧,请严格控制阅读量:**
 - 被审代码一律用 `git -C D:\RoboSim-Eval show 19203e0:<路径>` 读取。工作区可能已有后续提交,不代表被审版本。
@@ -19,7 +19,7 @@
 - `configs/network/fastdds.xml`
 
 ## 需求
-`RoboSim-Eval-Plan-and-Setup-ZH(1).md` 的 §0.2 与 §B0–§B4。
+`docs/reference/RoboSim-Eval-Plan-and-Setup-ZH.md` 的 §0.2 与 §B0–§B4(文件开头注明 §0 与 B 已作废,那是对今后的工作而言;D0 就是按这些章节做的,本片仍以它们为依据)。
 
 ## 本片审查重点
 1. 防火墙规则的范围是否最小(协议、程序、接口),能否重复运行,有无破坏性操作。
